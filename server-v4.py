@@ -2148,7 +2148,9 @@ x402_mw = payment_middleware(routes, server)
 # /.well-known/* is also free: discovery files (x402.json,
 # agent-catalog.json) and the AiPayGen site-verification file must be
 # readable unpaid, or directories cannot index or verify the service.
-HEALTH_PATHS = {"/health"}
+# / is the landing page: directories (e.g. Agent402) probe the bare root
+# and require a 200, not a 404.
+HEALTH_PATHS = {"/health", "/"}
 
 
 @app.middleware("http")
@@ -2171,6 +2173,27 @@ async def health():
         "payee": WALLET_ADDRESS,
         "rpc_connected": w3.is_connected(),
         "endpoints": len(ORDERED) + 1,  # 99 paid + /health = 100
+    }
+
+
+# ===== ROOT LANDING PAGE (no payment required) =====
+
+@app.get("/")
+async def root():
+    """Service landing/discovery page. Free, no payment.
+    Directories probe the bare root and require a 200."""
+    return {
+        "service": "Manteclaw x402 service",
+        "version": "4.0",
+        "network": "base",
+        "payment": "x402 v2, USDC on Base, per call ($0.001-$0.02)",
+        "payee": WALLET_ADDRESS,
+        "endpoints": len(ORDERED) + 1,  # 99 paid + /health = 100
+        "health": "/health",
+        "catalog": "/.well-known/agent-catalog.json",
+        "discovery": "/.well-known/x402.json",
+        "tools": "/mcp/tools",
+        "docs": "https://manteclaw-x402.fly.dev/.well-known/agent-catalog.json",
     }
 
 
