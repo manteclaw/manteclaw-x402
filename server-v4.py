@@ -74,9 +74,13 @@ PORT = int(os.environ.get("PORT", "4020"))
 
 # ===== x402 v2.9.0 SETUP =====
 
-# Mainnet facilitator for Base (eip155:8453)
+# Mainnet facilitator for Base (eip155:8453).
+# Switched Nov 21, 2026 from facilitator.xpay.sh (returning 503 on
+# /supported, which made every paid endpoint 500) to PayAI's facilitator,
+# verified to support scheme "exact" on eip155:8453. Coinbase's reference
+# facilitator (x402.org) only supports Base Sepolia, not Base mainnet.
 facilitator = HTTPFacilitatorClient(
-    FacilitatorConfig(url="https://facilitator.xpay.sh")
+    FacilitatorConfig(url="https://facilitator.payai.network")
 )
 
 server = x402ResourceServer(facilitator)
