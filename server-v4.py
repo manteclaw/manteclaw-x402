@@ -41,6 +41,7 @@ import asyncio
 import math
 
 from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from dotenv import load_dotenv
 from web3 import Web3
@@ -2160,6 +2161,25 @@ async def x402_middleware(request: Request, call_next):
     return await x402_mw(request, call_next)
 
 
+# CORS: the public catalog page (and any browser client) calls the API
+# cross-origin. Browsers block reading a cross-origin response unless
+# the server sends CORS headers, and the x402 client must be able to
+# read the `payment-required` header on the 402 and send `X-PAYMENT`.
+# Allow any origin (the endpoints are public, pay-per-call) and expose
+# the headers the x402 browser flow needs.
+# NOTE: this MUST be registered AFTER the x402 middleware above.
+# Starlette runs the most-recently-added middleware outermost, so CORS
+# has to be added last to wrap the 402 responses the x402 middleware
+# returns without calling through.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["GET", "HEAD", "OPTIONS"],
+    allow_headers=["*"],
+    expose_headers=["payment-required", "x-payment-response"],
+)
+
+
 # ===== HEALTH CHECK (no payment required) =====
 
 @app.get("/health")
@@ -2195,6 +2215,16 @@ async def root():
         "tools": "/mcp/tools",
         "docs": "https://manteclaw-x402.fly.dev/.well-known/agent-catalog.json",
     }
+
+
+@app.head("/")
+async def root_head():
+    """Explicit HEAD handler for the root. Some directory/indexer probes
+    send HEAD (not GET); Starlette does not auto-answer HEAD here once
+    the x402 middleware is in the stack, so answer it directly."""
+    from fastapi.responses import Response
+
+    return Response(status_code=200)
 
 
 # Register every paid route from the registry.
