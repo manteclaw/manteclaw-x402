@@ -4267,6 +4267,58 @@ async def catalog_page():
 for _e in ORDERED:
     app.add_api_route(_e["path"], _e["handler"], methods=["GET"])
 
+
+# ===== OPENAPI INPUT-SCHEMA FIX (x402scan) =====
+# Directories that import this service from its OpenAPI document
+# (x402scan's registerFromOrigin) reject any operation that has neither
+# `parameters` nor a `requestBody` — "Missing input schema — add a
+# requestBody or parameter schema to your OpenAPI spec". The no-input GET
+# endpoints (e.g. /defi/gas-tracker) have neither, so they failed to
+# register (72 of the 199 paid endpoints in v5). Give every such operation
+# an explicit, optional JSON request body describing an empty input
+# object. This changes only the served /openapi.json document — the
+# handlers take no body and runtime behaviour is unchanged.
+from fastapi.openapi.utils import get_openapi
+
+
+def _custom_openapi():
+    if app.openapi_schema:
+        return app.openapi_schema
+    schema = get_openapi(
+        title=app.title,
+        version=app.version,
+        openapi_version=app.openapi_version,
+        description=app.description,
+        routes=app.routes,
+    )
+    _empty_input_body = {
+        "required": False,
+        "content": {
+            "application/json": {
+                "schema": {
+                    "type": "object",
+                    "properties": {},
+                    "additionalProperties": True,
+                    "title": "EmptyInput",
+                    "description": "This endpoint takes no input.",
+                }
+            }
+        },
+    }
+    for _path_item in schema.get("paths", {}).values():
+        for _op in _path_item.values():
+            if (
+                isinstance(_op, dict)
+                and "parameters" not in _op
+                and "requestBody" not in _op
+            ):
+                _op["requestBody"] = _empty_input_body
+    app.openapi_schema = schema
+    return schema
+
+
+app.openapi = _custom_openapi
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=PORT)
