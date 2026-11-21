@@ -4,14 +4,14 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <meta name="color-scheme" content="light dark" />
-<meta name="description" content="Manteclaw x402 API Catalog — 100 pay-per-call endpoints on Base for token prices, wallet analytics, DEX data, DeFi yields, NFTs, ENS and more. Priced in USDC from $0.001 to $0.02 per call. No API key, no subscription." />
-<meta property="og:title" content="Manteclaw x402 API Catalog — 100 pay-per-call APIs on Base" />
+<meta name="description" content="Manteclaw x402 API Catalog — 200 pay-per-call endpoints on Base for token prices, wallet analytics, DEX data, DeFi yields, lending, stablecoins, oracles, governance, NFTs, memecoins, prediction markets, ENS and more. Priced in USDC from $0.001 to $0.02 per call. No API key, no subscription." />
+<meta property="og:title" content="Manteclaw x402 API Catalog — 200 pay-per-call APIs on Base" />
 <meta property="og:description" content="A live x402 API service on Base: token prices, wallet analytics, DEX data, DeFi yields, NFTs, ENS and on-chain utilities. No API key, no subscription — every call is $0.001–$0.02 in USDC, payable per request, right from this page." />
 <meta property="og:type" content="website" />
 <meta property="og:site_name" content="Manteclaw" />
 <meta name="twitter:card" content="summary" />
-<meta name="twitter:title" content="Manteclaw x402 API Catalog — 100 pay-per-call APIs on Base" />
-<meta name="twitter:description" content="100 live endpoints on Base, priced in USDC from $0.001 to $0.02 per call via x402. Connect a wallet and pay per call from the page." />
+<meta name="twitter:title" content="Manteclaw x402 API Catalog — 200 pay-per-call APIs on Base" />
+<meta name="twitter:description" content="200 live endpoints on Base, priced in USDC from $0.001 to $0.02 per call via x402. Connect a wallet and pay per call from the page." />
 <link rel="icon" href="data:," />
 <title>Manteclaw x402 API Catalog</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -286,11 +286,11 @@
       <a href="https://manteclaw-x402.fly.dev/.well-known/agent-catalog.json" target="_blank" rel="noopener">Live catalog JSON</a>
     </div>
     <h1>Base data, pay per call.</h1>
-    <p class="lede">Manteclaw is a live <strong>x402 API service on Base</strong> — 100 endpoints for token prices, wallet analytics, DEX data, DeFi yields, NFTs, ENS and on-chain utilities. <strong>No account, no API key, no subscription.</strong> Each call is priced in USDC, from <strong>$0.001 to $0.02</strong>, and paid per request by your app or AI agent.</p>
+    <p class="lede">Manteclaw is a live <strong>x402 API service on Base</strong> — 200 endpoints for token prices, wallet analytics, DEX data, DeFi yields, lending, stablecoins, oracles, governance, NFTs, memecoins, prediction markets, ENS and on-chain utilities. <strong>No account, no API key, no subscription.</strong> Each call is priced in USDC, from <strong>$0.001 to $0.02</strong>, and paid per request by your app or AI agent.</p>
     <div class="baseurl">
       <code class="mono">https://manteclaw-x402.fly.dev</code>
       <a class="btn btn-ghost" href="https://manteclaw-x402.fly.dev/health" target="_blank" rel="noopener">Check it’s live ↗</a>
-      <a class="btn btn-primary" href="#catalog">Browse the 100 endpoints ↓</a>
+      <a class="btn btn-primary" href="#catalog">Browse the 200 endpoints ↓</a>
     </div>
     <div class="walletbar" id="walletBar">
       <div class="winfo">
@@ -301,7 +301,7 @@
       <button class="btn btn-ghost" id="disconnectBtn" type="button" hidden>Disconnect</button>
     </div>
     <div class="stats" role="list" aria-label="Service at a glance">
-      <div class="stat" role="listitem"><b>100</b><span>endpoints, all live</span></div>
+      <div class="stat" role="listitem"><b>200</b><span>endpoints, all live</span></div>
       <div class="stat" role="listitem"><b>9</b><span>categories of data</span></div>
       <div class="stat" role="listitem"><b>$0.001</b><span>cheapest paid call</span></div>
       <div class="stat" role="listitem"><b>USDC</b><span>on Base · x402 v2</span></div>
@@ -355,14 +355,14 @@ curl -i https://manteclaw-x402.fly.dev/mcp/status
 curl https://manteclaw-x402.fly.dev/health
 
 <span class="cm"># { "status": "ok", "service": "x402-service", "version": "4.0",
-#   "network": "base", "rpc_connected": true, "endpoints": 100 }</span></code></pre>
+#   "network": "base", "rpc_connected": true, "endpoints": 200 }</span></code></pre>
     </div>
     <p class="code-note">Cheapest way to test a wallet setup end-to-end: <span class="mono">GET /mcp/status</span> at $0.001. Or skip the code entirely — connect a wallet at the top of this page and use any endpoint’s <strong>Pay &amp; Call</strong> button below; the result comes back right on the card. Full developer docs are in the <a href="https://github.com/manteclaw/manteclaw-x402/blob/main/README.md" target="_blank" rel="noopener">service README on GitHub</a>.</p>
   </section>
 
   <section aria-labelledby="cat-h">
     <h2 id="cat-h">What’s inside</h2>
-    <p class="sec-sub">Nine groups covering the questions apps and agents ask about Base all day — what’s a token worth, is it safe, what’s in this wallet, where’s the yield. Tap a group to jump to its endpoints.</p>
+    <p class="sec-sub">Fifteen groups covering the questions apps and agents ask about Base all day — what’s a token worth, is it safe, what’s in this wallet, where’s the yield. Tap a group to jump to its endpoints.</p>
     <div class="cat-grid" id="catGrid"></div>
   </section>
 
@@ -417,7 +417,7 @@ curl https://manteclaw-x402.fly.dev/health
             <li><a href="https://manteclaw-x402.fly.dev/.well-known/agent-catalog.json" target="_blank" rel="noopener">Agent catalog <span>/.well-known/agent-catalog.json</span></a></li>
             <li><a href="https://manteclaw-x402.fly.dev/.well-known/x402.json" target="_blank" rel="noopener">x402 discovery file <span>/.well-known/x402.json</span></a></li>
             <li><a href="https://manteclaw-x402.fly.dev/health" target="_blank" rel="noopener">Health check <span>/health — free</span></a></li>
-            <li><a href="https://hive402.scriptmasterlabs.com/api/public/catalog" target="_blank" rel="noopener">HIVE402 listing <span>all 99 paid endpoints</span></a></li>
+            <li><a href="https://hive402.scriptmasterlabs.com/api/public/catalog" target="_blank" rel="noopener">HIVE402 listing <span>all 199 paid endpoints</span></a></li>
             <li><a href="https://github.com/manteclaw/manteclaw-x402/blob/main/README.md" target="_blank" rel="noopener">Developer README <span>github.com/manteclaw</span></a></li>
           </ul>
         </div>
@@ -697,6 +697,100 @@ var ENDPOINTS = [
   "params": true
  },
  {
+  "name": "Token History",
+  "path": "/tokens/{address}/history/{days}",
+  "price": "$0.01",
+  "priceNum": 0.01,
+  "desc": "Price history for one Base token (1-365 days).",
+  "group": "Tokens",
+  "tags": [
+   "token",
+   "history",
+   "price"
+  ],
+  "params": true
+ },
+ {
+  "name": "Token Audit",
+  "path": "/tokens/{address}/audit",
+  "price": "$0.01",
+  "priceNum": 0.01,
+  "desc": "Security audit flags for one Base token (GoPlus).",
+  "group": "Tokens",
+  "tags": [
+   "token",
+   "audit",
+   "security"
+  ],
+  "params": true
+ },
+ {
+  "name": "Token Holders",
+  "path": "/tokens/{address}/holders",
+  "price": "$0.01",
+  "priceNum": 0.01,
+  "desc": "Holder count + top 10 holders for one Base token (GoPlus).",
+  "group": "Tokens",
+  "tags": [
+   "token",
+   "holders"
+  ],
+  "params": true
+ },
+ {
+  "name": "Token Top Holder",
+  "path": "/tokens/{address}/top-holder",
+  "price": "$0.005",
+  "priceNum": 0.005,
+  "desc": "Largest holder of one Base token (GoPlus).",
+  "group": "Tokens",
+  "tags": [
+   "token",
+   "top-holder"
+  ],
+  "params": true
+ },
+ {
+  "name": "Token Age",
+  "path": "/tokens/{address}/age",
+  "price": "$0.005",
+  "priceNum": 0.005,
+  "desc": "Age of a token's oldest DEX pair (first listing date).",
+  "group": "Tokens",
+  "tags": [
+   "token",
+   "age"
+  ],
+  "params": true
+ },
+ {
+  "name": "Token Liquidity USD",
+  "path": "/tokens/{address}/liquidity-usd",
+  "price": "$0.005",
+  "priceNum": 0.005,
+  "desc": "Total DEX liquidity (USD) across all pairs for one token.",
+  "group": "Tokens",
+  "tags": [
+   "token",
+   "liquidity"
+  ],
+  "params": true
+ },
+ {
+  "name": "Token FDV",
+  "path": "/tokens/{address}/fdv",
+  "price": "$0.005",
+  "priceNum": 0.005,
+  "desc": "Fully diluted valuation + market cap for one Base token.",
+  "group": "Tokens",
+  "tags": [
+   "token",
+   "fdv",
+   "market-cap"
+  ],
+  "params": true
+ },
+ {
   "name": "Chain Client",
   "path": "/chain/client",
   "price": "0.001",
@@ -915,6 +1009,75 @@ var ENDPOINTS = [
   "params": true
  },
  {
+  "name": "Chain Blocks",
+  "path": "/chain/blocks/{count}",
+  "price": "$0.01",
+  "priceNum": 0.01,
+  "desc": "Summaries of the last N blocks (1-10).",
+  "group": "Chain",
+  "tags": [
+   "chain",
+   "blocks"
+  ],
+  "params": true
+ },
+ {
+  "name": "Chain Pending Count",
+  "path": "/chain/pending/count",
+  "price": "$0.005",
+  "priceNum": 0.005,
+  "desc": "Pending-block transaction count (live mempool snapshot).",
+  "group": "Chain",
+  "tags": [
+   "chain",
+   "pending",
+   "mempool"
+  ],
+  "params": false
+ },
+ {
+  "name": "Chain Transaction Status",
+  "path": "/chain/transaction/{tx_hash}/status",
+  "price": "$0.005",
+  "priceNum": 0.005,
+  "desc": "Transaction receipt: status + confirmations.",
+  "group": "Chain",
+  "tags": [
+   "chain",
+   "transaction",
+   "status"
+  ],
+  "params": true
+ },
+ {
+  "name": "Chain Transaction Cost",
+  "path": "/chain/transaction/{tx_hash}/cost",
+  "price": "$0.01",
+  "priceNum": 0.01,
+  "desc": "Transaction cost in ETH and USD.",
+  "group": "Chain",
+  "tags": [
+   "chain",
+   "transaction",
+   "cost"
+  ],
+  "params": true
+ },
+ {
+  "name": "Chain Block Transaction Count",
+  "path": "/chain/block/{number}/tx-count",
+  "price": "$0.005",
+  "priceNum": 0.005,
+  "desc": "Transaction count + gas for one block number.",
+  "group": "Chain",
+  "tags": [
+   "chain",
+   "block",
+   "tx-count"
+  ],
+  "params": true
+ },
+ {
   "name": "DEX Fees Protocol",
   "path": "/dex/fees/{protocol}",
   "price": "0.01",
@@ -1075,6 +1238,118 @@ var ENDPOINTS = [
    "dex",
    "volume",
    "protocol"
+  ],
+  "params": true
+ },
+ {
+  "name": "DEX Top Volume",
+  "path": "/dex/top/volume/{n}",
+  "price": "$0.01",
+  "priceNum": 0.01,
+  "desc": "Top N DEXs by 24h volume (1-25).",
+  "group": "DEX",
+  "tags": [
+   "dex",
+   "top",
+   "volume"
+  ],
+  "params": true
+ },
+ {
+  "name": "DEX Volume Chain",
+  "path": "/dex/volume/{chain}",
+  "price": "$0.01",
+  "priceNum": 0.01,
+  "desc": "Total DEX volume for one chain (24h + 7d).",
+  "group": "DEX",
+  "tags": [
+   "dex",
+   "volume",
+   "chain"
+  ],
+  "params": true
+ },
+ {
+  "name": "DEX Chains",
+  "path": "/dex/chains",
+  "price": "$0.02",
+  "priceNum": 0.02,
+  "desc": "DEX volume by chain for the major chains.",
+  "group": "DEX",
+  "tags": [
+   "dex",
+   "chains",
+   "volume"
+  ],
+  "params": false
+ },
+ {
+  "name": "DEX Top Fees",
+  "path": "/dex/top/fees",
+  "price": "$0.01",
+  "priceNum": 0.01,
+  "desc": "Top 10 DEXs by 24h fees.",
+  "group": "DEX",
+  "tags": [
+   "dex",
+   "top",
+   "fees"
+  ],
+  "params": false
+ },
+ {
+  "name": "DEX Fees Chains",
+  "path": "/dex/fees/{protocol}/chains",
+  "price": "$0.01",
+  "priceNum": 0.01,
+  "desc": "Fee breakdown by chain for one protocol.",
+  "group": "DEX",
+  "tags": [
+   "dex",
+   "fees",
+   "chains"
+  ],
+  "params": true
+ },
+ {
+  "name": "DEX Pair Transactions",
+  "path": "/dex/pair/{chain}/{pair}/txns",
+  "price": "$0.01",
+  "priceNum": 0.01,
+  "desc": "Transactions + volume for one DEX pair.",
+  "group": "DEX",
+  "tags": [
+   "dex",
+   "pair",
+   "txns"
+  ],
+  "params": true
+ },
+ {
+  "name": "DEX Pairs Token",
+  "path": "/dex/pairs/{token}",
+  "price": "$0.01",
+  "priceNum": 0.01,
+  "desc": "Top 10 DEX pairs for one token, by liquidity.",
+  "group": "DEX",
+  "tags": [
+   "dex",
+   "pairs",
+   "token"
+  ],
+  "params": true
+ },
+ {
+  "name": "DEX Pair Chain",
+  "path": "/dex/pair/{token}/{chain}",
+  "price": "$0.01",
+  "priceNum": 0.01,
+  "desc": "Best DEX pair for one token on one chain, by liquidity.",
+  "group": "DEX",
+  "tags": [
+   "dex",
+   "pair",
+   "chain"
   ],
   "params": true
  },
@@ -1261,6 +1536,104 @@ var ENDPOINTS = [
   "params": true
  },
  {
+  "name": "Wallet Approvals",
+  "path": "/wallets/{address}/approvals",
+  "price": "$0.01",
+  "priceNum": 0.01,
+  "desc": "Token allowances a wallet granted to Permit2, routers, Aave.",
+  "group": "Wallets",
+  "tags": [
+   "wallet",
+   "approvals",
+   "allowance"
+  ],
+  "params": true
+ },
+ {
+  "name": "Wallet Approvals Token",
+  "path": "/wallets/{address}/approvals/{token}",
+  "price": "$0.01",
+  "priceNum": 0.01,
+  "desc": "Allowances one wallet granted for one token.",
+  "group": "Wallets",
+  "tags": [
+   "wallet",
+   "approvals",
+   "token"
+  ],
+  "params": true
+ },
+ {
+  "name": "Wallet Token Value",
+  "path": "/wallets/{address}/token/{token}/value",
+  "price": "$0.01",
+  "priceNum": 0.01,
+  "desc": "One wallet's balance of one token + USD value.",
+  "group": "Wallets",
+  "tags": [
+   "wallet",
+   "token",
+   "value"
+  ],
+  "params": true
+ },
+ {
+  "name": "Wallet cbETH Balance",
+  "path": "/wallets/{address}/cbeth-balance",
+  "price": "$0.005",
+  "priceNum": 0.005,
+  "desc": "Wallet cbETH balance.",
+  "group": "Wallets",
+  "tags": [
+   "wallet",
+   "cbeth",
+   "balance"
+  ],
+  "params": true
+ },
+ {
+  "name": "Wallet DAI Balance",
+  "path": "/wallets/{address}/dai-balance",
+  "price": "$0.005",
+  "priceNum": 0.005,
+  "desc": "Wallet DAI balance.",
+  "group": "Wallets",
+  "tags": [
+   "wallet",
+   "dai",
+   "balance"
+  ],
+  "params": true
+ },
+ {
+  "name": "Wallet USDbC Balance",
+  "path": "/wallets/{address}/usdbc-balance",
+  "price": "$0.005",
+  "priceNum": 0.005,
+  "desc": "Wallet USDbC balance.",
+  "group": "Wallets",
+  "tags": [
+   "wallet",
+   "usdbc",
+   "balance"
+  ],
+  "params": true
+ },
+ {
+  "name": "Wallet HIGHER Balance",
+  "path": "/wallets/{address}/higher-balance",
+  "price": "$0.005",
+  "priceNum": 0.005,
+  "desc": "Wallet HIGHER balance.",
+  "group": "Wallets",
+  "tags": [
+   "wallet",
+   "higher",
+   "balance"
+  ],
+  "params": true
+ },
+ {
   "name": "DeFi TVL",
   "path": "/defi/tvl",
   "price": "0.005",
@@ -1443,6 +1816,674 @@ var ENDPOINTS = [
   "params": true
  },
  {
+  "name": "Chain Gas Base Fee",
+  "path": "/chain/gas/base-fee",
+  "price": "$0.005",
+  "priceNum": 0.005,
+  "desc": "Current base fee + predicted next-block base fee.",
+  "group": "DeFi",
+  "tags": [
+   "gas",
+   "base-fee",
+   "eip1559"
+  ],
+  "params": false
+ },
+ {
+  "name": "Chain Gas Fee History",
+  "path": "/chain/gas/fee-history/{blocks}",
+  "price": "$0.01",
+  "priceNum": 0.01,
+  "desc": "Fee history for the last N blocks (1-20).",
+  "group": "DeFi",
+  "tags": [
+   "gas",
+   "fee-history"
+  ],
+  "params": true
+ },
+ {
+  "name": "Chain Gas Transfer Cost",
+  "path": "/chain/gas/transfer-cost",
+  "price": "$0.005",
+  "priceNum": 0.005,
+  "desc": "Cost of a plain 21,000-gas ETH transfer on Base.",
+  "group": "DeFi",
+  "tags": [
+   "gas",
+   "transfer",
+   "cost"
+  ],
+  "params": false
+ },
+ {
+  "name": "Chain Gas Transfer Cost USD",
+  "path": "/chain/gas/transfer-cost-usd",
+  "price": "$0.005",
+  "priceNum": 0.005,
+  "desc": "Cost of a plain ETH transfer on Base in USD.",
+  "group": "DeFi",
+  "tags": [
+   "gas",
+   "transfer",
+   "usd"
+  ],
+  "params": false
+ },
+ {
+  "name": "Chain Gas Max Fee",
+  "path": "/chain/gas/max-fee",
+  "price": "$0.005",
+  "priceNum": 0.005,
+  "desc": "Current base fee + max priority fee.",
+  "group": "DeFi",
+  "tags": [
+   "gas",
+   "max-fee",
+   "priority"
+  ],
+  "params": false
+ },
+ {
+  "name": "DeFi Protocol",
+  "path": "/defi/protocol/{slug}",
+  "price": "$0.01",
+  "priceNum": 0.01,
+  "desc": "One protocol's TVL detail by slug.",
+  "group": "DeFi",
+  "tags": [
+   "defi",
+   "protocol",
+   "tvl"
+  ],
+  "params": true
+ },
+ {
+  "name": "DeFi Chains",
+  "path": "/defi/chains",
+  "price": "$0.01",
+  "priceNum": 0.01,
+  "desc": "TVL by chain, top 20.",
+  "group": "DeFi",
+  "tags": [
+   "defi",
+   "chains",
+   "tvl"
+  ],
+  "params": false
+ },
+ {
+  "name": "DeFi Chain",
+  "path": "/defi/chains/{chain}",
+  "price": "$0.01",
+  "priceNum": 0.01,
+  "desc": "TVL for one chain.",
+  "group": "DeFi",
+  "tags": [
+   "defi",
+   "chain",
+   "tvl"
+  ],
+  "params": true
+ },
+ {
+  "name": "DeFi Chain History",
+  "path": "/defi/chains/{chain}/history",
+  "price": "$0.01",
+  "priceNum": 0.01,
+  "desc": "TVL history for one chain: first, latest, 30-day change.",
+  "group": "DeFi",
+  "tags": [
+   "defi",
+   "chain",
+   "history"
+  ],
+  "params": true
+ },
+ {
+  "name": "DeFi Fees Overview",
+  "path": "/defi/fees/overview",
+  "price": "$0.01",
+  "priceNum": 0.01,
+  "desc": "Top 10 protocols by 24h fees (all chains).",
+  "group": "DeFi",
+  "tags": [
+   "defi",
+   "fees",
+   "overview"
+  ],
+  "params": false
+ },
+ {
+  "name": "DeFi Yields Chart",
+  "path": "/defi/yields/chart/{pool}",
+  "price": "$0.01",
+  "priceNum": 0.01,
+  "desc": "TVL/APY history for one yield pool (last 30 points).",
+  "group": "DeFi",
+  "tags": [
+   "defi",
+   "yields",
+   "chart"
+  ],
+  "params": true
+ },
+ {
+  "name": "DeFi Yields IL",
+  "path": "/defi/yields/il/{pool}",
+  "price": "$0.01",
+  "priceNum": 0.01,
+  "desc": "Impermanent-loss risk + APY for one yield pool.",
+  "group": "DeFi",
+  "tags": [
+   "defi",
+   "yields",
+   "il"
+  ],
+  "params": true
+ },
+ {
+  "name": "DeFi Yields Project",
+  "path": "/defi/yields/project/{project}",
+  "price": "$0.01",
+  "priceNum": 0.01,
+  "desc": "Top 10 yield pools for one project, by APY.",
+  "group": "DeFi",
+  "tags": [
+   "defi",
+   "yields",
+   "project"
+  ],
+  "params": true
+ },
+ {
+  "name": "DeFi Yields Token",
+  "path": "/defi/yields/token/{symbol}",
+  "price": "$0.01",
+  "priceNum": 0.01,
+  "desc": "Top 10 yield pools for one token symbol, by APY.",
+  "group": "DeFi",
+  "tags": [
+   "defi",
+   "yields",
+   "token"
+  ],
+  "params": true
+ },
+ {
+  "name": "DeFi Yields Stable Chain",
+  "path": "/defi/yields/stable/{chain}",
+  "price": "$0.01",
+  "priceNum": 0.01,
+  "desc": "Top 10 stablecoin yield pools on one chain, by APY.",
+  "group": "DeFi",
+  "tags": [
+   "defi",
+   "yields",
+   "stablecoin"
+  ],
+  "params": true
+ },
+ {
+  "name": "DeFi DEX Volume 7d",
+  "path": "/defi/dex/volume/7d",
+  "price": "$0.005",
+  "priceNum": 0.005,
+  "desc": "Total DEX volume, last 7 days (all chains).",
+  "group": "DeFi",
+  "tags": [
+   "defi",
+   "dex",
+   "volume"
+  ],
+  "params": false
+ },
+ {
+  "name": "DeFi DEX Volume Base 7d",
+  "path": "/defi/dex/volume/base/7d",
+  "price": "$0.005",
+  "priceNum": 0.005,
+  "desc": "Total DEX volume on Base, last 7 days.",
+  "group": "DeFi",
+  "tags": [
+   "defi",
+   "dex",
+   "volume",
+   "base"
+  ],
+  "params": false
+ },
+ {
+  "name": "Lending Aave Markets",
+  "path": "/lending/aave/markets",
+  "price": "$0.02",
+  "priceNum": 0.02,
+  "desc": "All Aave V3 markets on Base with on-chain supply/borrow APY.",
+  "group": "Lending",
+  "tags": [
+   "lending",
+   "aave",
+   "markets"
+  ],
+  "params": false
+ },
+ {
+  "name": "Lending Aave Market",
+  "path": "/lending/aave/market/{asset}",
+  "price": "$0.01",
+  "priceNum": 0.01,
+  "desc": "Aave V3 market for one asset: on-chain rates + aToken/debt tokens.",
+  "group": "Lending",
+  "tags": [
+   "lending",
+   "aave",
+   "market"
+  ],
+  "params": true
+ },
+ {
+  "name": "Lending Aave User",
+  "path": "/lending/aave/user/{wallet}",
+  "price": "$0.01",
+  "priceNum": 0.01,
+  "desc": "Aave V3 account data for one wallet: collateral, debt, health factor.",
+  "group": "Lending",
+  "tags": [
+   "lending",
+   "aave",
+   "account"
+  ],
+  "params": true
+ },
+ {
+  "name": "Lending Aave TVL",
+  "path": "/lending/aave/tvl",
+  "price": "$0.005",
+  "priceNum": 0.005,
+  "desc": "Aave V3 TVL on Base.",
+  "group": "Lending",
+  "tags": [
+   "lending",
+   "aave",
+   "tvl"
+  ],
+  "params": false
+ },
+ {
+  "name": "Lending Compound Markets",
+  "path": "/lending/compound/markets",
+  "price": "$0.01",
+  "priceNum": 0.01,
+  "desc": "Compound V3 yield pools on Base, top 10 by TVL.",
+  "group": "Lending",
+  "tags": [
+   "lending",
+   "compound",
+   "markets"
+  ],
+  "params": false
+ },
+ {
+  "name": "Lending Compound USDC",
+  "path": "/lending/compound/usdc",
+  "price": "$0.01",
+  "priceNum": 0.01,
+  "desc": "Compound V3 Comet USDC market on Base: utilization, totals, APY.",
+  "group": "Lending",
+  "tags": [
+   "lending",
+   "compound",
+   "usdc"
+  ],
+  "params": false
+ },
+ {
+  "name": "Lending Compound User",
+  "path": "/lending/compound/user/{wallet}",
+  "price": "$0.01",
+  "priceNum": 0.01,
+  "desc": "Compound V3 Comet USDC position for one wallet: supplied/borrowed.",
+  "group": "Lending",
+  "tags": [
+   "lending",
+   "compound",
+   "account"
+  ],
+  "params": true
+ },
+ {
+  "name": "Lending Morpho Pools",
+  "path": "/lending/morpho/pools",
+  "price": "$0.01",
+  "priceNum": 0.01,
+  "desc": "Morpho Blue yield pools on Base, top 10 by TVL.",
+  "group": "Lending",
+  "tags": [
+   "lending",
+   "morpho",
+   "pools"
+  ],
+  "params": false
+ },
+ {
+  "name": "Lending Morpho Stable",
+  "path": "/lending/morpho/stable",
+  "price": "$0.01",
+  "priceNum": 0.01,
+  "desc": "Highest-APY Morpho Blue stablecoin pools on Base.",
+  "group": "Lending",
+  "tags": [
+   "lending",
+   "morpho",
+   "stablecoin"
+  ],
+  "params": false
+ },
+ {
+  "name": "Lending Rates",
+  "path": "/lending/rates/{asset}",
+  "price": "$0.01",
+  "priceNum": 0.01,
+  "desc": "Lending rates for one asset: Aave on-chain + yield pools.",
+  "group": "Lending",
+  "tags": [
+   "lending",
+   "rates",
+   "aave"
+  ],
+  "params": true
+ },
+ {
+  "name": "Lending Top APY",
+  "path": "/lending/top-apy",
+  "price": "$0.01",
+  "priceNum": 0.01,
+  "desc": "Top 10 lending APY pools on Base.",
+  "group": "Lending",
+  "tags": [
+   "lending",
+   "apy",
+   "top"
+  ],
+  "params": false
+ },
+ {
+  "name": "Lending Stablecoin Rates",
+  "path": "/lending/stablecoin-rates",
+  "price": "$0.01",
+  "priceNum": 0.01,
+  "desc": "Aave V3 supply/borrow APY for USDC, DAI and USDbC on Base.",
+  "group": "Lending",
+  "tags": [
+   "lending",
+   "stablecoin",
+   "rates"
+  ],
+  "params": false
+ },
+ {
+  "name": "Lending USDC Rate",
+  "path": "/lending/usdc-rate",
+  "price": "$0.005",
+  "priceNum": 0.005,
+  "desc": "Aave V3 USDC market rates on Base.",
+  "group": "Lending",
+  "tags": [
+   "lending",
+   "aave",
+   "usdc"
+  ],
+  "params": false
+ },
+ {
+  "name": "Lending WETH Rate",
+  "path": "/lending/weth-rate",
+  "price": "$0.005",
+  "priceNum": 0.005,
+  "desc": "Aave V3 WETH market rates on Base.",
+  "group": "Lending",
+  "tags": [
+   "lending",
+   "aave",
+   "weth"
+  ],
+  "params": false
+ },
+ {
+  "name": "Stablecoins Top",
+  "path": "/stablecoins/top",
+  "price": "$0.005",
+  "priceNum": 0.005,
+  "desc": "Top 10 stablecoins by circulating supply.",
+  "group": "Stablecoins",
+  "tags": [
+   "stablecoins",
+   "top",
+   "supply"
+  ],
+  "params": false
+ },
+ {
+  "name": "Stablecoins Asset",
+  "path": "/stablecoins/{asset}",
+  "price": "$0.01",
+  "priceNum": 0.01,
+  "desc": "One stablecoin by id, symbol, or gecko_id, with per-chain supply.",
+  "group": "Stablecoins",
+  "tags": [
+   "stablecoins",
+   "asset"
+  ],
+  "params": true
+ },
+ {
+  "name": "Stablecoins Chains",
+  "path": "/stablecoins/chains",
+  "price": "$0.01",
+  "priceNum": 0.01,
+  "desc": "Stablecoin supply by chain, top 15.",
+  "group": "Stablecoins",
+  "tags": [
+   "stablecoins",
+   "chains"
+  ],
+  "params": false
+ },
+ {
+  "name": "Stablecoins Pegs",
+  "path": "/stablecoins/pegs",
+  "price": "$0.01",
+  "priceNum": 0.01,
+  "desc": "Stablecoins furthest from their $1 peg right now.",
+  "group": "Stablecoins",
+  "tags": [
+   "stablecoins",
+   "peg",
+   "depeg"
+  ],
+  "params": false
+ },
+ {
+  "name": "Stablecoins Chain",
+  "path": "/stablecoins/chain/{chain}",
+  "price": "$0.01",
+  "priceNum": 0.01,
+  "desc": "Top 15 stablecoins by circulating supply on one chain.",
+  "group": "Stablecoins",
+  "tags": [
+   "stablecoins",
+   "chain"
+  ],
+  "params": true
+ },
+ {
+  "name": "Stablecoins Total",
+  "path": "/stablecoins/total",
+  "price": "$0.005",
+  "priceNum": 0.005,
+  "desc": "Total circulating supply of all stablecoins.",
+  "group": "Stablecoins",
+  "tags": [
+   "stablecoins",
+   "total"
+  ],
+  "params": false
+ },
+ {
+  "name": "Oracles Feeds",
+  "path": "/oracles/feeds",
+  "price": "$0.01",
+  "priceNum": 0.01,
+  "desc": "Chainlink price feeds on Base: ETH/USD, BTC/USD, USDC/USD.",
+  "group": "Oracles",
+  "tags": [
+   "oracles",
+   "chainlink",
+   "feeds"
+  ],
+  "params": false
+ },
+ {
+  "name": "Oracles Price",
+  "path": "/oracles/price/{symbol}",
+  "price": "$0.005",
+  "priceNum": 0.005,
+  "desc": "Chainlink price for one symbol (eth, btc, usdc).",
+  "group": "Oracles",
+  "tags": [
+   "oracles",
+   "chainlink",
+   "price"
+  ],
+  "params": true
+ },
+ {
+  "name": "Oracles ETH",
+  "path": "/oracles/eth",
+  "price": "$0.005",
+  "priceNum": 0.005,
+  "desc": "Chainlink ETH/USD on Base.",
+  "group": "Oracles",
+  "tags": [
+   "oracles",
+   "chainlink",
+   "eth"
+  ],
+  "params": false
+ },
+ {
+  "name": "Oracles BTC",
+  "path": "/oracles/btc",
+  "price": "$0.005",
+  "priceNum": 0.005,
+  "desc": "Chainlink BTC/USD on Base.",
+  "group": "Oracles",
+  "tags": [
+   "oracles",
+   "chainlink",
+   "btc"
+  ],
+  "params": false
+ },
+ {
+  "name": "Oracles USDC",
+  "path": "/oracles/usdc",
+  "price": "$0.005",
+  "priceNum": 0.005,
+  "desc": "Chainlink USDC/USD on Base.",
+  "group": "Oracles",
+  "tags": [
+   "oracles",
+   "chainlink",
+   "usdc"
+  ],
+  "params": false
+ },
+ {
+  "name": "Oracles vs CoinGecko",
+  "path": "/oracles/vs-coingecko",
+  "price": "$0.01",
+  "priceNum": 0.01,
+  "desc": "Chainlink ETH/USD vs CoinGecko ETH price (oracle deviation check).",
+  "group": "Oracles",
+  "tags": [
+   "oracles",
+   "chainlink",
+   "coingecko"
+  ],
+  "params": false
+ },
+ {
+  "name": "Governance Proposals",
+  "path": "/gov/proposals",
+  "price": "$0.01",
+  "priceNum": 0.01,
+  "desc": "Latest 10 Snapshot proposals across all DAOs.",
+  "group": "Governance",
+  "tags": [
+   "governance",
+   "snapshot",
+   "proposals"
+  ],
+  "params": false
+ },
+ {
+  "name": "Governance Space Proposals",
+  "path": "/gov/space/{space}/proposals",
+  "price": "$0.01",
+  "priceNum": 0.01,
+  "desc": "Latest 10 Snapshot proposals for one space.",
+  "group": "Governance",
+  "tags": [
+   "governance",
+   "snapshot",
+   "space"
+  ],
+  "params": true
+ },
+ {
+  "name": "Governance Proposal",
+  "path": "/gov/proposal/{proposal_id}",
+  "price": "$0.01",
+  "priceNum": 0.01,
+  "desc": "One Snapshot proposal by id, with scores.",
+  "group": "Governance",
+  "tags": [
+   "governance",
+   "snapshot",
+   "proposal"
+  ],
+  "params": true
+ },
+ {
+  "name": "Governance Votes",
+  "path": "/gov/proposal/{proposal_id}/votes",
+  "price": "$0.01",
+  "priceNum": 0.01,
+  "desc": "Top 20 votes on one Snapshot proposal, by voting power.",
+  "group": "Governance",
+  "tags": [
+   "governance",
+   "snapshot",
+   "votes"
+  ],
+  "params": true
+ },
+ {
+  "name": "Governance Space",
+  "path": "/gov/space/{space}",
+  "price": "$0.01",
+  "priceNum": 0.01,
+  "desc": "One Snapshot space: name, about, proposal/follower counts.",
+  "group": "Governance",
+  "tags": [
+   "governance",
+   "snapshot",
+   "space"
+  ],
+  "params": true
+ },
+ {
   "name": "NFT Balance",
   "path": "/nfts/{collection}/balance/{wallet}",
   "price": "0.005",
@@ -1541,6 +2582,89 @@ var ENDPOINTS = [
   "params": true
  },
  {
+  "name": "NFT Token URI",
+  "path": "/nfts/{collection}/token/{token_id}/uri",
+  "price": "$0.005",
+  "priceNum": 0.005,
+  "desc": "Raw tokenURI for one NFT token.",
+  "group": "NFTs",
+  "tags": [
+   "nft",
+   "tokenuri"
+  ],
+  "params": true
+ },
+ {
+  "name": "NFT Token Image",
+  "path": "/nfts/{collection}/token/{token_id}/image",
+  "price": "$0.01",
+  "priceNum": 0.01,
+  "desc": "Image URL from one NFT token's metadata.",
+  "group": "NFTs",
+  "tags": [
+   "nft",
+   "image",
+   "metadata"
+  ],
+  "params": true
+ },
+ {
+  "name": "NFT Token Attributes",
+  "path": "/nfts/{collection}/token/{token_id}/attributes",
+  "price": "$0.01",
+  "priceNum": 0.01,
+  "desc": "Traits/attributes from one NFT token's metadata.",
+  "group": "NFTs",
+  "tags": [
+   "nft",
+   "traits",
+   "metadata"
+  ],
+  "params": true
+ },
+ {
+  "name": "NFT1155 Balance",
+  "path": "/nfts1155/{collection}/balance/{wallet}/{token_id}",
+  "price": "$0.01",
+  "priceNum": 0.01,
+  "desc": "ERC1155 balance of one wallet for one token id.",
+  "group": "NFTs",
+  "tags": [
+   "nft",
+   "erc1155",
+   "balance"
+  ],
+  "params": true
+ },
+ {
+  "name": "NFT1155 URI",
+  "path": "/nfts1155/{collection}/uri/{token_id}",
+  "price": "$0.005",
+  "priceNum": 0.005,
+  "desc": "ERC1155 metadata URI for one token id.",
+  "group": "NFTs",
+  "tags": [
+   "nft",
+   "erc1155",
+   "uri"
+  ],
+  "params": true
+ },
+ {
+  "name": "NFT1155 Supply",
+  "path": "/nfts1155/{collection}/supply/{token_id}",
+  "price": "$0.005",
+  "priceNum": 0.005,
+  "desc": "ERC1155 total supply for one token id (if the contract tracks it).",
+  "group": "NFTs",
+  "tags": [
+   "nft",
+   "erc1155",
+   "supply"
+  ],
+  "params": true
+ },
+ {
   "name": "ENS Avatar",
   "path": "/ens/avatar/{name}",
   "price": "0.005",
@@ -1591,6 +2715,185 @@ var ENDPOINTS = [
    "reverse"
   ],
   "params": true
+ },
+ {
+  "name": "ENS Records",
+  "path": "/ens/{name}/records",
+  "price": "$0.01",
+  "priceNum": 0.01,
+  "desc": "ENS text records / socials for one name.",
+  "group": "ENS",
+  "tags": [
+   "ens",
+   "records",
+   "socials"
+  ],
+  "params": true
+ },
+ {
+  "name": "ENS Content",
+  "path": "/ens/{name}/content",
+  "price": "$0.005",
+  "priceNum": 0.005,
+  "desc": "ENS content hash + avatar for one name.",
+  "group": "ENS",
+  "tags": [
+   "ens",
+   "content",
+   "avatar"
+  ],
+  "params": true
+ },
+ {
+  "name": "Memecoins New Pairs",
+  "path": "/memes/new-pairs",
+  "price": "$0.01",
+  "priceNum": 0.01,
+  "desc": "Newest Base token profiles on Dexscreener.",
+  "group": "Memecoins",
+  "tags": [
+   "memes",
+   "new",
+   "pairs"
+  ],
+  "params": false
+ },
+ {
+  "name": "Memecoins Trending",
+  "path": "/memes/trending",
+  "price": "$0.02",
+  "priceNum": 0.02,
+  "desc": "Top 15 Base pairs by 24h volume across the main Base tokens.",
+  "group": "Memecoins",
+  "tags": [
+   "memes",
+   "trending",
+   "volume"
+  ],
+  "params": false
+ },
+ {
+  "name": "Memecoins Boosted",
+  "path": "/memes/boosted",
+  "price": "$0.01",
+  "priceNum": 0.01,
+  "desc": "Latest boosted Base tokens on Dexscreener.",
+  "group": "Memecoins",
+  "tags": [
+   "memes",
+   "boosted"
+  ],
+  "params": false
+ },
+ {
+  "name": "Memecoins Price Change",
+  "path": "/memes/{token}/price-change",
+  "price": "$0.005",
+  "priceNum": 0.005,
+  "desc": "Price changes (5m/1h/6h/24h) for one token's best pair.",
+  "group": "Memecoins",
+  "tags": [
+   "memes",
+   "price-change"
+  ],
+  "params": true
+ },
+ {
+  "name": "Memecoins Holders",
+  "path": "/memes/{token}/holders",
+  "price": "$0.01",
+  "priceNum": 0.01,
+  "desc": "Holder count + top holders for one token.",
+  "group": "Memecoins",
+  "tags": [
+   "memes",
+   "holders"
+  ],
+  "params": true
+ },
+ {
+  "name": "Prediction Markets",
+  "path": "/predict/markets",
+  "price": "$0.01",
+  "priceNum": 0.01,
+  "desc": "Top 15 active Polymarket markets by liquidity.",
+  "group": "Prediction",
+  "tags": [
+   "prediction",
+   "polymarket",
+   "markets"
+  ],
+  "params": false
+ },
+ {
+  "name": "Prediction Trending",
+  "path": "/predict/trending",
+  "price": "$0.01",
+  "priceNum": 0.01,
+  "desc": "Top 15 active Polymarket markets by 24h volume.",
+  "group": "Prediction",
+  "tags": [
+   "prediction",
+   "polymarket",
+   "trending"
+  ],
+  "params": false
+ },
+ {
+  "name": "Prediction Search",
+  "path": "/predict/search/{query}",
+  "price": "$0.01",
+  "priceNum": 0.01,
+  "desc": "Search active Polymarket markets by keyword.",
+  "group": "Prediction",
+  "tags": [
+   "prediction",
+   "polymarket",
+   "search"
+  ],
+  "params": true
+ },
+ {
+  "name": "Prediction Events",
+  "path": "/predict/events",
+  "price": "$0.01",
+  "priceNum": 0.01,
+  "desc": "Latest 20 active Polymarket events.",
+  "group": "Prediction",
+  "tags": [
+   "prediction",
+   "polymarket",
+   "events"
+  ],
+  "params": false
+ },
+ {
+  "name": "Prediction Market",
+  "path": "/predict/market/{slug}",
+  "price": "$0.01",
+  "priceNum": 0.01,
+  "desc": "One Polymarket market by slug, with outcomes and prices.",
+  "group": "Prediction",
+  "tags": [
+   "prediction",
+   "polymarket",
+   "market"
+  ],
+  "params": true
+ },
+ {
+  "name": "Prediction Markets Closing",
+  "path": "/predict/markets/closing",
+  "price": "$0.01",
+  "priceNum": 0.01,
+  "desc": "Active Polymarket markets ending soonest (next 15 by end date).",
+  "group": "Prediction",
+  "tags": [
+   "prediction",
+   "polymarket",
+   "closing"
+  ],
+  "params": false
  },
  {
   "name": "Validate Address",
@@ -1789,6 +3092,92 @@ var ENDPOINTS = [
   "params": true
  },
  {
+  "name": "Coin Price History",
+  "path": "/utils/coin/{coin}/history/{days}",
+  "price": "$0.01",
+  "priceNum": 0.01,
+  "desc": "Price history for one CoinGecko coin (1-365 days).",
+  "group": "Utilities",
+  "tags": [
+   "utils",
+   "coin",
+   "history"
+  ],
+  "params": true
+ },
+ {
+  "name": "Convert USDC to ETH",
+  "path": "/utils/convert/usdc-eth/{amount}",
+  "price": "$0.005",
+  "priceNum": 0.005,
+  "desc": "Convert a USDC amount to ETH at the current price.",
+  "group": "Utilities",
+  "tags": [
+   "utils",
+   "convert",
+   "usdc",
+   "eth"
+  ],
+  "params": true
+ },
+ {
+  "name": "Fear & Greed History",
+  "path": "/utils/market/fear-greed/history",
+  "price": "$0.005",
+  "priceNum": 0.005,
+  "desc": "Fear & Greed index, last 7 days.",
+  "group": "Utilities",
+  "tags": [
+   "utils",
+   "fear-greed",
+   "history"
+  ],
+  "params": false
+ },
+ {
+  "name": "Coin All-Time High",
+  "path": "/utils/coin/{coin}/ath",
+  "price": "$0.01",
+  "priceNum": 0.01,
+  "desc": "All-time high/low for one CoinGecko coin (USD).",
+  "group": "Utilities",
+  "tags": [
+   "utils",
+   "coin",
+   "ath"
+  ],
+  "params": true
+ },
+ {
+  "name": "Convert Gwei to ETH",
+  "path": "/utils/convert/gwei-eth/{amount}",
+  "price": "$0.001",
+  "priceNum": 0.001,
+  "desc": "Convert gwei to ETH.",
+  "group": "Utilities",
+  "tags": [
+   "utils",
+   "convert",
+   "gwei",
+   "eth"
+  ],
+  "params": true
+ },
+ {
+  "name": "Coin Price Change",
+  "path": "/utils/coin/{coin}/change",
+  "price": "$0.005",
+  "priceNum": 0.005,
+  "desc": "Price change (24h/7d/30d/1y) for one CoinGecko coin.",
+  "group": "Utilities",
+  "tags": [
+   "utils",
+   "coin",
+   "change"
+  ],
+  "params": true
+ },
+ {
   "name": "Service Health",
   "path": "/health",
   "price": "0",
@@ -1838,9 +3227,15 @@ var GROUP_INFO = {
   "NFTs":      { blurb: "Collection info, ownership, balances, supply and metadata for ERC-721 collections.", icon: "▦" },
   "ENS":       { blurb: "Resolve names, reverse-lookup addresses, avatars and full public profiles.", icon: "@" },
   "Utilities": { blurb: "ETH price, market stats, the Fear & Greed index, conversions and address tools.", icon: "⚒" },
+  "Lending":   { blurb: "Aave, Compound and Morpho markets, rates and positions on Base.", icon: "▤" },
+  "Stablecoins": { blurb: "Pegs, supply, yields and chain breakdowns for every major stablecoin.", icon: "◈" },
+  "Oracles":    { blurb: "Chainlink price feeds on Base, compared against CoinGecko.", icon: "◐" },
+  "Governance": { blurb: "DAO proposals, votes and spaces from Snapshot.", icon: "⚖" },
+  "Memecoins":  { blurb: "New pairs, trending tokens, boosts and price moves on Base.", icon: "✦" },
+  "Prediction": { blurb: "Polymarket markets, events and trending questions.", icon: "◔" },
   "Service":   { blurb: "Health, MCP status and the tool list — including the free liveness probe.", icon: "✓" }
 };
-var GROUP_ORDER = ["Tokens","Chain","DEX","Wallets","DeFi","NFTs","ENS","Utilities","Service"];
+var GROUP_ORDER = ["Tokens","Chain","DEX","Wallets","DeFi","Lending","Stablecoins","Oracles","Governance","NFTs","ENS","Memecoins","Prediction","Utilities","Service"];
 
 var PICKS = [
   { path: "/health", why: "Check the service is alive. Free, no wallet needed — open it in a browser." },
@@ -1859,7 +3254,10 @@ var PARAM_HINTS = {
   hash: "0x… — transaction hash", number: "e.g. 21400000", tokenId: "e.g. 1",
   name: "e.g. vitalik.eth", coin: "CoinGecko id, e.g. ethereum", query: "search text",
   text: "any text", amount: "e.g. 1.5", protocol: "e.g. aerodrome", chain: "e.g. base",
-  gwei: "e.g. 0.05", gas: "e.g. 21000"
+  gwei: "e.g. 0.05", gas: "e.g. 21000",
+  asset: "0x… — token contract", slug: "e.g. aave-v3", project: "e.g. aave-v3", symbol: "e.g. ETH", space: "e.g. aave.eth",
+  proposal_id: "0x… — proposal id", blocks: "e.g. 5", count: "e.g. 3", days: "e.g. 7", token_id: "e.g. 1",
+  tx_hash: "0x… — transaction hash", n: "e.g. 10", token: "0x… — token contract"
 };
 function paramHint(n){ return PARAM_HINTS[n] || ("value for {" + n + "}"); }
 function esc(s){ return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }

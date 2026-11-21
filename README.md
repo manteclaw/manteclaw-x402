@@ -1,4 +1,4 @@
-# Manteclaw x402 API Service (v4)
+# Manteclaw x402 API Service (v5)
 
 Pay-per-call API service for AI agents and apps, on Base via the x402 protocol. No API keys, no subscriptions — every call is priced in USDC and paid per request.
 
@@ -9,7 +9,7 @@ Pay-per-call API service for AI agents and apps, on Base via the x402 protocol. 
 
 ## What it is
 
-100 endpoints (99 paid + free `/health`): token prices and security checks, wallet analytics, DEX pairs and Uniswap V3 pools, DeFi yields and TVL, blocks and transactions, NFTs, ENS, and on-chain utilities. All data comes from live sources (Base RPC, Dexscreener, DeFiLlama, CoinGecko, ENS) — no stubs, no fake data.
+200 endpoints (199 paid + free `/health`): token prices and security checks, wallet analytics, DEX pairs and Uniswap V3 pools, DeFi yields and TVL, blocks and transactions, NFTs, ENS, on-chain utilities, plus lending (Aave/Compound/Morpho), stablecoins, Chainlink oracles, governance, memecoins, and prediction markets. All data comes from live sources (Base RPC, Dexscreener, DeFiLlama, CoinGecko, ENS) — no stubs, no fake data.
 
 Prices: $0.001–$0.02 USDC per call. Payments go to `0xea0aad6dfa33d6ea4aec842c24d2015e3a4b3175` on Base (chain 8453, USDC `0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913`).
 
@@ -26,7 +26,7 @@ Free endpoints (no payment): `GET /` (landing page), `GET /health`, `GET /catalo
 ```bash
 python3 -m venv .venv
 .venv/bin/pip install -r requirements.txt
-.venv/bin/python server-v4.py
+.venv/bin/python server-v5.py
 ```
 
 Health check (no payment needed):
