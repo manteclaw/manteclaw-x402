@@ -231,7 +231,7 @@
   .empty strong{color:var(--ink);display:block;font-size:1.05rem;margin-bottom:4px}
 
   /* Share / links */
-  .share-grid{display:grid;grid-template-columns:1.2fr .8fr;gap:14px;align-items:start}
+  .share-grid{display:grid;grid-template-columns:1fr;gap:14px;align-items:start}
   .panel{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:20px;box-shadow:var(--shadow)}
   .panel h3{margin-bottom:10px}
   .post{white-space:pre-wrap;font-size:.92rem;line-height:1.6;color:var(--ink);background:var(--surface-2);
@@ -408,22 +408,8 @@ curl https://manteclaw-x402.fly.dev/health
 
   <section aria-labelledby="share-h">
     <h2 id="share-h">Share it &amp; plug it in</h2>
-    <p class="sec-sub">A ready-to-post draft for LinkedIn, and the live links developers and agent frameworks use to discover the service automatically.</p>
+    <p class="sec-sub">The live links developers and agent frameworks use to discover the service automatically.</p>
     <div class="share-grid">
-      <div class="panel">
-        <h3>LinkedIn post — copy &amp; post</h3>
-        <p class="post" id="liPost">I’ve launched Manteclaw — a pay-per-call API service for Base, built on the x402 protocol. 🤖⛓️
-
-100 live endpoints: token prices &amp; security checks, wallet analytics, DEX pairs &amp; Uniswap V3 pools, DeFi yields &amp; TVL, blocks &amp; transactions, NFTs, ENS, and market utilities.
-
-No API keys. No subscriptions. Every call is priced in USDC on Base — from $0.001 to $0.02 — and paid per request by your app or AI agent. You can even connect a wallet on the catalog page and pay &amp; call them right there.
-
-Full catalog: [paste the link to this catalog page]
-Live service: https://manteclaw-x402.fly.dev
-
-#Base #x402 #Web3 #APIs #AIAgents</p>
-        <button class="btn btn-primary" type="button" id="copyPost">Copy post text</button>
-      </div>
       <div>
         <div class="panel">
           <h3>Live links</h3>
@@ -2039,10 +2025,6 @@ document.querySelectorAll(".codebox .tab").forEach(function(tab){
   });
 });
 
-/* LinkedIn post copy */
-document.getElementById("copyPost").addEventListener("click", function(){
-  copyText(document.getElementById("liPost").innerText, "Post copied — paste it into LinkedIn");
-});
 </script>
 
 <script>
