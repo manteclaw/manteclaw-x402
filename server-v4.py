@@ -2151,7 +2151,9 @@ x402_mw = payment_middleware(routes, server)
 # readable unpaid, or directories cannot index or verify the service.
 # / is the landing page: directories (e.g. Agent402) probe the bare root
 # and require a 200, not a 404.
-HEALTH_PATHS = {"/health", "/"}
+# /catalog is the public shareable catalog page (LinkedIn): it must load
+# free, or nobody can open the link.
+HEALTH_PATHS = {"/health", "/", "/catalog"}
 
 
 @app.middleware("http")
@@ -2225,6 +2227,20 @@ async def root_head():
     from fastapi.responses import Response
 
     return Response(status_code=200)
+
+
+# ===== PUBLIC CATALOG PAGE (no payment required) =====
+
+@app.get("/catalog")
+async def catalog_page():
+    """The shareable catalog page (LinkedIn). Served from the same origin
+    as the API, so the page's Pay & Call buttons are same-origin calls.
+    Free, no payment. The HTML is a static export of the catalog
+    artifact; keep catalog.html next to this file in the repo."""
+    from fastapi.responses import FileResponse
+
+    _catalog = os.path.join(os.path.dirname(os.path.abspath(__file__)), "catalog.html")
+    return FileResponse(_catalog, media_type="text/html")
 
 
 # Register every paid route from the registry.
