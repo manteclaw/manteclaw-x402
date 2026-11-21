@@ -9,6 +9,10 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY server-v4.py ./
 COPY tx_store.json ./
+# Public catalog page (LinkedIn shareable): served free at /catalog by
+# server-v4.py. Must be copied explicitly — the Dockerfile lists files,
+# it does not copy the whole repo.
+COPY catalog.html ./
 # Ship the discovery file that names the correct payee. The agent
 # catalog is deliberately NOT copied: it names a wrong wallet and
 # endpoints that do not exist in v3 (see REPAIR-NOTES.md).
@@ -20,6 +24,9 @@ COPY .well-known/agent-catalog.json ./.well-known/agent-catalog.json
 # Nov 20, 2026) — proves control of the host so the gateway routes can be
 # listed on the AiPayGen marketplace.
 COPY .well-known/aipaygen-verify.txt ./.well-known/aipaygen-verify.txt
+# Extensionless copy of x402.json (identical content): Agent402 probes
+# /.well-known/x402 (no extension) and backs off on a 404.
+COPY .well-known/x402 ./.well-known/x402
 
 EXPOSE 8080
 
