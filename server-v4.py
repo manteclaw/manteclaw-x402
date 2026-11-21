@@ -2132,11 +2132,29 @@ for _e in ORDERED:
 # Create FastAPI app
 app = FastAPI(title="Manteclaw x402 service", version="4.0")
 
+# Extensionless x402 discovery document. Agent402 probes /.well-known/x402
+# (no extension) and expects JSON. StaticFiles serves an extensionless
+# file as application/octet-stream, which the probe rejects, so serve it
+# explicitly as JSON. This route is registered BEFORE the StaticFiles
+# mount below so it takes precedence for this one path.
+_WELL_KNOWN_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".well-known")
+
+
+@app.get("/.well-known/x402", include_in_schema=False)
+async def well_known_x402():
+    """Serve the x402 discovery document at the extensionless path."""
+    from fastapi.responses import FileResponse
+
+    return FileResponse(
+        os.path.join(_WELL_KNOWN_DIR, "x402.json"),
+        media_type="application/json",
+    )
+
+
 # Serve the discovery + verification files for free (no payment):
 # /.well-known/x402.json, /.well-known/agent-catalog.json, and
 # /.well-known/aipaygen-verify.txt (AiPayGen site verification).
 # These MUST be public — agents and directories read them unpaid.
-_WELL_KNOWN_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".well-known")
 if os.path.isdir(_WELL_KNOWN_DIR):
     app.mount("/.well-known", StaticFiles(directory=_WELL_KNOWN_DIR), name="well-known")
 
