@@ -178,11 +178,11 @@
 
   /* Explorer */
   .explorer{padding-bottom:20px}
-  .controls{position:sticky;top:0;z-index:5;background:var(--bg);padding:14px 0 12px;border-bottom:1px solid var(--line)}
+  .controls{position:sticky;top:0;z-index:5;background:var(--bg);padding:14px 0 12px;border-bottom:1px solid var(--line);box-shadow:0 8px 20px rgba(0,0,0,.08)}
   .controls .line1{display:flex;gap:10px;flex-wrap:wrap}
   .search{flex:1 1 260px;display:flex;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:0 14px;gap:10px}
   .search svg{flex:none;color:var(--faint)}
-  .search input{border:0;background:transparent;font:inherit;color:var(--ink);width:100%;padding:10px 0;min-height:2.5rem}
+  .search input{border:0;background:transparent;font-size:1.05rem;color:var(--ink);width:100%;padding:12px 0;min-height:3rem}
   .search input:focus{outline:none}
   .search:focus-within{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent)}
   select{font:inherit;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:9px 12px;min-height:2.5rem}
@@ -270,7 +270,7 @@
     .grid,.cat-grid,.picks,.steps{grid-template-columns:1fr}
     .hero-inner{padding:32px 0 30px}
     section{padding:34px 0 4px}
-    .controls{position:static}
+    .search{flex:1 1 100%}
   }
 </style>
 </head>
@@ -396,8 +396,8 @@ curl https://manteclaw-x402.fly.dev/health
           <option value="az">Sort: name A–Z</option>
         </select>
       </div>
-      <div class="pills" id="pills" role="group" aria-label="Filter by category"></div>
     </div>
+    <div class="pills" id="pills" role="group" aria-label="Filter by category"></div>
     <p class="showing" id="showing" aria-live="polite"></p>
     <div class="grid" id="grid"></div>
     <div class="empty" id="empty">
