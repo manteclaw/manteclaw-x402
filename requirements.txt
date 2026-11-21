@@ -2,6 +2,9 @@
 # x402==2.9.0 is required: server-v3.py uses its 2.9.0 API
 # (x402ResourceServer, HTTPFacilitatorClient, payment_middleware,
 # ExactEvmServerScheme). Newer x402 releases changed that API.
+# The [extensions] extra on the pin below adds jsonschema, without
+# which x402.extensions.bazaar (Bazaar discovery declarations in
+# server-v5.py) refuses to import.
 fastapi==0.136.1
 uvicorn==0.46.0
 httpx==0.28.1
@@ -10,5 +13,5 @@ qrcode==8.2
 Pillow==12.2.0
 web3==7.16.0
 eth-account==0.13.7
-x402==2.9.0
+x402[extensions]==2.9.0
 pydantic==2.13.4

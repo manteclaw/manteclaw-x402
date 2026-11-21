@@ -44,6 +44,7 @@ import asyncio
 import math
 import time
 import base64
+import inspect
 import json
 
 from fastapi import FastAPI, Request
@@ -59,6 +60,7 @@ from x402 import x402ResourceServer
 from x402.http import HTTPFacilitatorClient, FacilitatorConfig
 from x402.http.middleware.fastapi import payment_middleware
 from x402.mechanisms.evm.exact import ExactEvmServerScheme
+from x402.extensions.bazaar import OutputConfig, declare_discovery_extension
 
 # Load environment variables from .env
 load_dotenv()
@@ -4116,10 +4118,129 @@ def _resource_for(path: str) -> str:
     return path if idx == -1 else path[:idx]
 
 
+# ===== BAZAAR DISCOVERY DECLARATIONS (PayAI catalog) =====
+# PayAI's Bazaar catalogs a resource from the payments its facilitator
+# processes — but only when the payment payload carries the discovery
+# declaration this server put in its 402 response (the buyer's client
+# echoes `extensions` from the 402 into the payload). Without a
+# declaration, settled payments stay invisible to the catalog: this
+# service took ~31 settled calls on Nov 21, 2026 and appeared nowhere
+# in /discovery/resources. So every route config below carries one
+# declaration, built with the SDK's declare_discovery_extension. The
+# FastAPI payment middleware auto-registers
+# bazaar_resource_server_extension when a route config declares a
+# "bazaar" extension; that extension enriches each declaration at
+# request time with the HTTP method and, for dynamic routes, the
+# concrete path params plus a :param routeTemplate.
+#
+# Dynamic routes: PayAI rejects a templated resource
+# (resource_path_template) unless EVERY path parameter declares an
+# example value — the catalog lists the route under a real URL built
+# from the examples and probes that URL. Path params are strings on
+# the wire (the SDK extracts them from the URL as strings), so their
+# schema type is "string" even when a handler annotates int/float;
+# the query-input schema (no route takes query params today) maps
+# annotations to JSON types properly.
+
+_BAZAAR_JSON_TYPES = {str: "string", int: "integer", float: "number", bool: "boolean"}
+
+# Example values for path parameters, by parameter name. Address-shaped
+# parameters (see _BAZAAR_ADDRESS_PARAMS) use the USDC contract: a real
+# Base contract that returns useful data from any address-taking
+# endpoint, so the catalog's probe of the example URL and any agent
+# calling the route as listed both get a sensible result.
+_BAZAAR_EXAMPLES = {
+    "symbol": "ETH",
+    "chain": "base",
+    "number": "19000000",
+    "name": "vitalik.eth",
+    "space": "aave.eth",
+    "protocol": "aave",
+    "slug": "aave",
+    "project": "aave-v3",
+    "coin": "ethereum",
+    "query": "ethereum",
+    "text": "hello",
+    "gwei": "20",
+    "gas": "21000",
+    "amount": "1",
+    "days": "30",
+    "count": "5",
+    "n": "10",
+    "blocks": "10",
+    "tokenId": "1",
+    "token_id": "1",
+    "proposal_id": "0x" + "0123456789abcdef" * 4,
+    "hash": "0x" + "0123456789abcdef" * 4,
+    "tx_hash": "0x" + "0123456789abcdef" * 4,
+}
+
+_BAZAAR_ADDRESS_PARAMS = {
+    "address", "token_address", "wallet", "owner", "spender", "to",
+    "token", "collection", "pool", "pair", "asset",
+}
+
+
+def _bazaar_example(entry, name, annotation):
+    """One example value for a parameter: by route/name, then by type."""
+    # /stablecoins/{asset} looks up by id/symbol, not by contract address
+    # (the lending {asset} routes do want an address — handled below).
+    if name == "asset" and entry["path"].startswith("/stablecoins"):
+        return "USDC"
+    if name in _BAZAAR_EXAMPLES:
+        return _BAZAAR_EXAMPLES[name]
+    if name in _BAZAAR_ADDRESS_PARAMS:
+        return USDC
+    if annotation is int:
+        return 1
+    if annotation is float:
+        return 1.0
+    if annotation is bool:
+        return True
+    return "example"
+
+
+def _bazaar_extension(entry):
+    """Build the {"bazaar": ...} discovery declaration for one registry entry.
+
+    All routes are GET, so handler params not in the path are query
+    params: they go into the declaration's example input (required ones
+    only) and input schema, with JSON types mapped from the annotations.
+    Path params go into path_params_schema with an example for each.
+    """
+    import re
+
+    path_params = re.findall(r"\{(\w+)\}", entry["path"])
+    query_props, query_required, query_example = {}, [], {}
+    path_props, path_required = {}, []
+    for pname, param in inspect.signature(entry["handler"]).parameters.items():
+        if pname in path_params:
+            path_props[pname] = {
+                "type": "string",
+                "examples": [str(_bazaar_example(entry, pname, param.annotation))],
+            }
+            path_required.append(pname)
+        else:
+            query_props[pname] = {
+                "type": _BAZAAR_JSON_TYPES.get(param.annotation, "string")
+            }
+            if param.default is inspect.Parameter.empty:
+                query_required.append(pname)
+                query_example[pname] = _bazaar_example(entry, pname, param.annotation)
+    return declare_discovery_extension(
+        input=query_example or None,
+        input_schema={"properties": query_props, "required": query_required},
+        path_params_schema=(
+            {"properties": path_props, "required": path_required} if path_props else None
+        ),
+        output=OutputConfig(example={"status": "ok"}),
+    )
+
+
 # x402 payment config, built from the same registry as the routes.
 routes = {}
 for _e in ORDERED:
-    routes[f"GET {_middleware_pattern(_e['path'])}"] = {
+    _cfg = {
         "accepts": {
             "scheme": "exact",
             "payTo": WALLET_ADDRESS,
@@ -4129,7 +4250,15 @@ for _e in ORDERED:
         "resource": _resource_for(_e["path"]),
         "description": _e["description"],
         "mimeType": "application/json",
+        "extensions": _bazaar_extension(_e),
     }
+    routes[f"GET {_middleware_pattern(_e['path'])}"] = _cfg
+    # HEAD carries the same payment config (Alex approved 2026-11-21):
+    # directory probers (AgentPay, Arispay) probe with HEAD and must see
+    # the 402 payment terms instead of a bare 405. A HEAD response has
+    # no body, so nothing leaks unpaid; a paid HEAD runs the handler
+    # exactly like GET (the server strips the body).
+    routes[f"HEAD {_middleware_pattern(_e['path'])}"] = _cfg
 
 # Create FastAPI app
 app = FastAPI(title="Manteclaw x402 service", version="5.0")
@@ -4266,6 +4395,12 @@ async def catalog_page():
 # Register every paid route from the registry.
 for _e in ORDERED:
     app.add_api_route(_e["path"], _e["handler"], methods=["GET"])
+    # HEAD twin for the middleware config above (Alex approved
+    # 2026-11-21). include_in_schema=False keeps /openapi.json exactly
+    # as the GET-only spec directories already consume.
+    app.add_api_route(
+        _e["path"], _e["handler"], methods=["HEAD"], include_in_schema=False
+    )
 
 
 # ===== OPENAPI INPUT-SCHEMA FIX (x402scan) =====
