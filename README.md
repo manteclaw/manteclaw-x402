@@ -1,31 +1,32 @@
-# x402 Agent Services (v3)
+# Manteclaw x402 API Service (v4)
 
-Monetized API services for AI agents via the x402 protocol on Base.
-Other agents pay USDC per call; payments go to the wallet in `.env`
-(confirmed payee: Alex's main wallet).
+Pay-per-call API service for AI agents and apps, on Base via the x402 protocol. No API keys, no subscriptions — every call is priced in USDC and paid per request.
 
-## Services
+- **Live service:** https://manteclaw-x402.fly.dev
+- **Public catalog (pay from the page):** https://manteclaw-x402.fly.dev/catalog
+- **Machine-readable catalog:** https://manteclaw-x402.fly.dev/.well-known/agent-catalog.json
+- **x402 discovery file:** https://manteclaw-x402.fly.dev/.well-known/x402.json
 
-| Endpoint | Price | Description |
-|----------|-------|-------------|
-| `GET /health` | free | Liveness probe — no payment, no on-chain call |
-| `GET /defi/gas-tracker` | 0.005 USDC | Current Base gas prices (slow/average/fast) |
-| `GET /defi/token-price/{address}` | 0.01 USDC | Token metadata via on-chain calls |
-| `GET /defi/wallet-analyzer/{address}` | 0.01 USDC | Wallet balance and activity |
-| `GET /defi/token-security/{address}` | 0.02 USDC | Basic token security check |
-| `GET /agent/earnings-report` | 0.05 USDC | Earnings summary (figures are stale placeholders — see REPAIR-NOTES.md) |
-| `GET /mcp/status` | 0.001 USDC | Service status |
-| `GET /mcp/tools` | 0.001 USDC | Tool list and pricing |
+## What it is
 
-Unpaid calls to a priced endpoint return HTTP 402 with payment details.
+100 endpoints (99 paid + free `/health`): token prices and security checks, wallet analytics, DEX pairs and Uniswap V3 pools, DeFi yields and TVL, blocks and transactions, NFTs, ENS, and on-chain utilities. All data comes from live sources (Base RPC, Dexscreener, DeFiLlama, CoinGecko, ENS) — no stubs, no fake data.
 
-## Setup
+Prices: $0.001–$0.02 USDC per call. Payments go to `0xea0aad6dfa33d6ea4aec842c24d2015e3a4b3175` on Base (chain 8453, USDC `0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913`).
+
+## How to call an endpoint
+
+Unpaid calls return HTTP 402 with the payment terms in the `payment-required` header (x402 v2, `exact` scheme). Sign an EIP-3009 `transferWithAuthorization` with your wallet (off-chain, no gas) and retry with the signature in the `X-PAYMENT` header. Payment is valid for 300 seconds.
+
+Cheapest test call: `GET /mcp/status` ($0.001). Full how-to with TypeScript and Python examples: see `HOW-TO-CALL.md` in this repo.
+
+Free endpoints (no payment): `GET /` (landing page), `GET /health`, `GET /catalog`, `GET /.well-known/*`.
+
+## Running it yourself
 
 ```bash
 python3 -m venv .venv
 .venv/bin/pip install -r requirements.txt
-cp .env.example .env   # edit if needed; WALLET_ADDRESS is pre-filled
-./run-v3.sh
+.venv/bin/python server-v4.py
 ```
 
 Health check (no payment needed):
@@ -34,22 +35,6 @@ Health check (no payment needed):
 curl http://localhost:4020/health
 ```
 
-## Deploying as a service
+## Deploy
 
-See `x402-v3.service` (systemd unit). Adjust the paths in it to the
-deploy host, copy it into place, then start it. The unit restarts only
-on failure, with a burst limit — a service that crashes on startup will
-not loop forever.
-
-## Links
-
-- **GitHub:** https://github.com/manteclaw/x402-agent-services
-- **Status:** Repaired Nov 2026, deploy-ready, not yet launched — see REPAIR-NOTES.md
-
-## Earning Potential
-
-Unverified projections from the original README — do not treat as a forecast:
-
-- 1,000 calls/day at 0.02 USDC = $20/day
-- 30,000 calls/month = $600/month
-- Scale with agent marketplace discovery
+Deploys go through GitHub Actions (`.github/workflows/deploy.yml`) to Fly.io (`flyctl deploy --remote-only`). The Dockerfile lists every file the image ships explicitly — add a `COPY` line for any new file, or it will not be in the container.
