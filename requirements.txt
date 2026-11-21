@@ -1,0 +1,14 @@
+# Pinned to the versions in the last known-good environment (May 2026).
+# x402==2.9.0 is required: server-v3.py uses its 2.9.0 API
+# (x402ResourceServer, HTTPFacilitatorClient, payment_middleware,
+# ExactEvmServerScheme). Newer x402 releases changed that API.
+fastapi==0.136.1
+uvicorn==0.46.0
+httpx==0.28.1
+python-dotenv==1.2.2
+qrcode==8.2
+Pillow==12.2.0
+web3==7.16.0
+eth-account==0.13.7
+x402==2.9.0
+pydantic==2.13.4

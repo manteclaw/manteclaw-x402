@@ -1,0 +1,21 @@
+# Never ship: venv, legacy v2 files (old wallet, not started by v3),
+# systemd unit, local launchers, docs. The agent catalog IS shipped
+# (rewritten Nov 19, 2026: main wallet, six live v3 endpoints only).
+.venv
+__pycache__
+*.pyc
+.git
+.github
+server-v2.py
+start-v2.sh
+x402-v3.service
+run-v3.sh
+replit.nix
+.replit
+.env
+.env.example
+README.md
+SPECS.md
+REPAIR-NOTES.md
+xpay-setup.md
+LICENSE
