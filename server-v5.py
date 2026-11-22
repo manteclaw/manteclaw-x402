@@ -4309,7 +4309,32 @@ HEALTH_PATHS = {"/health", "/", "/catalog"}
 async def x402_middleware(request: Request, call_next):
     if request.url.path in HEALTH_PATHS or request.url.path.startswith("/.well-known/"):
         return await call_next(request)
-    return await x402_mw(request, call_next)
+    response = await x402_mw(request, call_next)
+    # The SDK returns 402s with an EMPTY {} JSON body: the payment terms
+    # live only in the base64 `payment-required` header. Body-based
+    # validators (e.g. Market402) read the body and score an empty one
+    # 5/10, so mirror the header's decoded PaymentRequired JSON into the
+    # body — identical terms in both places, header and status untouched.
+    # Only an empty body is replaced (a richer SDK error body is kept),
+    # and HEAD is skipped: a HEAD response must not carry a body.
+    if response.status_code == 402 and request.method != "HEAD":
+        pr_header = response.headers.get("payment-required")
+        body = getattr(response, "body", b"") or b""
+        if pr_header and body.strip() in (b"", b"{}"):
+            try:
+                terms = json.loads(base64.b64decode(pr_header))
+            except Exception:
+                terms = None
+            if isinstance(terms, dict) and terms.get("accepts"):
+                from fastapi.responses import JSONResponse
+
+                headers = {
+                    k: v
+                    for k, v in response.headers.items()
+                    if k.lower() not in ("content-length", "content-type")
+                }
+                return JSONResponse(content=terms, status_code=402, headers=headers)
+    return response
 
 
 # CORS: the public catalog page (and any browser client) calls the API
