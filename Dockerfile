@@ -24,6 +24,10 @@ COPY .well-known/agent-catalog.json ./.well-known/agent-catalog.json
 # Nov 20, 2026) — proves control of the host so the gateway routes can be
 # listed on the AiPayGen marketplace.
 COPY .well-known/aipaygen-verify.txt ./.well-known/aipaygen-verify.txt
+# 402index domain-verification file (Nov 21, 2026) — proves control of
+# the host for the 402index domain claim; the file contains only the
+# SHA-256 verification hash and is served at /.well-known/402index-verify.txt.
+COPY .well-known/402index-verify.txt ./.well-known/402index-verify.txt
 # Extensionless copy of x402.json (identical content): Agent402 probes
 # /.well-known/x402 (no extension) and backs off on a 404.
 COPY .well-known/x402 ./.well-known/x402
