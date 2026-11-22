@@ -301,11 +301,11 @@ def endpoint(path, price, description, category, tags, eid):
 
 # ===== EXISTING v3 ENDPOINTS (same paths, same prices) =====
 
-@endpoint("/defi/gas-tracker", "$0.005",
-          "Current Base gas prices (slow/average/fast). $0.005 USDC per call.",
+@endpoint("/defi/gas-tracker", "$0.01",
+          "Current Base gas prices (slow/average/fast). $0.01 USDC per call.",
           "gas", ["gas", "base", "l2", "pricing"], "gas-tracker")
 async def gas_tracker():
-    """Current Base gas prices (slow/average/fast). $0.005 USDC per call."""
+    """Current Base gas prices (slow/average/fast). $0.01 USDC per call."""
     block = w3.eth.get_block("latest")
     base_fee = block.get("baseFeePerGas", 0)
 
@@ -404,15 +404,15 @@ async def token_security(token_address: str):
     }
 
 
-@endpoint("/mcp/status", "$0.001",
-          "MCP server status. $0.001 USDC per call.",
+@endpoint("/mcp/status", "$0.01",
+          "MCP server status. $0.01 USDC per call.",
           "status", ["status", "mcp"], "mcp-status")
 async def mcp_status():
     return {"status": "online", "version": "5.0", "endpoints": 200, "network": "base", "x402_version": "2.9.0"}
 
 
-@endpoint("/mcp/tools", "$0.001",
-          "MCP tools list. $0.001 USDC per call.",
+@endpoint("/mcp/tools", "$0.01",
+          "MCP tools list. $0.01 USDC per call.",
           "status", ["tools", "mcp"], "mcp-tools")
 async def mcp_tools():
     # Generated from the registry at request time, so it always matches
@@ -555,8 +555,8 @@ async def token_info(address: str):
     }
 
 
-@endpoint("/tokens/{address}/supply", "$0.005",
-          "ERC20 total supply for a Base token. $0.005 USDC per call.",
+@endpoint("/tokens/{address}/supply", "$0.01",
+          "ERC20 total supply for a Base token. $0.01 USDC per call.",
           "token", ["token", "supply", "erc20"], "token-supply")
 async def token_supply(address: str):
     token = _checksum(address)
@@ -576,8 +576,8 @@ async def token_supply(address: str):
         return {"error": str(e)[:200], "token": token}
 
 
-@endpoint("/tokens/{address}/name", "$0.005",
-          "ERC20 name for a Base token. $0.005 USDC per call.",
+@endpoint("/tokens/{address}/name", "$0.01",
+          "ERC20 name for a Base token. $0.01 USDC per call.",
           "token", ["token", "erc20"], "token-name")
 async def token_name(address: str):
     token = _checksum(address)
@@ -587,8 +587,8 @@ async def token_name(address: str):
         return {"error": str(e)[:200], "token": token}
 
 
-@endpoint("/tokens/{address}/symbol", "$0.005",
-          "ERC20 symbol for a Base token. $0.005 USDC per call.",
+@endpoint("/tokens/{address}/symbol", "$0.01",
+          "ERC20 symbol for a Base token. $0.01 USDC per call.",
           "token", ["token", "erc20"], "token-symbol")
 async def token_symbol(address: str):
     token = _checksum(address)
@@ -598,8 +598,8 @@ async def token_symbol(address: str):
         return {"error": str(e)[:200], "token": token}
 
 
-@endpoint("/tokens/{address}/decimals", "$0.005",
-          "ERC20 decimals for a Base token. $0.005 USDC per call.",
+@endpoint("/tokens/{address}/decimals", "$0.01",
+          "ERC20 decimals for a Base token. $0.01 USDC per call.",
           "token", ["token", "erc20"], "token-decimals")
 async def token_decimals(address: str):
     token = _checksum(address)
@@ -609,8 +609,8 @@ async def token_decimals(address: str):
         return {"error": str(e)[:200], "token": token}
 
 
-@endpoint("/tokens/{address}/balance/{wallet}", "$0.005",
-          "ERC20 balance of a wallet for a Base token. $0.005 USDC per call.",
+@endpoint("/tokens/{address}/balance/{wallet}", "$0.01",
+          "ERC20 balance of a wallet for a Base token. $0.01 USDC per call.",
           "token", ["token", "balance", "wallet"], "token-balance")
 async def token_balance(address: str, wallet: str):
     token = _checksum(address)
@@ -632,8 +632,8 @@ async def token_balance(address: str, wallet: str):
         return {"error": str(e)[:200], "token": token, "wallet": w}
 
 
-@endpoint("/tokens/{address}/allowance/{owner}/{spender}", "$0.005",
-          "ERC20 allowance a wallet granted to a spender. $0.005 USDC per call.",
+@endpoint("/tokens/{address}/allowance/{owner}/{spender}", "$0.01",
+          "ERC20 allowance a wallet granted to a spender. $0.01 USDC per call.",
           "token", ["token", "allowance", "erc20"], "token-allowance")
 async def token_allowance(address: str, owner: str, spender: str):
     token = _checksum(address)
@@ -739,8 +739,8 @@ async def token_boosts():
 
 # ===== WALLET ANALYTICS (on-chain + Dexscreener) =====
 
-@endpoint("/wallets/{address}/balance", "$0.005",
-          "ETH balance of a Base wallet. $0.005 USDC per call.",
+@endpoint("/wallets/{address}/balance", "$0.01",
+          "ETH balance of a Base wallet. $0.01 USDC per call.",
           "wallet", ["wallet", "balance", "base"], "wallet-balance")
 async def wallet_balance(address: str):
     addr = _checksum(address)
@@ -753,8 +753,8 @@ async def wallet_balance(address: str):
     }
 
 
-@endpoint("/wallets/{address}/nonce", "$0.005",
-          "Transaction count (nonce) of a Base wallet. $0.005 USDC per call.",
+@endpoint("/wallets/{address}/nonce", "$0.01",
+          "Transaction count (nonce) of a Base wallet. $0.01 USDC per call.",
           "wallet", ["wallet", "nonce", "base"], "wallet-nonce")
 async def wallet_nonce(address: str):
     addr = _checksum(address)
@@ -765,8 +765,8 @@ async def wallet_nonce(address: str):
     }
 
 
-@endpoint("/wallets/{address}/is-contract", "$0.005",
-          "Whether a Base address is a smart contract. $0.005 USDC per call.",
+@endpoint("/wallets/{address}/is-contract", "$0.01",
+          "Whether a Base address is a smart contract. $0.01 USDC per call.",
           "wallet", ["wallet", "contract", "base"], "wallet-is-contract")
 async def wallet_is_contract(address: str):
     addr = _checksum(address)
@@ -774,8 +774,8 @@ async def wallet_is_contract(address: str):
     return {"address": addr, "is_contract": len(code) > 0, "code_size": len(code), "network": "base"}
 
 
-@endpoint("/wallets/{address}/code", "$0.005",
-          "Bytecode size and hash for a Base address. $0.005 USDC per call.",
+@endpoint("/wallets/{address}/code", "$0.01",
+          "Bytecode size and hash for a Base address. $0.01 USDC per call.",
           "wallet", ["wallet", "code", "base"], "wallet-code")
 async def wallet_code(address: str):
     addr = _checksum(address)
@@ -857,8 +857,8 @@ async def wallet_portfolio(address: str):
     }
 
 
-@endpoint("/wallets/{address}/ens", "$0.005",
-          "Reverse ENS name for a Base wallet address. $0.005 USDC per call.",
+@endpoint("/wallets/{address}/ens", "$0.01",
+          "Reverse ENS name for a Base wallet address. $0.01 USDC per call.",
           "wallet", ["wallet", "ens", "name"], "wallet-ens")
 async def wallet_ens(address: str):
     addr = _checksum(address)
@@ -872,8 +872,8 @@ async def wallet_ens(address: str):
     return {"address": addr, "ens_name": name, "avatar": (data or {}).get("avatar"), "network": "base"}
 
 
-@endpoint("/wallets/{address}/eth-value", "$0.005",
-          "USD value of a Base wallet's ETH balance. $0.005 USDC per call.",
+@endpoint("/wallets/{address}/eth-value", "$0.01",
+          "USD value of a Base wallet's ETH balance. $0.01 USDC per call.",
           "wallet", ["wallet", "eth", "usd"], "wallet-eth-value")
 async def wallet_eth_value(address: str):
     addr = _checksum(address)
@@ -904,8 +904,8 @@ async def wallet_token_count(address: str):
     return {"address": addr, "tokens_held": len(held), "symbols": held, "network": "base"}
 
 
-@endpoint("/wallets/{address}/usdc-balance", "$0.005",
-          "USDC balance of a Base wallet. $0.005 USDC per call.",
+@endpoint("/wallets/{address}/usdc-balance", "$0.01",
+          "USDC balance of a Base wallet. $0.01 USDC per call.",
           "wallet", ["wallet", "usdc", "balance"], "wallet-usdc-balance")
 async def wallet_usdc_balance(address: str):
     addr = _checksum(address)
@@ -913,8 +913,8 @@ async def wallet_usdc_balance(address: str):
     return {"address": addr, "symbol": "USDC", "balance": raw / 1e6, "balance_raw": raw, "network": "base"}
 
 
-@endpoint("/wallets/{address}/weth-balance", "$0.005",
-          "WETH balance of a Base wallet. $0.005 USDC per call.",
+@endpoint("/wallets/{address}/weth-balance", "$0.01",
+          "WETH balance of a Base wallet. $0.01 USDC per call.",
           "wallet", ["wallet", "weth", "balance"], "wallet-weth-balance")
 async def wallet_weth_balance(address: str):
     addr = _checksum(address)
@@ -922,8 +922,8 @@ async def wallet_weth_balance(address: str):
     return {"address": addr, "symbol": "WETH", "balance": raw / 1e18, "balance_raw": raw, "network": "base"}
 
 
-@endpoint("/wallets/{address}/aero-balance", "$0.005",
-          "AERO balance of a Base wallet. $0.005 USDC per call.",
+@endpoint("/wallets/{address}/aero-balance", "$0.01",
+          "AERO balance of a Base wallet. $0.01 USDC per call.",
           "wallet", ["wallet", "aero", "balance"], "wallet-aero-balance")
 async def wallet_aero_balance(address: str):
     addr = _checksum(address)
@@ -1175,15 +1175,15 @@ def _block_dict(block):
     }
 
 
-@endpoint("/chain/block/latest", "$0.005",
-          "Latest Base block with gas and transaction count. $0.005 USDC per call.",
+@endpoint("/chain/block/latest", "$0.01",
+          "Latest Base block with gas and transaction count. $0.01 USDC per call.",
           "chain", ["chain", "block", "latest"], "chain-block-latest")
 async def chain_block_latest():
     return _block_dict(w3.eth.get_block("latest"))
 
 
-@endpoint("/chain/block/{number}", "$0.005",
-          "Base block by number. $0.005 USDC per call.",
+@endpoint("/chain/block/{number}", "$0.01",
+          "Base block by number. $0.01 USDC per call.",
           "chain", ["chain", "block"], "chain-block")
 async def chain_block(number: str):
     try:
@@ -1289,8 +1289,8 @@ async def chain_tx_logs(hash: str):
         return {"error": str(e)[:200], "hash": hash}
 
 
-@endpoint("/chain/transaction/{hash}/input", "$0.005",
-          "Decoded input data for a Base transaction. $0.005 USDC per call.",
+@endpoint("/chain/transaction/{hash}/input", "$0.01",
+          "Decoded input data for a Base transaction. $0.01 USDC per call.",
           "chain", ["chain", "transaction", "input"], "chain-tx-input")
 async def chain_tx_input(hash: str):
     try:
@@ -1309,8 +1309,8 @@ async def chain_tx_input(hash: str):
         return {"error": str(e)[:200], "hash": hash}
 
 
-@endpoint("/chain/gas/fee-history", "$0.005",
-          "Base fee history for the last 10 blocks. $0.005 USDC per call.",
+@endpoint("/chain/gas/fee-history", "$0.01",
+          "Base fee history for the last 10 blocks. $0.01 USDC per call.",
           "chain", ["chain", "gas", "fees"], "chain-fee-history")
 async def chain_fee_history():
     fh = w3.eth.fee_history(10, "latest", [25, 50, 75])
@@ -1325,8 +1325,8 @@ async def chain_fee_history():
     }
 
 
-@endpoint("/chain/gas/priority-fee", "$0.005",
-          "Current max priority fee on Base. $0.005 USDC per call.",
+@endpoint("/chain/gas/priority-fee", "$0.01",
+          "Current max priority fee on Base. $0.01 USDC per call.",
           "chain", ["chain", "gas", "priority"], "chain-priority-fee")
 async def chain_priority_fee():
     fee = w3.eth.max_priority_fee
@@ -1337,8 +1337,8 @@ async def chain_priority_fee():
     }
 
 
-@endpoint("/chain/gas/estimate-transfer/{to}", "$0.005",
-          "Estimated gas for a plain ETH transfer on Base. $0.005 USDC per call.",
+@endpoint("/chain/gas/estimate-transfer/{to}", "$0.01",
+          "Estimated gas for a plain ETH transfer on Base. $0.01 USDC per call.",
           "chain", ["chain", "gas", "estimate"], "chain-estimate-transfer")
 async def chain_estimate_transfer(to: str):
     dest = _checksum(to)
@@ -1364,8 +1364,8 @@ async def chain_estimate_transfer(to: str):
         return {"error": str(e)[:200], "to": dest}
 
 
-@endpoint("/chain/gas/oracle", "$0.005",
-          "Combined gas oracle: gas price, priority fee, fee history. $0.005 USDC per call.",
+@endpoint("/chain/gas/oracle", "$0.01",
+          "Combined gas oracle: gas price, priority fee, fee history. $0.01 USDC per call.",
           "chain", ["chain", "gas", "oracle"], "chain-gas-oracle")
 async def chain_gas_oracle():
     gas_price = w3.eth.gas_price
@@ -1391,8 +1391,8 @@ def _sync_status():
     return {"syncing": age > 60, "latest_block": block.number, "block_age_seconds": age}
 
 
-@endpoint("/chain/stats", "$0.005",
-          "Live Base chain stats: block, gas, chain id, client. $0.005 USDC per call.",
+@endpoint("/chain/stats", "$0.01",
+          "Live Base chain stats: block, gas, chain id, client. $0.01 USDC per call.",
           "chain", ["chain", "stats"], "chain-stats")
 async def chain_stats():
     sync = _sync_status()
@@ -1407,8 +1407,8 @@ async def chain_stats():
     }
 
 
-@endpoint("/chain/syncing", "$0.001",
-          "Whether the Base node is syncing (from latest block age). $0.001 USDC per call.",
+@endpoint("/chain/syncing", "$0.01",
+          "Whether the Base node is syncing (from latest block age). $0.01 USDC per call.",
           "chain", ["chain", "syncing"], "chain-syncing")
 async def chain_syncing():
     sync = _sync_status()
@@ -1421,22 +1421,22 @@ async def chain_syncing():
     }
 
 
-@endpoint("/chain/client", "$0.001",
-          "Client version of the Base RPC node. $0.001 USDC per call.",
+@endpoint("/chain/client", "$0.01",
+          "Client version of the Base RPC node. $0.01 USDC per call.",
           "chain", ["chain", "client"], "chain-client")
 async def chain_client():
     return {"client_version": w3.client_version, "network": "base"}
 
 
-@endpoint("/chain/network", "$0.001",
-          "Chain id and latest block for Base. $0.001 USDC per call.",
+@endpoint("/chain/network", "$0.01",
+          "Chain id and latest block for Base. $0.01 USDC per call.",
           "chain", ["chain", "network"], "chain-network")
 async def chain_network():
     return {"chain_id": w3.eth.chain_id, "network": "base", "block_number": w3.eth.block_number}
 
 
-@endpoint("/chain/address/{address}/code", "$0.005",
-          "Bytecode for a Base address, with size and hash. $0.005 USDC per call.",
+@endpoint("/chain/address/{address}/code", "$0.01",
+          "Bytecode for a Base address, with size and hash. $0.01 USDC per call.",
           "chain", ["chain", "address", "code"], "chain-address-code")
 async def chain_address_code(address: str):
     addr = _checksum(address)
@@ -1501,8 +1501,8 @@ async def nft_info(collection: str):
     }
 
 
-@endpoint("/nfts/{collection}/owner/{tokenId}", "$0.005",
-          "Owner of one NFT by token id. $0.005 USDC per call.",
+@endpoint("/nfts/{collection}/owner/{tokenId}", "$0.01",
+          "Owner of one NFT by token id. $0.01 USDC per call.",
           "nft", ["nft", "owner", "erc721"], "nft-owner")
 async def nft_owner(collection: str, tokenId: str):
     c = _checksum(collection)
@@ -1542,8 +1542,8 @@ async def nft_token(collection: str, tokenId: str):
     }
 
 
-@endpoint("/nfts/{collection}/balance/{wallet}", "$0.005",
-          "How many NFTs of a collection a wallet holds. $0.005 USDC per call.",
+@endpoint("/nfts/{collection}/balance/{wallet}", "$0.01",
+          "How many NFTs of a collection a wallet holds. $0.01 USDC per call.",
           "nft", ["nft", "balance", "wallet"], "nft-balance")
 async def nft_balance(collection: str, wallet: str):
     c = _checksum(collection)
@@ -1580,8 +1580,8 @@ async def nft_interfaces(collection: str):
     return {"collection": c, "interfaces": out, "network": "base"}
 
 
-@endpoint("/nfts/{collection}/supply", "$0.005",
-          "Total supply of an enumerable NFT collection. $0.005 USDC per call.",
+@endpoint("/nfts/{collection}/supply", "$0.01",
+          "Total supply of an enumerable NFT collection. $0.01 USDC per call.",
           "nft", ["nft", "supply", "erc721"], "nft-supply")
 async def nft_supply(collection: str):
     c = _checksum(collection)
@@ -1598,8 +1598,8 @@ async def nft_supply(collection: str):
         }
 
 
-@endpoint("/nfts/{collection}/exists/{tokenId}", "$0.005",
-          "Whether an NFT token id exists. $0.005 USDC per call.",
+@endpoint("/nfts/{collection}/exists/{tokenId}", "$0.01",
+          "Whether an NFT token id exists. $0.01 USDC per call.",
           "nft", ["nft", "exists", "erc721"], "nft-exists")
 async def nft_exists(collection: str, tokenId: str):
     c = _checksum(collection)
@@ -1618,8 +1618,8 @@ async def nft_exists(collection: str, tokenId: str):
 
 # ===== DEFI (DeFiLlama + Aave on-chain) =====
 
-@endpoint("/defi/tvl", "$0.005",
-          "Total value locked on Base. $0.005 USDC per call.",
+@endpoint("/defi/tvl", "$0.01",
+          "Total value locked on Base. $0.01 USDC per call.",
           "defi", ["defi", "tvl", "base"], "defi-tvl")
 async def defi_tvl():
     data = await _get_json(f"{LLAMA}/v2/chains")
@@ -1810,8 +1810,8 @@ async def defi_aave_reserves():
 
 # ===== NAMING / ENS =====
 
-@endpoint("/ens/resolve/{name}", "$0.005",
-          "Resolve an ENS name to its address. $0.005 USDC per call.",
+@endpoint("/ens/resolve/{name}", "$0.01",
+          "Resolve an ENS name to its address. $0.01 USDC per call.",
           "naming", ["ens", "resolve"], "ens-resolve")
 async def ens_resolve(name: str):
     data = await _get_json(f"{ENSIDEAS}/ens/resolve/{name}")
@@ -1827,8 +1827,8 @@ async def ens_resolve(name: str):
     }
 
 
-@endpoint("/ens/reverse/{address}", "$0.005",
-          "Reverse-resolve a wallet address to its ENS name. $0.005 USDC per call.",
+@endpoint("/ens/reverse/{address}", "$0.01",
+          "Reverse-resolve a wallet address to its ENS name. $0.01 USDC per call.",
           "naming", ["ens", "reverse"], "ens-reverse")
 async def ens_reverse(address: str):
     addr = _checksum(address)
@@ -1842,8 +1842,8 @@ async def ens_reverse(address: str):
     return {"address": addr, "ens_name": name, "avatar": (data or {}).get("avatar")}
 
 
-@endpoint("/ens/avatar/{name}", "$0.005",
-          "Avatar URL for an ENS name. $0.005 USDC per call.",
+@endpoint("/ens/avatar/{name}", "$0.01",
+          "Avatar URL for an ENS name. $0.01 USDC per call.",
           "naming", ["ens", "avatar"], "ens-avatar")
 async def ens_avatar(name: str):
     data = await _get_json(f"{ENSIDEAS}/ens/resolve/{name}")
@@ -1854,8 +1854,8 @@ async def ens_avatar(name: str):
     return {"name": name, "address": data.get("address"), "avatar": data.get("avatar")}
 
 
-@endpoint("/ens/profile/{name}", "$0.005",
-          "Full public profile for an ENS name. $0.005 USDC per call.",
+@endpoint("/ens/profile/{name}", "$0.01",
+          "Full public profile for an ENS name. $0.01 USDC per call.",
           "naming", ["ens", "profile"], "ens-profile")
 async def ens_profile(name: str):
     data = await _get_json(f"{ENSDATA}/{name}")
@@ -1875,8 +1875,8 @@ async def ens_profile(name: str):
 
 # ===== UTILITIES =====
 
-@endpoint("/utils/eth-usd", "$0.005",
-          "Live ETH price in USD. $0.005 USDC per call.",
+@endpoint("/utils/eth-usd", "$0.01",
+          "Live ETH price in USD. $0.01 USDC per call.",
           "utils", ["utils", "eth", "price"], "utils-eth-usd")
 async def utils_eth_usd():
     price = await _eth_price_usd()
@@ -1885,8 +1885,8 @@ async def utils_eth_usd():
     return {"asset": "ETH", "price_usd": price}
 
 
-@endpoint("/utils/convert/eth-usd/{amount}", "$0.005",
-          "Convert an ETH amount to USD at the live price. $0.005 USDC per call.",
+@endpoint("/utils/convert/eth-usd/{amount}", "$0.01",
+          "Convert an ETH amount to USD at the live price. $0.01 USDC per call.",
           "utils", ["utils", "convert", "eth"], "utils-convert-eth-usd")
 async def utils_convert_eth_usd(amount: str):
     try:
@@ -1899,8 +1899,8 @@ async def utils_convert_eth_usd(amount: str):
     return {"eth": eth, "eth_price_usd": price, "usd": round(eth * price, 2)}
 
 
-@endpoint("/utils/convert/usd-eth/{amount}", "$0.005",
-          "Convert a USD amount to ETH at the live price. $0.005 USDC per call.",
+@endpoint("/utils/convert/usd-eth/{amount}", "$0.01",
+          "Convert a USD amount to ETH at the live price. $0.01 USDC per call.",
           "utils", ["utils", "convert", "usd"], "utils-convert-usd-eth")
 async def utils_convert_usd_eth(amount: str):
     try:
@@ -1913,8 +1913,8 @@ async def utils_convert_usd_eth(amount: str):
     return {"usd": usd, "eth_price_usd": price, "eth": round(usd / price, 6) if price else None}
 
 
-@endpoint("/utils/convert/wei/{amount}", "$0.001",
-          "Convert wei to ether and gwei. $0.001 USDC per call.",
+@endpoint("/utils/convert/wei/{amount}", "$0.01",
+          "Convert wei to ether and gwei. $0.01 USDC per call.",
           "utils", ["utils", "convert", "wei"], "utils-convert-wei")
 async def utils_convert_wei(amount: str):
     try:
@@ -1928,8 +1928,8 @@ async def utils_convert_wei(amount: str):
     }
 
 
-@endpoint("/utils/convert/ether-wei/{amount}", "$0.001",
-          "Convert ether to wei. $0.001 USDC per call.",
+@endpoint("/utils/convert/ether-wei/{amount}", "$0.01",
+          "Convert ether to wei. $0.01 USDC per call.",
           "utils", ["utils", "convert", "ether"], "utils-convert-ether-wei")
 async def utils_convert_ether_wei(amount: str):
     try:
@@ -1939,8 +1939,8 @@ async def utils_convert_ether_wei(amount: str):
     return {"ether": eth, "wei": Web3.to_wei(eth, "ether")}
 
 
-@endpoint("/utils/address/validate/{address}", "$0.001",
-          "Validate an Ethereum address and return its checksum form. $0.001 USDC per call.",
+@endpoint("/utils/address/validate/{address}", "$0.01",
+          "Validate an Ethereum address and return its checksum form. $0.01 USDC per call.",
           "utils", ["utils", "address", "validate"], "utils-address-validate")
 async def utils_address_validate(address: str):
     valid = Web3.is_address(address)
@@ -1951,15 +1951,15 @@ async def utils_address_validate(address: str):
     return result
 
 
-@endpoint("/utils/address/keccak/{text}", "$0.001",
-          "Keccak-256 hash of text. $0.001 USDC per call.",
+@endpoint("/utils/address/keccak/{text}", "$0.01",
+          "Keccak-256 hash of text. $0.01 USDC per call.",
           "utils", ["utils", "hash", "keccak"], "utils-keccak")
 async def utils_keccak(text: str):
     return {"input": text, "keccak256": Web3.keccak(text=text).hex()}
 
 
-@endpoint("/utils/gas-cost/{gwei}/{gas}", "$0.005",
-          "Cost of a transaction in ETH and USD at the live ETH price. $0.005 USDC per call.",
+@endpoint("/utils/gas-cost/{gwei}/{gas}", "$0.01",
+          "Cost of a transaction in ETH and USD at the live ETH price. $0.01 USDC per call.",
           "utils", ["utils", "gas", "cost"], "utils-gas-cost")
 async def utils_gas_cost(gwei: str, gas: str):
     try:
@@ -1978,8 +1978,8 @@ async def utils_gas_cost(gwei: str, gas: str):
     }
 
 
-@endpoint("/utils/coin-price/{coin}", "$0.005",
-          "Live USD price for a coin by CoinGecko id. $0.005 USDC per call.",
+@endpoint("/utils/coin-price/{coin}", "$0.01",
+          "Live USD price for a coin by CoinGecko id. $0.01 USDC per call.",
           "utils", ["utils", "coin", "price"], "utils-coin-price")
 async def utils_coin_price(coin: str):
     data = await _get_json(
@@ -1993,8 +1993,8 @@ async def utils_coin_price(coin: str):
     return {"coin": coin, "price_usd": entry.get("usd"), "source": "coingecko"}
 
 
-@endpoint("/utils/market/global", "$0.005",
-          "Global crypto market stats from CoinGecko. $0.005 USDC per call.",
+@endpoint("/utils/market/global", "$0.01",
+          "Global crypto market stats from CoinGecko. $0.01 USDC per call.",
           "utils", ["utils", "market", "global"], "utils-market-global")
 async def utils_market_global():
     data = await _get_json(f"{COINGECKO}/global")
@@ -2012,8 +2012,8 @@ async def utils_market_global():
     }
 
 
-@endpoint("/utils/market/trending", "$0.005",
-          "Trending coins on CoinGecko. $0.005 USDC per call.",
+@endpoint("/utils/market/trending", "$0.01",
+          "Trending coins on CoinGecko. $0.01 USDC per call.",
           "utils", ["utils", "market", "trending"], "utils-market-trending")
 async def utils_market_trending():
     data = await _get_json(f"{COINGECKO}/search/trending")
@@ -2034,8 +2034,8 @@ async def utils_market_trending():
     }
 
 
-@endpoint("/utils/market/top", "$0.005",
-          "Top 10 cryptocurrencies by market cap. $0.005 USDC per call.",
+@endpoint("/utils/market/top", "$0.01",
+          "Top 10 cryptocurrencies by market cap. $0.01 USDC per call.",
           "utils", ["utils", "market", "top"], "utils-market-top")
 async def utils_market_top():
     data = await _get_json(
@@ -2058,8 +2058,8 @@ async def utils_market_top():
     }
 
 
-@endpoint("/utils/fear-greed", "$0.005",
-          "Crypto Fear & Greed Index. $0.005 USDC per call.",
+@endpoint("/utils/fear-greed", "$0.01",
+          "Crypto Fear & Greed Index. $0.01 USDC per call.",
           "utils", ["utils", "fear-greed", "sentiment"], "utils-fear-greed")
 async def utils_fear_greed():
     data = await _get_json(f"{FNG}/fng/", params={"limit": 1})
@@ -3962,13 +3962,13 @@ async def utils_coin_change(coin: str):
 # Applied here (rather than as decorators above) so the handler
 # definitions stay readable; calling endpoint(...)(fn) is identical
 # to decorating fn with @endpoint(...).
-# Price mix: $0.001 x1, $0.005 x35, $0.01 x61, $0.02 x3 = 100 new.
+# Price mix: $0.01 x97, $0.02 x3 = 100 new.
 
 # Lending (14)
 endpoint("/lending/aave/markets", "$0.02", "All Aave V3 markets on Base with on-chain supply/borrow APY. $0.02 USDC per call.", "lending", ["lending", "aave", "markets"], "lending-aave-markets")(lending_aave_markets)
 endpoint("/lending/aave/market/{asset}", "$0.01", "Aave V3 market for one asset: on-chain rates + aToken/debt tokens. $0.01 USDC per call.", "lending", ["lending", "aave", "market"], "lending-aave-market")(lending_aave_market_asset)
 endpoint("/lending/aave/user/{wallet}", "$0.01", "Aave V3 account data for one wallet: collateral, debt, health factor. $0.01 USDC per call.", "lending", ["lending", "aave", "account"], "lending-aave-user")(lending_aave_user)
-endpoint("/lending/aave/tvl", "$0.005", "Aave V3 TVL on Base. $0.005 USDC per call.", "lending", ["lending", "aave", "tvl"], "lending-aave-tvl")(lending_aave_tvl)
+endpoint("/lending/aave/tvl", "$0.01", "Aave V3 TVL on Base. $0.01 USDC per call.", "lending", ["lending", "aave", "tvl"], "lending-aave-tvl")(lending_aave_tvl)
 endpoint("/lending/compound/markets", "$0.01", "Compound V3 yield pools on Base, top 10 by TVL. $0.01 USDC per call.", "lending", ["lending", "compound", "markets"], "lending-compound-markets")(lending_compound_markets)
 endpoint("/lending/compound/usdc", "$0.01", "Compound V3 Comet USDC market on Base: utilization, totals, APY. $0.01 USDC per call.", "lending", ["lending", "compound", "usdc"], "lending-compound-usdc")(lending_compound_usdc)
 endpoint("/lending/compound/user/{wallet}", "$0.01", "Compound V3 Comet USDC position for one wallet: supplied/borrowed. $0.01 USDC per call.", "lending", ["lending", "compound", "account"], "lending-compound-user")(lending_compound_user)
@@ -3977,23 +3977,23 @@ endpoint("/lending/morpho/stable", "$0.01", "Highest-APY Morpho Blue stablecoin 
 endpoint("/lending/rates/{asset}", "$0.01", "Lending rates for one asset: Aave on-chain + yield pools. $0.01 USDC per call.", "lending", ["lending", "rates", "aave"], "lending-rates")(lending_rates)
 endpoint("/lending/top-apy", "$0.01", "Top 10 lending APY pools on Base. $0.01 USDC per call.", "lending", ["lending", "apy", "top"], "lending-top-apy")(lending_top_apy)
 endpoint("/lending/stablecoin-rates", "$0.01", "Aave V3 supply/borrow APY for USDC, DAI and USDbC on Base. $0.01 USDC per call.", "lending", ["lending", "stablecoin", "rates"], "lending-stablecoin-rates")(lending_stablecoin_rates)
-endpoint("/lending/usdc-rate", "$0.005", "Aave V3 USDC market rates on Base. $0.005 USDC per call.", "lending", ["lending", "aave", "usdc"], "lending-usdc-rate")(lending_usdc_rate)
-endpoint("/lending/weth-rate", "$0.005", "Aave V3 WETH market rates on Base. $0.005 USDC per call.", "lending", ["lending", "aave", "weth"], "lending-weth-rate")(lending_weth_rate)
+endpoint("/lending/usdc-rate", "$0.01", "Aave V3 USDC market rates on Base. $0.01 USDC per call.", "lending", ["lending", "aave", "usdc"], "lending-usdc-rate")(lending_usdc_rate)
+endpoint("/lending/weth-rate", "$0.01", "Aave V3 WETH market rates on Base. $0.01 USDC per call.", "lending", ["lending", "aave", "weth"], "lending-weth-rate")(lending_weth_rate)
 
 # Stablecoins (6)
-endpoint("/stablecoins/top", "$0.005", "Top 10 stablecoins by circulating supply. $0.005 USDC per call.", "stablecoins", ["stablecoins", "top", "supply"], "stablecoins-top")(stablecoins_top)
+endpoint("/stablecoins/top", "$0.01", "Top 10 stablecoins by circulating supply. $0.01 USDC per call.", "stablecoins", ["stablecoins", "top", "supply"], "stablecoins-top")(stablecoins_top)
 endpoint("/stablecoins/{asset}", "$0.01", "One stablecoin by id, symbol, or gecko_id, with per-chain supply. $0.01 USDC per call.", "stablecoins", ["stablecoins", "asset"], "stablecoins-asset")(stablecoins_asset)
 endpoint("/stablecoins/chains", "$0.01", "Stablecoin supply by chain, top 15. $0.01 USDC per call.", "stablecoins", ["stablecoins", "chains"], "stablecoins-chains")(stablecoins_chains)
 endpoint("/stablecoins/pegs", "$0.01", "Stablecoins furthest from their $1 peg right now. $0.01 USDC per call.", "stablecoins", ["stablecoins", "peg", "depeg"], "stablecoins-pegs")(stablecoins_pegs)
 endpoint("/stablecoins/chain/{chain}", "$0.01", "Top 15 stablecoins by circulating supply on one chain. $0.01 USDC per call.", "stablecoins", ["stablecoins", "chain"], "stablecoins-chain")(stablecoins_chain)
-endpoint("/stablecoins/total", "$0.005", "Total circulating supply of all stablecoins. $0.005 USDC per call.", "stablecoins", ["stablecoins", "total"], "stablecoins-total")(stablecoins_total)
+endpoint("/stablecoins/total", "$0.01", "Total circulating supply of all stablecoins. $0.01 USDC per call.", "stablecoins", ["stablecoins", "total"], "stablecoins-total")(stablecoins_total)
 
 # Oracles (6)
 endpoint("/oracles/feeds", "$0.01", "Chainlink price feeds on Base: ETH/USD, BTC/USD, USDC/USD. $0.01 USDC per call.", "oracles", ["oracles", "chainlink", "feeds"], "oracles-feeds")(oracles_feeds)
-endpoint("/oracles/price/{symbol}", "$0.005", "Chainlink price for one symbol (eth, btc, usdc). $0.005 USDC per call.", "oracles", ["oracles", "chainlink", "price"], "oracles-price")(oracles_price)
-endpoint("/oracles/eth", "$0.005", "Chainlink ETH/USD on Base. $0.005 USDC per call.", "oracles", ["oracles", "chainlink", "eth"], "oracles-eth")(oracles_eth)
-endpoint("/oracles/btc", "$0.005", "Chainlink BTC/USD on Base. $0.005 USDC per call.", "oracles", ["oracles", "chainlink", "btc"], "oracles-btc")(oracles_btc)
-endpoint("/oracles/usdc", "$0.005", "Chainlink USDC/USD on Base. $0.005 USDC per call.", "oracles", ["oracles", "chainlink", "usdc"], "oracles-usdc")(oracles_usdc)
+endpoint("/oracles/price/{symbol}", "$0.01", "Chainlink price for one symbol (eth, btc, usdc). $0.01 USDC per call.", "oracles", ["oracles", "chainlink", "price"], "oracles-price")(oracles_price)
+endpoint("/oracles/eth", "$0.01", "Chainlink ETH/USD on Base. $0.01 USDC per call.", "oracles", ["oracles", "chainlink", "eth"], "oracles-eth")(oracles_eth)
+endpoint("/oracles/btc", "$0.01", "Chainlink BTC/USD on Base. $0.01 USDC per call.", "oracles", ["oracles", "chainlink", "btc"], "oracles-btc")(oracles_btc)
+endpoint("/oracles/usdc", "$0.01", "Chainlink USDC/USD on Base. $0.01 USDC per call.", "oracles", ["oracles", "chainlink", "usdc"], "oracles-usdc")(oracles_usdc)
 endpoint("/oracles/vs-coingecko", "$0.01", "Chainlink ETH/USD vs CoinGecko ETH price (oracle deviation check). $0.01 USDC per call.", "oracles", ["oracles", "chainlink", "coingecko"], "oracles-vs-coingecko")(oracles_vs_coingecko)
 
 # Governance (5)
@@ -4004,19 +4004,19 @@ endpoint("/gov/proposal/{proposal_id}/votes", "$0.01", "Top 20 votes on one Snap
 endpoint("/gov/space/{space}", "$0.01", "One Snapshot space: name, about, proposal/follower counts. $0.01 USDC per call.", "governance", ["governance", "snapshot", "space"], "gov-space")(gov_space)
 
 # Gas (5)
-endpoint("/chain/gas/base-fee", "$0.005", "Current base fee + predicted next-block base fee. $0.005 USDC per call.", "gas", ["gas", "base-fee", "eip1559"], "chain-gas-base-fee")(chain_gas_base_fee)
+endpoint("/chain/gas/base-fee", "$0.01", "Current base fee + predicted next-block base fee. $0.01 USDC per call.", "gas", ["gas", "base-fee", "eip1559"], "chain-gas-base-fee")(chain_gas_base_fee)
 endpoint("/chain/gas/fee-history/{blocks}", "$0.01", "Fee history for the last N blocks (1-20). $0.01 USDC per call.", "gas", ["gas", "fee-history"], "chain-gas-fee-history")(chain_gas_fee_history)
-endpoint("/chain/gas/transfer-cost", "$0.005", "Cost of a plain 21,000-gas ETH transfer on Base. $0.005 USDC per call.", "gas", ["gas", "transfer", "cost"], "chain-gas-transfer-cost")(chain_gas_transfer_cost)
-endpoint("/chain/gas/transfer-cost-usd", "$0.005", "Cost of a plain ETH transfer on Base in USD. $0.005 USDC per call.", "gas", ["gas", "transfer", "usd"], "chain-gas-transfer-cost-usd")(chain_gas_transfer_cost_usd)
-endpoint("/chain/gas/max-fee", "$0.005", "Current base fee + max priority fee. $0.005 USDC per call.", "gas", ["gas", "max-fee", "priority"], "chain-gas-max-fee")(chain_gas_max_fee)
+endpoint("/chain/gas/transfer-cost", "$0.01", "Cost of a plain 21,000-gas ETH transfer on Base. $0.01 USDC per call.", "gas", ["gas", "transfer", "cost"], "chain-gas-transfer-cost")(chain_gas_transfer_cost)
+endpoint("/chain/gas/transfer-cost-usd", "$0.01", "Cost of a plain ETH transfer on Base in USD. $0.01 USDC per call.", "gas", ["gas", "transfer", "usd"], "chain-gas-transfer-cost-usd")(chain_gas_transfer_cost_usd)
+endpoint("/chain/gas/max-fee", "$0.01", "Current base fee + max priority fee. $0.01 USDC per call.", "gas", ["gas", "max-fee", "priority"], "chain-gas-max-fee")(chain_gas_max_fee)
 
 # NFTs (6)
-endpoint("/nfts/{collection}/token/{token_id}/uri", "$0.005", "Raw tokenURI for one NFT token. $0.005 USDC per call.", "nft", ["nft", "tokenuri"], "nft-token-uri")(nft_token_uri)
+endpoint("/nfts/{collection}/token/{token_id}/uri", "$0.01", "Raw tokenURI for one NFT token. $0.01 USDC per call.", "nft", ["nft", "tokenuri"], "nft-token-uri")(nft_token_uri)
 endpoint("/nfts/{collection}/token/{token_id}/image", "$0.01", "Image URL from one NFT token's metadata. $0.01 USDC per call.", "nft", ["nft", "image", "metadata"], "nft-token-image")(nft_token_image)
 endpoint("/nfts/{collection}/token/{token_id}/attributes", "$0.01", "Traits/attributes from one NFT token's metadata. $0.01 USDC per call.", "nft", ["nft", "traits", "metadata"], "nft-token-attributes")(nft_token_attributes)
 endpoint("/nfts1155/{collection}/balance/{wallet}/{token_id}", "$0.01", "ERC1155 balance of one wallet for one token id. $0.01 USDC per call.", "nft", ["nft", "erc1155", "balance"], "nft1155-balance")(nft1155_balance)
-endpoint("/nfts1155/{collection}/uri/{token_id}", "$0.005", "ERC1155 metadata URI for one token id. $0.005 USDC per call.", "nft", ["nft", "erc1155", "uri"], "nft1155-uri")(nft1155_uri)
-endpoint("/nfts1155/{collection}/supply/{token_id}", "$0.005", "ERC1155 total supply for one token id (if the contract tracks it). $0.005 USDC per call.", "nft", ["nft", "erc1155", "supply"], "nft1155-supply")(nft1155_supply)
+endpoint("/nfts1155/{collection}/uri/{token_id}", "$0.01", "ERC1155 metadata URI for one token id. $0.01 USDC per call.", "nft", ["nft", "erc1155", "uri"], "nft1155-uri")(nft1155_uri)
+endpoint("/nfts1155/{collection}/supply/{token_id}", "$0.01", "ERC1155 total supply for one token id (if the contract tracks it). $0.01 USDC per call.", "nft", ["nft", "erc1155", "supply"], "nft1155-supply")(nft1155_supply)
 
 # DeFi (12)
 endpoint("/defi/protocol/{slug}", "$0.01", "One protocol's TVL detail by slug. $0.01 USDC per call.", "defi", ["defi", "protocol", "tvl"], "defi-protocol")(defi_protocol)
@@ -4029,8 +4029,8 @@ endpoint("/defi/yields/il/{pool}", "$0.01", "Impermanent-loss risk + APY for one
 endpoint("/defi/yields/project/{project}", "$0.01", "Top 10 yield pools for one project, by APY. $0.01 USDC per call.", "defi", ["defi", "yields", "project"], "defi-yields-project")(defi_yields_project)
 endpoint("/defi/yields/token/{symbol}", "$0.01", "Top 10 yield pools for one token symbol, by APY. $0.01 USDC per call.", "defi", ["defi", "yields", "token"], "defi-yields-token")(defi_yields_token)
 endpoint("/defi/yields/stable/{chain}", "$0.01", "Top 10 stablecoin yield pools on one chain, by APY. $0.01 USDC per call.", "defi", ["defi", "yields", "stablecoin"], "defi-yields-stable-chain")(defi_yields_stable)
-endpoint("/defi/dex/volume/7d", "$0.005", "Total DEX volume, last 7 days (all chains). $0.005 USDC per call.", "defi", ["defi", "dex", "volume"], "defi-dex-volume-7d")(defi_dex_volume_7d)
-endpoint("/defi/dex/volume/base/7d", "$0.005", "Total DEX volume on Base, last 7 days. $0.005 USDC per call.", "defi", ["defi", "dex", "volume", "base"], "defi-dex-volume-base-7d")(defi_dex_volume_base_7d)
+endpoint("/defi/dex/volume/7d", "$0.01", "Total DEX volume, last 7 days (all chains). $0.01 USDC per call.", "defi", ["defi", "dex", "volume"], "defi-dex-volume-7d")(defi_dex_volume_7d)
+endpoint("/defi/dex/volume/base/7d", "$0.01", "Total DEX volume on Base, last 7 days. $0.01 USDC per call.", "defi", ["defi", "dex", "volume", "base"], "defi-dex-volume-base-7d")(defi_dex_volume_base_7d)
 
 # DEX (8)
 endpoint("/dex/top/volume/{n}", "$0.01", "Top N DEXs by 24h volume (1-25). $0.01 USDC per call.", "dex", ["dex", "top", "volume"], "dex-top-volume")(dex_top_volume)
@@ -4046,16 +4046,16 @@ endpoint("/dex/pair/{token}/{chain}", "$0.01", "Best DEX pair for one token on o
 endpoint("/wallets/{address}/approvals", "$0.01", "Token allowances a wallet granted to Permit2, routers, Aave. $0.01 USDC per call.", "wallet", ["wallet", "approvals", "allowance"], "wallet-approvals")(wallet_approvals)
 endpoint("/wallets/{address}/approvals/{token}", "$0.01", "Allowances one wallet granted for one token. $0.01 USDC per call.", "wallet", ["wallet", "approvals", "token"], "wallet-approvals-token")(wallet_approvals_token)
 endpoint("/wallets/{address}/token/{token}/value", "$0.01", "One wallet's balance of one token + USD value. $0.01 USDC per call.", "wallet", ["wallet", "token", "value"], "wallet-token-value")(wallet_token_value)
-endpoint("/wallets/{address}/cbeth-balance", "$0.005", "Wallet cbETH balance. $0.005 USDC per call.", "wallet", ["wallet", "cbeth", "balance"], "wallet-cbeth-balance")(wallet_cbeth_balance)
-endpoint("/wallets/{address}/dai-balance", "$0.005", "Wallet DAI balance. $0.005 USDC per call.", "wallet", ["wallet", "dai", "balance"], "wallet-dai-balance")(wallet_dai_balance)
-endpoint("/wallets/{address}/usdbc-balance", "$0.005", "Wallet USDbC balance. $0.005 USDC per call.", "wallet", ["wallet", "usdbc", "balance"], "wallet-usdbc-balance")(wallet_usdbc_balance)
-endpoint("/wallets/{address}/higher-balance", "$0.005", "Wallet HIGHER balance. $0.005 USDC per call.", "wallet", ["wallet", "higher", "balance"], "wallet-higher-balance")(wallet_higher_balance)
+endpoint("/wallets/{address}/cbeth-balance", "$0.01", "Wallet cbETH balance. $0.01 USDC per call.", "wallet", ["wallet", "cbeth", "balance"], "wallet-cbeth-balance")(wallet_cbeth_balance)
+endpoint("/wallets/{address}/dai-balance", "$0.01", "Wallet DAI balance. $0.01 USDC per call.", "wallet", ["wallet", "dai", "balance"], "wallet-dai-balance")(wallet_dai_balance)
+endpoint("/wallets/{address}/usdbc-balance", "$0.01", "Wallet USDbC balance. $0.01 USDC per call.", "wallet", ["wallet", "usdbc", "balance"], "wallet-usdbc-balance")(wallet_usdbc_balance)
+endpoint("/wallets/{address}/higher-balance", "$0.01", "Wallet HIGHER balance. $0.01 USDC per call.", "wallet", ["wallet", "higher", "balance"], "wallet-higher-balance")(wallet_higher_balance)
 
 # Memecoins (5)
 endpoint("/memes/new-pairs", "$0.01", "Newest Base token profiles on Dexscreener. $0.01 USDC per call.", "memes", ["memes", "new", "pairs"], "memes-new-pairs")(memes_new_pairs)
 endpoint("/memes/trending", "$0.02", "Top 15 Base pairs by 24h volume across the main Base tokens. $0.02 USDC per call.", "memes", ["memes", "trending", "volume"], "memes-trending")(memes_trending)
 endpoint("/memes/boosted", "$0.01", "Latest boosted Base tokens on Dexscreener. $0.01 USDC per call.", "memes", ["memes", "boosted"], "memes-boosted")(memes_boosted)
-endpoint("/memes/{token}/price-change", "$0.005", "Price changes (5m/1h/6h/24h) for one token's best pair. $0.005 USDC per call.", "memes", ["memes", "price-change"], "memes-price-change")(memes_price_change)
+endpoint("/memes/{token}/price-change", "$0.01", "Price changes (5m/1h/6h/24h) for one token's best pair. $0.01 USDC per call.", "memes", ["memes", "price-change"], "memes-price-change")(memes_price_change)
 endpoint("/memes/{token}/holders", "$0.01", "Holder count + top holders for one token. $0.01 USDC per call.", "memes", ["memes", "holders"], "memes-holders")(memes_holders)
 
 # Prediction (6)
@@ -4070,29 +4070,29 @@ endpoint("/predict/markets/closing", "$0.01", "Active Polymarket markets ending 
 endpoint("/tokens/{address}/history/{days}", "$0.01", "Price history for one Base token (1-365 days). $0.01 USDC per call.", "token", ["token", "history", "price"], "token-history")(token_history)
 endpoint("/tokens/{address}/audit", "$0.01", "Security audit flags for one Base token (GoPlus). $0.01 USDC per call.", "token", ["token", "audit", "security"], "token-audit")(token_audit)
 endpoint("/tokens/{address}/holders", "$0.01", "Holder count + top 10 holders for one Base token (GoPlus). $0.01 USDC per call.", "token", ["token", "holders"], "token-holders")(token_holders)
-endpoint("/tokens/{address}/top-holder", "$0.005", "Largest holder of one Base token (GoPlus). $0.005 USDC per call.", "token", ["token", "top-holder"], "token-top-holder")(token_top_holder)
-endpoint("/tokens/{address}/age", "$0.005", "Age of a token's oldest DEX pair (first listing date). $0.005 USDC per call.", "token", ["token", "age"], "token-age")(token_age)
-endpoint("/tokens/{address}/liquidity-usd", "$0.005", "Total DEX liquidity (USD) across all pairs for one token. $0.005 USDC per call.", "token", ["token", "liquidity"], "token-liquidity-usd")(token_liquidity_usd)
-endpoint("/tokens/{address}/fdv", "$0.005", "Fully diluted valuation + market cap for one Base token. $0.005 USDC per call.", "token", ["token", "fdv", "market-cap"], "token-fdv")(token_fdv)
+endpoint("/tokens/{address}/top-holder", "$0.01", "Largest holder of one Base token (GoPlus). $0.01 USDC per call.", "token", ["token", "top-holder"], "token-top-holder")(token_top_holder)
+endpoint("/tokens/{address}/age", "$0.01", "Age of a token's oldest DEX pair (first listing date). $0.01 USDC per call.", "token", ["token", "age"], "token-age")(token_age)
+endpoint("/tokens/{address}/liquidity-usd", "$0.01", "Total DEX liquidity (USD) across all pairs for one token. $0.01 USDC per call.", "token", ["token", "liquidity"], "token-liquidity-usd")(token_liquidity_usd)
+endpoint("/tokens/{address}/fdv", "$0.01", "Fully diluted valuation + market cap for one Base token. $0.01 USDC per call.", "token", ["token", "fdv", "market-cap"], "token-fdv")(token_fdv)
 
 # Chain (5)
 endpoint("/chain/blocks/{count}", "$0.01", "Summaries of the last N blocks (1-10). $0.01 USDC per call.", "chain", ["chain", "blocks"], "chain-blocks")(chain_blocks)
-endpoint("/chain/pending/count", "$0.005", "Pending-block transaction count (live mempool snapshot). $0.005 USDC per call.", "chain", ["chain", "pending", "mempool"], "chain-pending-count")(chain_pending_count)
-endpoint("/chain/transaction/{tx_hash}/status", "$0.005", "Transaction receipt: status + confirmations. $0.005 USDC per call.", "chain", ["chain", "transaction", "status"], "chain-tx-status")(chain_tx_status)
+endpoint("/chain/pending/count", "$0.01", "Pending-block transaction count (live mempool snapshot). $0.01 USDC per call.", "chain", ["chain", "pending", "mempool"], "chain-pending-count")(chain_pending_count)
+endpoint("/chain/transaction/{tx_hash}/status", "$0.01", "Transaction receipt: status + confirmations. $0.01 USDC per call.", "chain", ["chain", "transaction", "status"], "chain-tx-status")(chain_tx_status)
 endpoint("/chain/transaction/{tx_hash}/cost", "$0.01", "Transaction cost in ETH and USD. $0.01 USDC per call.", "chain", ["chain", "transaction", "cost"], "chain-tx-cost")(chain_tx_cost)
-endpoint("/chain/block/{number}/tx-count", "$0.005", "Transaction count + gas for one block number. $0.005 USDC per call.", "chain", ["chain", "block", "tx-count"], "chain-block-tx-count")(chain_block_tx_count)
+endpoint("/chain/block/{number}/tx-count", "$0.01", "Transaction count + gas for one block number. $0.01 USDC per call.", "chain", ["chain", "block", "tx-count"], "chain-block-tx-count")(chain_block_tx_count)
 
 # Utils (5)
 endpoint("/utils/coin/{coin}/history/{days}", "$0.01", "Price history for one CoinGecko coin (1-365 days). $0.01 USDC per call.", "utils", ["utils", "coin", "history"], "utils-coin-history")(utils_coin_history)
-endpoint("/utils/convert/usdc-eth/{amount}", "$0.005", "Convert a USDC amount to ETH at the current price. $0.005 USDC per call.", "utils", ["utils", "convert", "usdc", "eth"], "utils-convert-usdc-eth")(utils_convert_usdc_eth)
-endpoint("/utils/market/fear-greed/history", "$0.005", "Fear & Greed index, last 7 days. $0.005 USDC per call.", "utils", ["utils", "fear-greed", "history"], "utils-fear-greed-history")(utils_fear_greed_history)
+endpoint("/utils/convert/usdc-eth/{amount}", "$0.01", "Convert a USDC amount to ETH at the current price. $0.01 USDC per call.", "utils", ["utils", "convert", "usdc", "eth"], "utils-convert-usdc-eth")(utils_convert_usdc_eth)
+endpoint("/utils/market/fear-greed/history", "$0.01", "Fear & Greed index, last 7 days. $0.01 USDC per call.", "utils", ["utils", "fear-greed", "history"], "utils-fear-greed-history")(utils_fear_greed_history)
 endpoint("/utils/coin/{coin}/ath", "$0.01", "All-time high/low for one CoinGecko coin (USD). $0.01 USDC per call.", "utils", ["utils", "coin", "ath"], "utils-coin-ath")(utils_coin_ath)
-endpoint("/utils/convert/gwei-eth/{amount}", "$0.001", "Convert gwei to ETH. $0.001 USDC per call.", "utils", ["utils", "convert", "gwei", "eth"], "utils-convert-gwei-eth")(utils_convert_gwei_eth)
-endpoint("/utils/coin/{coin}/change", "$0.005", "Price change (24h/7d/30d/1y) for one CoinGecko coin. $0.005 USDC per call.", "utils", ["utils", "coin", "change"], "utils-coin-change")(utils_coin_change)
+endpoint("/utils/convert/gwei-eth/{amount}", "$0.01", "Convert gwei to ETH. $0.01 USDC per call.", "utils", ["utils", "convert", "gwei", "eth"], "utils-convert-gwei-eth")(utils_convert_gwei_eth)
+endpoint("/utils/coin/{coin}/change", "$0.01", "Price change (24h/7d/30d/1y) for one CoinGecko coin. $0.01 USDC per call.", "utils", ["utils", "coin", "change"], "utils-coin-change")(utils_coin_change)
 
 # ENS (2)
 endpoint("/ens/{name}/records", "$0.01", "ENS text records / socials for one name. $0.01 USDC per call.", "naming", ["ens", "records", "socials"], "ens-records")(ens_records)
-endpoint("/ens/{name}/content", "$0.005", "ENS content hash + avatar for one name. $0.005 USDC per call.", "naming", ["ens", "content", "avatar"], "ens-content")(ens_content)
+endpoint("/ens/{name}/content", "$0.01", "ENS content hash + avatar for one name. $0.01 USDC per call.", "naming", ["ens", "content", "avatar"], "ens-content")(ens_content)
 
 
 # ===== APP CONSTRUCTION (routes + paywall built from the registry) =====
@@ -4382,7 +4382,7 @@ async def root():
         "service": "Manteclaw x402 service",
         "version": "5.0",
         "network": "base",
-        "payment": "x402 v2, USDC on Base, per call ($0.001-$0.02)",
+        "payment": "x402 v2, USDC on Base, per call ($0.01-$0.02)",
         "payee": WALLET_ADDRESS,
         "endpoints": len(ORDERED) + 1,  # 199 paid + /health = 200
         "health": "/health",
