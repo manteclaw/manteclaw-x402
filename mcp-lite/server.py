@@ -59,7 +59,7 @@ from starlette.responses import HTMLResponse, JSONResponse
 
 # ===== config =====
 
-VERSION = "1.1.1"
+VERSION = "1.1.2"
 
 PORT = int(os.environ.get("PORT", "8080"))
 BASE_RPC = "https://mainnet.base.org"
@@ -74,6 +74,7 @@ FNG = "https://api.alternative.me"
 HTTP_TIMEOUT = 10.0  # seconds, per upstream call
 
 CATALOG_URL = "https://manteclaw-x402.fly.dev/catalog"
+SOLANA_CATALOG_URL = "https://manteclaw-x402-solana.fly.dev/catalog"
 
 # Well-known Base token contracts (public constants, same as paid service).
 USDC = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"
@@ -119,7 +120,8 @@ SEL_LIQUIDITY = "1a686502"
 
 FUNNEL = (
     "More: full holder breakdowns, history and 199 endpoints at "
-    f"{CATALOG_URL} ($0.01/call, USDC on Base via x402)."
+    f"{CATALOG_URL} ($0.01/call, USDC on Base via x402); Solana-native "
+    f"paid endpoints at {SOLANA_CATALOG_URL} ($0.01/call, USDC on Solana via x402)."
 )
 
 _client = httpx.AsyncClient(timeout=HTTP_TIMEOUT, follow_redirects=True)
@@ -719,6 +721,8 @@ async def manteclaw_catalog() -> str:
             "- ENS: resolve, reverse, avatars, text records and profiles",
             "- Plus NFTs, governance, stablecoins, prediction markets and market sentiment",
             f"Catalog and how to call: {CATALOG_URL}",
+            "A second paid service covers Solana natively (199 endpoints: Solana chain, SPL tokens, wallets, DEX, DeFi, Pyth oracles, memecoins, NFTs), paid in USDC on Solana:",
+            f"Solana catalog: {SOLANA_CATALOG_URL}",
             "The free lite tools here (100 of them — chain, gas, tokens, DEX, DeFi, stablecoins, markets, ENS, wallets, oracles, converters) are a small sample.",
         ]
     )
@@ -1393,18 +1397,19 @@ async def token_price_eth(token: str) -> str:
 
 @mcp.tool()
 async def dex_search(query: str) -> str:
-    """Search DEX pairs across all chains by token name, symbol or address — top 10 by liquidity, with rounded prices. Source: DexScreener."""
+    """Search DEX pairs by token name, symbol or address — top 10 by liquidity, with rounded prices. Solana pairs are excluded: Solana DEX data is served by the paid Solana API. Source: DexScreener."""
     try:
         data = await _get_json(f"{DEXSCREENER}/latest/dex/search", params={"q": query})
         pairs = data.get("pairs") if isinstance(data, dict) else None
+        pairs = [p for p in (pairs or []) if p.get("chainId") != "solana"]
         if not pairs:
-            return f"Error: no DEX pairs found matching '{query}'."
+            return f"Error: no DEX pairs found matching '{query}' (Solana pairs are served by the paid Solana API: {SOLANA_CATALOG_URL})."
         pairs = sorted(
             pairs,
             key=lambda p: float((p.get("liquidity") or {}).get("usd") or 0),
             reverse=True,
         )[:10]
-        lines = [f"DEX search for '{query}' ({len(pairs)} shown) — lite preview"]
+        lines = [f"DEX search for '{query}' ({len(pairs)} shown, Solana excluded) — lite preview"]
         for i, p in enumerate(pairs):
             lines.append(
                 f"{i + 1}. [{p.get('chainId')}] {(p.get('baseToken') or {}).get('symbol')}/"
@@ -1455,39 +1460,39 @@ def _boost_lines(items, title):
 
 @mcp.tool()
 async def dex_trending() -> str:
-    """Top boosted tokens on DexScreener right now (their trending board), top 10 across chains."""
+    """Top boosted tokens on DexScreener right now (their trending board), top 10, Solana excluded (Solana boosts are a paid Solana-API lookup)."""
     try:
         data = await _get_json(f"{DEXSCREENER}/token-boosts/top/v1")
-        items = data if isinstance(data, list) else []
+        items = [it for it in (data if isinstance(data, list) else []) if it.get("chainId") != "solana"]
         if not items:
             return "Error: no boosted tokens returned by DexScreener."
-        return _join(_boost_lines(items[:10], "Top boosted tokens on DexScreener"))
+        return _join(_boost_lines(items[:10], "Top boosted tokens on DexScreener (Solana excluded — paid Solana API)"))
     except Exception as e:
         return _err("dex_trending", e)
 
 
 @mcp.tool()
 async def dex_latest_boosts() -> str:
-    """Most recently boosted tokens on DexScreener, latest 10 across chains."""
+    """Most recently boosted tokens on DexScreener, latest 10, Solana excluded (Solana boosts are a paid Solana-API lookup)."""
     try:
         data = await _get_json(f"{DEXSCREENER}/token-boosts/latest/v1")
-        items = data if isinstance(data, list) else []
+        items = [it for it in (data if isinstance(data, list) else []) if it.get("chainId") != "solana"]
         if not items:
             return "Error: no boosted tokens returned by DexScreener."
-        return _join(_boost_lines(items[:10], "Latest boosted tokens on DexScreener"))
+        return _join(_boost_lines(items[:10], "Latest boosted tokens on DexScreener (Solana excluded — paid Solana API)"))
     except Exception as e:
         return _err("dex_latest_boosts", e)
 
 
 @mcp.tool()
 async def dex_new_profiles() -> str:
-    """Newest token profiles created on DexScreener, latest 10 across chains, with short descriptions."""
+    """Newest token profiles created on DexScreener, latest 10, Solana excluded (Solana profiles are a paid Solana-API lookup), with short descriptions."""
     try:
         data = await _get_json(f"{DEXSCREENER}/token-profiles/latest/v1")
-        items = data if isinstance(data, list) else []
+        items = [it for it in (data if isinstance(data, list) else []) if it.get("chainId") != "solana"]
         if not items:
             return "Error: no token profiles returned by DexScreener."
-        lines = ["Newest token profiles on DexScreener"]
+        lines = ["Newest token profiles on DexScreener (Solana excluded — paid Solana API)"]
         for i, it in enumerate(items[:10]):
             desc = (it.get("description") or "").strip().replace("\n", " ")
             if len(desc) > 100:
@@ -1606,8 +1611,15 @@ async def base_tvl() -> str:
 
 @mcp.tool()
 async def chain_tvl(chain: str) -> str:
-    """TVL preview for any chain by name (e.g. "Ethereum", "Solana", "Arbitrum"): its TVL rank and a rounded TVL. Exact figures are a paid lookup. Source: DeFiLlama."""
+    """TVL preview for a chain by name (e.g. "Ethereum", "Arbitrum"): its TVL rank and a rounded TVL. Solana is excluded — Solana TVL is served by the paid Solana API. Exact figures are a paid lookup. Source: DeFiLlama."""
     try:
+        if chain.strip().lower() == "solana":
+            return _join(
+                [
+                    "Solana TVL is served by the paid Solana x402 API (Solana DeFi TVL, history, dominance and protocol breakdowns).",
+                    f"Solana catalog: {SOLANA_CATALOG_URL}",
+                ]
+            )
         chains = await _llama_chains()
         match = next((c for c in chains if str(c.get("name", "")).lower() == chain.strip().lower()), None)
         if not match:
@@ -1796,11 +1808,11 @@ async def dex_fees_top() -> str:
 async def yields_top() -> str:
     """Top 3 yield pools by APY across all chains (whole-percent APYs, rounded TVLs). The full top-10 table with exact APYs is a paid lookup. Source: DeFiLlama Yields."""
     try:
-        pools = await _yields_pools()
+        pools = [p for p in await _yields_pools() if p.get("chain") != "Solana"]
         if not pools:
             return "Error: no yield pools returned by DeFiLlama."
         top = sorted(pools, key=lambda p: float(p.get("apy") or 0), reverse=True)[:3]
-        lines = ["Top yield pools by APY (DeFiLlama Yields) — lite preview"]
+        lines = ["Top yield pools by APY (DeFiLlama Yields; Solana pools excluded — paid Solana API) — lite preview"]
         lines += [f"{i + 1}. {_pool_line(p)}" for i, p in enumerate(top)]
         return _join(lines)
     except Exception as e:
@@ -1828,11 +1840,11 @@ async def yields_stablecoins() -> str:
     """Top 3 stablecoin yield pools by APY across chains (whole-percent APYs, rounded TVLs). The full top-10 table with exact APYs is a paid lookup. Source: DeFiLlama Yields."""
     try:
         pools = await _yields_pools()
-        stables = [p for p in pools if p.get("stablecoin") is True]
+        stables = [p for p in pools if p.get("stablecoin") is True and p.get("chain") != "Solana"]
         if not stables:
             return "Error: no stablecoin yield pools returned by DeFiLlama."
         top = sorted(stables, key=lambda p: float(p.get("apy") or 0), reverse=True)[:3]
-        lines = ["Top stablecoin yield pools by APY (DeFiLlama Yields) — lite preview"]
+        lines = ["Top stablecoin yield pools by APY (DeFiLlama Yields; Solana pools excluded — paid Solana API) — lite preview"]
         lines += [f"{i + 1}. {_pool_line(p)}" for i, p in enumerate(top)]
         return _join(lines)
     except Exception as e:
@@ -1845,11 +1857,11 @@ async def yields_token(symbol: str) -> str:
     try:
         pools = await _yields_pools()
         key = symbol.strip().upper()
-        mine = [p for p in pools if key in str(p.get("symbol", "")).upper()]
+        mine = [p for p in pools if key in str(p.get("symbol", "")).upper() and p.get("chain") != "Solana"]
         if not mine:
-            return f"Error: no yield pools found for symbol '{symbol}'."
+            return f"Error: no yield pools found for symbol '{symbol}' (Solana pools are served by the paid Solana API)."
         top = sorted(mine, key=lambda p: float(p.get("apy") or 0), reverse=True)[:3]
-        lines = [f"Top yield pools for {key} by APY (DeFiLlama Yields) — lite preview"]
+        lines = [f"Top yield pools for {key} by APY (DeFiLlama Yields; Solana pools excluded — paid Solana API) — lite preview"]
         lines += [f"{i + 1}. {_pool_line(p)}" for i, p in enumerate(top)]
         return _join(lines)
     except Exception as e:
@@ -1921,9 +1933,10 @@ async def stablecoin_info(asset: str) -> str:
             amt = ((v or {}).get("current") or {}).get("peggedUSD")
             if isinstance(amt, (int, float)):
                 per_chain.append((ch, amt))
+        per_chain = [(ch, amt) for ch, amt in per_chain if ch.lower() != "solana"]
         per_chain.sort(key=lambda x: x[1], reverse=True)
         if per_chain:
-            lines.append("Top chains: " + ", ".join(f"{ch} ≈{_coarse_usd(amt)}" for ch, amt in per_chain[:3]))
+            lines.append("Top chains (excluding Solana — its per-chain amount is a paid Solana-API lookup): " + ", ".join(f"{ch} ≈{_coarse_usd(amt)}" for ch, amt in per_chain[:3]))
         return _join(lines)
     except Exception as e:
         return _err("stablecoin_info", e)
@@ -1993,7 +2006,7 @@ async def stablecoins_base() -> str:
 
 @mcp.tool()
 async def stablecoin_pegs() -> str:
-    """The 5 stablecoins trading furthest from their peg right now (rounded prices and deviations; the tail is mostly illiquid or dead coins). Source: DeFiLlama Stablecoins."""
+    """The 3 stablecoins trading furthest from their peg right now (coarse prices, whole-percent deviations; the tail is mostly illiquid or dead coins). The full peg table is a paid lookup. Source: DeFiLlama Stablecoins."""
     try:
         data = await _get_cached(f"{STABLECOINS_API}/stablecoinprices", ttl=60.0)
         prices = {}
@@ -2008,8 +2021,8 @@ async def stablecoin_pegs() -> str:
         out.sort(key=lambda x: abs(x[2]), reverse=True)
         lines = ["Largest stablecoin peg deviations (DeFiLlama) — lite preview"]
         lines += [
-            f"{i + 1}. {k}: ${v:.3f} ({dev:+.1f}% from $1.00)"
-            for i, (k, v, dev) in enumerate(out[:5])
+            f"{i + 1}. {k}: ≈{_coarse_usd(v)} ({_whole_pct(dev)} from $1.00)"
+            for i, (k, v, dev) in enumerate(out[:3])
         ]
         return _join(lines)
     except Exception as e:
@@ -2570,7 +2583,7 @@ async def base_network_info() -> str:
 
 @mcp.tool()
 async def top_gainer_today() -> str:
-    """The biggest 24h gainer among the top 100 coins by market cap (whole-percent gain, rounded price) — a derived lite stat, not part of the paid catalog. Source: CoinGecko."""
+    """The biggest 24h gainer among the top 100 coins by market cap (whole-percent gain, rounded price) — a derived lite stat. (Solana-ecosystem gainers are a paid Solana-API lookup.) Source: CoinGecko."""
     try:
         data = await _get_cached(
             f"{COINGECKO}/coins/markets",
