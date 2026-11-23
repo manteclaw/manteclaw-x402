@@ -384,8 +384,6 @@ curl https://manteclaw-x402.fly.dev/health
         <select id="priceFilter" aria-label="Filter by price">
           <option value="all">All prices</option>
           <option value="free">Free only</option>
-          <option value="0.001">$0.001</option>
-          <option value="0.005">$0.005 and under</option>
           <option value="0.01">$0.01</option>
           <option value="0.02">$0.02</option>
         </select>
@@ -3355,8 +3353,7 @@ function matches(e){
   if (state.price === "free" && e.priceNum !== 0) return false;
   if (state.price !== "all" && state.price !== "free"){
     var p = parseFloat(state.price);
-    if (state.price === "0.005"){ if (!(e.priceNum > 0 && e.priceNum <= 0.005)) return false; }
-    else if (e.priceNum !== p) return false;
+    if (e.priceNum !== p) return false;
   }
   if (state.q){
     var hay = (e.name + " " + e.path + " " + e.desc + " " + e.group + " " + e.tags.join(" ")).toLowerCase();
