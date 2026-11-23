@@ -46,6 +46,7 @@ for _var in ("NO_PROXY", "no_proxy"):
         os.environ[_var] = ",".join(_kept)
 
 import asyncio
+import statistics
 import sys
 import time
 from datetime import datetime, timezone
@@ -58,7 +59,7 @@ from starlette.responses import HTMLResponse, JSONResponse
 
 # ===== config =====
 
-VERSION = "1.1.0"
+VERSION = "1.1.1"
 
 PORT = int(os.environ.get("PORT", "8080"))
 BASE_RPC = "https://mainnet.base.org"
@@ -334,6 +335,64 @@ def _fmt_ts(ts) -> str:
         return "n/a"
 
 
+def _coarse(value, sig: int = 2) -> str:
+    """A number rounded to `sig` significant figures, plainly formatted.
+
+    The lite tier coarsens every figure a paid endpoint sells exactly:
+    enough to be a useful preview, never a substitute for the paid value.
+    """
+    try:
+        v = float(value)
+    except (TypeError, ValueError):
+        return "n/a"
+    if v == 0:
+        return "0"
+    r = float(f"{v:.{sig}g}")
+    if abs(r) >= 100:
+        return f"{r:,.0f}"
+    if abs(r) >= 1:
+        return f"{r:g}"
+    return f"{r:.12f}".rstrip("0").rstrip(".")
+
+
+def _coarse_usd(value, sig: int = 2) -> str:
+    """Coarse USD: $5.1B / $970M / $3,400 / $0.42 (2 significant figures)."""
+    try:
+        v = float(value)
+    except (TypeError, ValueError):
+        return "n/a"
+    if abs(v) >= 1e6:
+        for suffix, scale in (("T", 1e12), ("B", 1e9), ("M", 1e6)):
+            if abs(v) >= scale:
+                return f"${_coarse(v / scale, sig)}{suffix}"
+    return f"${_coarse(v, sig)}"
+
+
+def _whole_pct(value) -> str:
+    """A percentage rounded to the nearest whole point, signed."""
+    try:
+        return f"{round(float(value)):+d}%"
+    except (TypeError, ValueError):
+        return "n/a"
+
+
+def _mask_addr(addr) -> str:
+    a = str(addr)
+    return f"{a[:6]}…{a[-4:]}" if len(a) > 12 else a
+
+
+def _band(value, cuts, labels) -> str:
+    """Bucket a number: labels[i] applies below cuts[i]; last label above all."""
+    try:
+        v = float(value)
+    except (TypeError, ValueError):
+        return labels[-1]
+    for cut, label in zip(cuts, labels):
+        if v < cut:
+            return label
+    return labels[-1]
+
+
 def _err(tool: str, exc: Exception) -> str:
     msg = str(exc).splitlines()[0][:200] if str(exc) else exc.__class__.__name__
     return f"Error: {tool} failed — {msg}. Try again shortly."
@@ -424,43 +483,57 @@ async def glama_claim_endpoint(request: Request) -> JSONResponse:
 
 @mcp.tool()
 async def base_gas() -> str:
-    """Current Base gas price / fee snapshot: base fee (slow/average/fast in gwei), latest block."""
+    """Base fee climate right now: whether the current base fee is LOW, TYPICAL or HIGH versus the last 20 blocks, and whether fees are rising, falling or flat. Exact fee tiers are a paid lookup; this is the lite preview."""
     try:
-        block = await _rpc("eth_getBlockByNumber", ["latest", False])
-        base_fee = int(block["baseFeePerGas"], 16)
-        gwei = base_fee / 1e9
-        lines = [
-            "Base gas snapshot",
-            f"Base fee: {gwei:.4f} gwei",
-            f"Slow (1.0x): {gwei * 1.0:.4f} gwei",
-            f"Average (1.2x): {gwei * 1.2:.4f} gwei",
-            f"Fast (1.5x): {gwei * 1.5:.4f} gwei",
-            f"Block: {int(block['number'], 16)}",
-            f"Block time (unix): {int(block['timestamp'], 16)}",
-            FUNNEL,
-        ]
-        return "\n".join(lines)
+        data = await _rpc("eth_feeHistory", [hex(20), "latest", [50]])
+        fees = [int(x, 16) / 1e9 for x in (data.get("baseFeePerGas") or [])[:-1]]
+        if not fees:
+            return "Error: no fee history returned by the Base RPC."
+        current = fees[-1]
+        ordered = sorted(fees)
+        median = ordered[len(ordered) // 2]
+        if current < 0.7 * median:
+            band = "LOW"
+        elif current > 1.5 * median:
+            band = "HIGH"
+        else:
+            band = "TYPICAL"
+        half = len(fees) // 2
+        early = sum(fees[:half]) / half
+        late = sum(fees[half:]) / (len(fees) - half)
+        if late > early * 1.1:
+            trend = "rising"
+        elif late < early * 0.9:
+            trend = "falling"
+        else:
+            trend = "flat"
+        block = await _rpc("eth_blockNumber", [])
+        return _join(
+            [
+                "Base fee climate (last 20 blocks)",
+                f"Current base fee: {band} for Base right now",
+                f"Trend: {trend}",
+                f"Latest block: {int(block, 16)}",
+            ]
+        )
     except Exception as e:
         return _err("base_gas", e)
 
 
 @mcp.tool()
 async def base_block() -> str:
-    """Latest Base block summary: number, hash, timestamp, transaction count, gas used/limit, base fee."""
+    """Latest Base block preview: block number, how long ago it landed, and a coarse activity level. Full block detail is a paid lookup."""
     try:
         block = await _rpc("eth_getBlockByNumber", ["latest", False])
-        base_fee = block.get("baseFeePerGas")
+        ts = int(block["timestamp"], 16)
+        age = max(0, int(time.time()) - ts)
+        txs = len(block.get("transactions", []))
+        activity = _band(txs, [100, 250], ["quiet", "typical", "busy"])
         lines = [
-            "Latest Base block",
+            "Latest Base block (preview)",
             f"Number: {int(block['number'], 16)}",
-            f"Hash: {block['hash']}",
-            f"Parent hash: {block['parentHash']}",
-            f"Timestamp (unix): {int(block['timestamp'], 16)}",
-            f"Transactions: {len(block.get('transactions', []))}",
-            f"Gas used: {int(block['gasUsed'], 16):,}",
-            f"Gas limit: {int(block['gasLimit'], 16):,}",
-            f"Base fee: {(int(base_fee, 16) / 1e9):.4f} gwei" if base_fee else "Base fee: n/a",
-            f"Miner/sequencer: {block.get('miner')}",
+            f"Landed: {age}s ago",
+            f"Activity: {activity}",
             FUNNEL,
         ]
         return "\n".join(lines)
@@ -470,20 +543,29 @@ async def base_block() -> str:
 
 @mcp.tool()
 async def token_price(token: str) -> str:
-    """Spot USD price and 24h change for a token, by symbol (e.g. "AERO") or Base contract address. Source: DexScreener best-liquidity Base pair."""
+    """Coarse spot price preview for a token (symbol like "AERO" or Base contract address): price rounded to 2 significant figures, 24h direction, and a liquidity band. Exact prices are a paid lookup. Source: DexScreener best Base pair."""
     try:
         pairs = await _pairs_for_query(token)
         best = _best_pair(pairs)
         if not best:
             return f"Error: no Base DEX pair found for '{token}'."
         change = (best.get("priceChange") or {}).get("h24")
+        if change is None:
+            direction = "24h direction: n/a"
+        elif float(change) > 0.5:
+            direction = "24h direction: up"
+        elif float(change) < -0.5:
+            direction = "24h direction: down"
+        else:
+            direction = "24h direction: roughly flat"
+        liq = float((best.get("liquidity") or {}).get("usd") or 0)
+        depth = _band(liq, [10_000, 250_000], ["thin", "moderate", "deep"])
         lines = [
-            f"{(best.get('baseToken') or {}).get('name')} ({(best.get('baseToken') or {}).get('symbol')}) on Base",
-            f"Price: {_fmt_usd(best.get('priceUsd'))}",
-            f"24h change: {change}%" if change is not None else "24h change: n/a",
+            f"{(best.get('baseToken') or {}).get('name')} ({(best.get('baseToken') or {}).get('symbol')}) on Base — lite preview",
+            f"Price: ≈{_coarse_usd(best.get('priceUsd'))}",
+            direction,
             f"Pair: {best.get('baseToken', {}).get('symbol')}/{(best.get('quoteToken') or {}).get('symbol')} on {best.get('dexId')}",
-            f"Liquidity: {_fmt_usd((best.get('liquidity') or {}).get('usd'))}",
-            f"24h volume: {_fmt_usd((best.get('volume') or {}).get('h24'))}",
+            f"Liquidity: {depth}",
             FUNNEL,
         ]
         return "\n".join(lines)
@@ -493,7 +575,7 @@ async def token_price(token: str) -> str:
 
 @mcp.tool()
 async def token_info(contract_address: str) -> str:
-    """Basic metadata (name, symbol, decimals, total supply, read on-chain) plus a market snapshot for a Base ERC20 contract address."""
+    """Lite metadata preview for a Base ERC20: name, symbol, decimals, and total supply rounded to 2 significant figures. Exact supply and market data are paid lookups."""
     try:
         if not _is_address(contract_address):
             return "Error: token_info needs a Base contract address (0x, 42 chars)."
@@ -523,27 +605,13 @@ async def token_info(contract_address: str) -> str:
         except Exception:
             pass
         lines = [
-            f"Token {token} (Base)",
+            f"Token {token} (Base) — lite preview",
             f"Name: {name}",
             f"Symbol: {symbol}",
             f"Decimals: {decimals}",
         ]
         if supply is not None and decimals is not None:
-            lines.append(f"Total supply: {supply / (10 ** decimals):,.4f} {symbol or ''}".rstrip())
-        elif supply is not None:
-            lines.append(f"Total supply (raw): {supply}")
-        try:
-            best = _best_pair(await _base_pairs_for_token(token))
-            if best:
-                lines += [
-                    f"Price: {_fmt_usd(best.get('priceUsd'))}",
-                    f"Market cap: {_fmt_usd(best.get('marketCap'))}",
-                    f"FDV: {_fmt_usd(best.get('fdv'))}",
-                    f"Liquidity: {_fmt_usd((best.get('liquidity') or {}).get('usd'))}",
-                    f"24h volume: {_fmt_usd((best.get('volume') or {}).get('h24'))}",
-                ]
-        except Exception:
-            pass  # market snapshot is best-effort; on-chain metadata already answered
+            lines.append(f"Total supply: ≈{_coarse(supply / (10 ** decimals))} {symbol or ''}".rstrip())
         lines.append(FUNNEL)
         return "\n".join(lines)
     except Exception as e:
@@ -552,7 +620,7 @@ async def token_info(contract_address: str) -> str:
 
 @mcp.tool()
 async def ens_resolve(name_or_address: str) -> str:
-    """Resolve an ENS name to its Ethereum address, or reverse-resolve an address to its ENS name."""
+    """Check whether an ENS name resolves (or an address has a primary ENS name). Lite shows a masked preview only — full addresses and names are paid lookups."""
     try:
         value = name_or_address.strip()
         if _is_address(value):
@@ -566,11 +634,11 @@ async def ens_resolve(name_or_address: str) -> str:
             if isinstance(data, dict):
                 name = data.get("name") or data.get("ens") or data.get("displayName")
                 if name:
+                    masked = (str(name)[:3] + "…") if len(str(name)) > 3 else str(name)
                     return "\n".join(
                         [
                             f"Address: {value}",
-                            f"ENS name: {name}",
-                            f"Avatar: {data.get('avatar')}",
+                            f"Has a primary ENS name: yes ({masked})",
                             FUNNEL,
                         ]
                     )
@@ -581,9 +649,7 @@ async def ens_resolve(name_or_address: str) -> str:
         return "\n".join(
             [
                 f"Name: {value}",
-                f"Address: {data.get('address')}",
-                f"Display name: {data.get('displayName')}",
-                f"Avatar: {data.get('avatar')}",
+                f"Resolves: yes → {_mask_addr(data.get('address'))} (masked preview)",
                 FUNNEL,
             ]
         )
@@ -593,18 +659,21 @@ async def ens_resolve(name_or_address: str) -> str:
 
 @mcp.tool()
 async def wallet_snapshot(address: str) -> str:
-    """ETH and USDC balances for an address on Base."""
+    """Coarse balance bands for an address on Base (ETH and USDC ranges, not exact figures — exact balances are paid lookups)."""
     try:
         if not _is_address(address):
             return "Error: wallet_snapshot needs an address (0x, 42 chars)."
         addr = address.strip()
         wei = int(await _rpc("eth_getBalance", [addr, "latest"]), 16)
-        usdc_raw = await _erc20_uint(USDC, SEL_BALANCE_OF, _addr32(addr))
+        eth = wei / 1e18
+        usdc = await _erc20_uint(USDC, SEL_BALANCE_OF, _addr32(addr)) / 1e6
+        eth_band = _band(eth, [0.000001, 0.01, 0.1, 1, 10], ["0", "under 0.01", "0.01–0.1", "0.1–1", "1–10", "over 10"])
+        usdc_band = _band(usdc, [0.01, 10, 100, 1000, 10000], ["0", "under 10", "10–100", "100–1,000", "1,000–10,000", "over 10,000"])
         return "\n".join(
             [
-                f"Wallet {addr} (Base)",
-                f"ETH: {wei / 1e18:.6f}",
-                f"USDC: {usdc_raw / 1e6:,.2f}",
+                f"Wallet {addr} (Base) — lite bands",
+                f"ETH: {eth_band}",
+                f"USDC: {usdc_band}",
                 FUNNEL,
             ]
         )
@@ -614,22 +683,21 @@ async def wallet_snapshot(address: str) -> str:
 
 @mcp.tool()
 async def dex_pair(token: str) -> str:
-    """Top DEX pair (by liquidity) on Base for a token, by symbol or contract address: pair, price, liquidity, 24h volume. Source: DexScreener."""
+    """Top Base DEX pair for a token (symbol or contract address) — lite preview: pair, coarse price, liquidity band. Exact pair data is a paid lookup. Source: DexScreener."""
     try:
         pairs = await _pairs_for_query(token)
         best = _best_pair(pairs)
         if not best:
             return f"Error: no Base DEX pair found for '{token}'."
+        liq = float((best.get("liquidity") or {}).get("usd") or 0)
+        depth = _band(liq, [10_000, 250_000], ["thin (under $10K)", "moderate ($10K–$250K)", "deep (over $250K)"])
         return "\n".join(
             [
-                f"Top Base pair for {(best.get('baseToken') or {}).get('symbol')}",
+                f"Top Base pair for {(best.get('baseToken') or {}).get('symbol')} — lite preview",
                 f"Pair: {(best.get('baseToken') or {}).get('symbol')}/{(best.get('quoteToken') or {}).get('symbol')} on {best.get('dexId')}",
                 f"Pair address: {best.get('pairAddress')}",
-                f"Price: {_fmt_usd(best.get('priceUsd'))}",
-                f"Liquidity: {_fmt_usd((best.get('liquidity') or {}).get('usd'))}",
-                f"24h volume: {_fmt_usd((best.get('volume') or {}).get('h24'))}",
-                f"Market cap: {_fmt_usd(best.get('marketCap'))}",
-                f"URL: {best.get('url')}",
+                f"Price: ≈{_coarse_usd(best.get('priceUsd'))}",
+                f"Liquidity: {depth}",
                 FUNNEL,
             ]
         )
@@ -672,22 +740,20 @@ async def chain_id() -> str:
 
 @mcp.tool()
 async def base_block_by_number(number: int) -> str:
-    """Summary of one Base block by number: hash, timestamp, tx count, gas used/limit, base fee."""
+    """Lite preview of one Base block: when it landed and a coarse transaction-activity level. Full block detail is a paid lookup."""
     try:
         if number < 0:
             return "Error: block number must be >= 0."
         block = await _rpc("eth_getBlockByNumber", [hex(number), False])
         if not block:
             return f"Error: block {number} not found on Base."
-        base_fee = block.get("baseFeePerGas")
+        txs = len(block.get("transactions", []))
+        activity = _band(txs, [100, 250], ["quiet", "typical", "busy"])
         return _join(
             [
-                f"Base block {int(block['number'], 16)}",
-                f"Hash: {block['hash']}",
-                f"Timestamp: {int(block['timestamp'], 16)} ({_fmt_ts(int(block['timestamp'], 16))})",
-                f"Transactions: {len(block.get('transactions', []))}",
-                f"Gas used: {int(block['gasUsed'], 16):,} / {int(block['gasLimit'], 16):,}",
-                f"Base fee: {(int(base_fee, 16) / 1e9):.4f} gwei" if base_fee else "Base fee: n/a",
+                f"Base block {int(block['number'], 16)} (preview)",
+                f"Timestamp: {_fmt_ts(int(block['timestamp'], 16))}",
+                f"Activity: {activity}",
             ]
         )
     except Exception as e:
@@ -696,19 +762,16 @@ async def base_block_by_number(number: int) -> str:
 
 @mcp.tool()
 async def base_recent_blocks(count: int = 5) -> str:
-    """The most recent Base blocks (1-10): number, tx count, gas used, base fee for each."""
+    """The most recent Base blocks (up to 3 in lite): number and a coarse activity level for each. Full per-block detail is a paid lookup."""
     try:
-        n = max(1, min(int(count), 10))
+        n = max(1, min(int(count), 3))
         latest = await _rpc("eth_getBlockByNumber", ["latest", False])
         latest_num = int(latest["number"], 16)
-        lines = [f"Last {n} Base blocks (latest: {latest_num})"]
+        lines = [f"Last {n} Base blocks (latest: {latest_num}) — lite preview"]
         for num in range(latest_num, latest_num - n, -1):
             b = await _rpc("eth_getBlockByNumber", [hex(num), False])
-            bf = b.get("baseFeePerGas")
-            lines.append(
-                f"#{num}: {len(b.get('transactions', []))} txs, gas {int(b['gasUsed'], 16):,}, "
-                f"base fee {(int(bf, 16) / 1e9):.4f} gwei" if bf else f"#{num}: {len(b.get('transactions', []))} txs"
-            )
+            activity = _band(len(b.get("transactions", [])), [100, 250], ["quiet", "typical", "busy"])
+            lines.append(f"#{num}: {activity}")
         return _join(lines)
     except Exception as e:
         return _err("base_recent_blocks", e)
@@ -716,25 +779,24 @@ async def base_recent_blocks(count: int = 5) -> str:
 
 @mcp.tool()
 async def base_tx(tx_hash: str) -> str:
-    """Summary of one Base transaction by hash: from, to, value, gas, nonce, block."""
+    """Lite preview of one Base transaction: from, to, plain transfer vs contract call, a value band, and its block. Full transaction detail is a paid lookup."""
     try:
         if not _is_txhash(tx_hash):
             return "Error: base_tx needs a transaction hash (0x, 66 chars)."
         tx = await _rpc("eth_getTransactionByHash", [tx_hash.strip()])
         if not tx:
             return f"Error: transaction {tx_hash} not found on Base."
-        gas_price = tx.get("gasPrice")
+        kind = "contract interaction" if len(tx.get("input", "0x")) > 2 else "plain ETH transfer"
+        value_eth = int(tx.get("value", "0x0"), 16) / 1e18
+        vband = _band(value_eth, [0.000001, 0.01, 1], ["0 ETH", "under 0.01 ETH", "0.01–1 ETH", "over 1 ETH"])
         return _join(
             [
-                f"Transaction {tx['hash']}",
+                f"Transaction {tx['hash']} (preview)",
                 f"From: {tx.get('from')}",
-                f"To: {tx.get('to')}",
-                f"Value: {int(tx.get('value', '0x0'), 16) / 1e18:.6f} ETH",
-                f"Gas limit: {int(tx.get('gas', '0x0'), 16):,}",
-                f"Gas price: {int(gas_price, 16) / 1e9:.4f} gwei" if gas_price else "Gas price: n/a",
-                f"Nonce: {int(tx.get('nonce', '0x0'), 16)}",
+                f"To: {tx.get('to') if tx.get('to') else 'contract creation'}",
+                f"Type: {kind}",
+                f"Value: {vband}",
                 f"Block: {int(tx['blockNumber'], 16) if tx.get('blockNumber') else 'pending'}",
-                f"Input size: {(len(tx.get('input', '0x')) - 2) // 2} bytes",
             ]
         )
     except Exception as e:
@@ -743,26 +805,23 @@ async def base_tx(tx_hash: str) -> str:
 
 @mcp.tool()
 async def base_tx_receipt(tx_hash: str) -> str:
-    """Receipt for one Base transaction: success/failure, gas used, effective price, fee paid, log count."""
+    """Lite receipt preview for one Base transaction: success/failure, its block, and a confirmations band. Full receipt detail (gas, fee, logs) is a paid lookup."""
     try:
         if not _is_txhash(tx_hash):
             return "Error: base_tx_receipt needs a transaction hash (0x, 66 chars)."
         r = await _rpc("eth_getTransactionReceipt", [tx_hash.strip()])
         if not r:
             return f"Error: no receipt for {tx_hash} (unknown or still pending)."
-        gas_used = int(r.get("gasUsed", "0x0"), 16)
-        eff = r.get("effectiveGasPrice")
+        block_num = int(r.get("blockNumber", "0x0"), 16)
+        latest = int(await _rpc("eth_blockNumber", []), 16)
+        conf = max(1, latest - block_num + 1)
+        conf_band = _band(conf, [6, 26, 101], ["1–5 confirmations", "6–25 confirmations", "26–100 confirmations", "100+ confirmations"])
         lines = [
-            f"Receipt {r.get('transactionHash')}",
+            f"Receipt {r.get('transactionHash')} (preview)",
             f"Status: {'success' if int(r.get('status', '0x0'), 16) == 1 else 'failed'}",
-            f"Block: {int(r.get('blockNumber', '0x0'), 16)}",
-            f"Gas used: {gas_used:,}",
-            f"Logs: {len(r.get('logs', []))}",
+            f"Block: {block_num}",
+            f"Confirmations: {conf_band}",
         ]
-        if eff:
-            eff_i = int(eff, 16)
-            lines.append(f"Effective gas price: {eff_i / 1e9:.4f} gwei")
-            lines.append(f"Fee paid: {gas_used * eff_i / 1e18:.6f} ETH")
         if r.get("contractAddress"):
             lines.append(f"Contract created: {r['contractAddress']}")
         return _join(lines)
@@ -772,18 +831,21 @@ async def base_tx_receipt(tx_hash: str) -> str:
 
 @mcp.tool()
 async def base_nonce(address: str) -> str:
-    """Transaction count (nonce) of an address on Base — confirmed and pending."""
+    """Coarse activity band for an address on Base, from how many transactions it has sent. The exact nonce is a paid lookup."""
     try:
         if not _is_address(address):
             return "Error: base_nonce needs an address (0x, 42 chars)."
         addr = address.strip()
         confirmed = int(await _rpc("eth_getTransactionCount", [addr, "latest"]), 16)
-        pending = int(await _rpc("eth_getTransactionCount", [addr, "pending"]), 16)
+        band = _band(
+            confirmed,
+            [1, 11, 101, 1001],
+            ["no transactions sent yet", "light (1–10 sent)", "moderate (11–100 sent)", "active (101–1,000 sent)", "very active (1,000+ sent)"],
+        )
         return _join(
             [
-                f"Address {addr} (Base)",
-                f"Nonce (confirmed): {confirmed}",
-                f"Nonce (pending): {pending}",
+                f"Address {addr} (Base) — lite preview",
+                f"Sending activity: {band}",
             ]
         )
     except Exception as e:
@@ -792,15 +854,16 @@ async def base_nonce(address: str) -> str:
 
 @mcp.tool()
 async def base_pending_txs() -> str:
-    """Transaction count in the pending Base block, as reported by the public RPC."""
+    """Base mempool climate: whether the pending block is quiet, normal or busy right now. The exact pending count is a paid lookup."""
     try:
         block = await _rpc("eth_getBlockByNumber", ["pending", False])
         if not block:
             return "Error: the Base public RPC did not return a pending block."
+        load = _band(len(block.get("transactions", [])), [50, 200], ["quiet", "normal", "busy"])
         return _join(
             [
-                "Base pending block",
-                f"Transactions pending: {len(block.get('transactions', []))}",
+                "Base mempool climate (preview)",
+                f"Pending load: {load}",
                 f"Pending block number: {int(block['number'], 16) if block.get('number') else 'n/a'}",
             ]
         )
@@ -810,33 +873,33 @@ async def base_pending_txs() -> str:
 
 @mcp.tool()
 async def base_client_version() -> str:
-    """Client version string of the Base public RPC node."""
+    """Client family of the Base public RPC node (e.g. Reth, Geth). The full version string is a paid lookup."""
     try:
-        v = await _rpc("web3_clientVersion", [])
-        return _join(["Base RPC client", f"Version: {v}"])
+        v = str(await _rpc("web3_clientVersion", []))
+        family = v.split("/")[0].strip() if "/" in v else v.split("-")[0].strip()
+        return _join(["Base RPC client (preview)", f"Client family: {family or 'unknown'}"])
     except Exception as e:
         return _err("base_client_version", e)
 
 
 @mcp.tool()
 async def base_sync_status() -> str:
-    """Base node sync status plus latest-block age (the practical health signal — the public RPC filters eth_syncing, same note as the paid service)."""
+    """Qualitative Base node health: whether the chain head is fresh, slightly behind, or lagging, from the latest block's age."""
     try:
-        try:
-            syncing = await _rpc("eth_syncing", [])
-        except Exception:
-            # The public RPC rejects/filters eth_syncing (HTTP 401);
-            # block recency is the health signal, as in the paid service.
-            syncing = "unavailable (filtered by the public RPC)"
         block = await _rpc("eth_getBlockByNumber", ["latest", False])
         ts = int(block["timestamp"], 16)
         age = max(0, int(time.time()) - ts)
+        if age <= 10:
+            status = "UP — chain head is fresh"
+        elif age <= 60:
+            status = "slightly behind"
+        else:
+            status = "lagging"
         return _join(
             [
-                "Base sync status",
-                f"eth_syncing: {syncing}",
+                "Base node health (preview)",
+                f"Status: {status}",
                 f"Latest block: {int(block['number'], 16)}",
-                f"Block age: {age}s (Base targets ~2s blocks; a small age means the chain head is fresh)",
             ]
         )
     except Exception as e:
@@ -845,24 +908,31 @@ async def base_sync_status() -> str:
 
 @mcp.tool()
 async def base_fee_history(blocks: int = 10) -> str:
-    """Recent Base fee history (eth_feeHistory): per-block base fee in gwei, gas-used ratio, median priority reward."""
+    """Base fee trend over a recent window (up to 20 blocks in lite): a rounded average base fee, a rounded range, and the direction. The per-block fee series is a paid lookup."""
     try:
-        n = max(1, min(int(blocks), 25))
-        data = await _rpc("eth_feeHistory", [hex(n), "latest", [25, 50, 75]])
-        oldest = int(data["oldestBlock"], 16)
-        fees = data.get("baseFeePerGas") or []
-        ratios = data.get("gasUsedRatio") or []
-        rewards = data.get("reward") or []
-        lines = [f"Base fee history — {n} blocks from #{oldest}"]
-        for i in range(min(n, len(ratios))):
-            fee_gwei = int(fees[i], 16) / 1e9 if i < len(fees) else 0.0
-            med = int(rewards[i][1], 16) / 1e9 if i < len(rewards) and len(rewards[i]) > 1 else 0.0
-            lines.append(
-                f"#{oldest + i}: base fee {fee_gwei:.4f} gwei, gas used {ratios[i] * 100:.1f}%, median priority {med:.4f} gwei"
-            )
-        if fees:
-            lines.append(f"Next block base fee: {int(fees[-1], 16) / 1e9:.4f} gwei")
-        return _join(lines)
+        n = max(5, min(int(blocks), 20))
+        data = await _rpc("eth_feeHistory", [hex(n), "latest", [50]])
+        fees = [int(x, 16) / 1e9 for x in (data.get("baseFeePerGas") or [])[:-1]]
+        if not fees:
+            return "Error: no fee history returned by the Base RPC."
+        avg = sum(fees) / len(fees)
+        half = len(fees) // 2
+        early = sum(fees[:half]) / half
+        late = sum(fees[half:]) / (len(fees) - half)
+        if late > early * 1.1:
+            trend = "rising"
+        elif late < early * 0.9:
+            trend = "falling"
+        else:
+            trend = "flat"
+        return _join(
+            [
+                f"Base fee trend — last {len(fees)} blocks (preview)",
+                f"Average base fee: ≈{_coarse(avg)} gwei",
+                f"Range: ≈{_coarse(min(fees))}–{_coarse(max(fees))} gwei",
+                f"Trend: {trend}",
+            ]
+        )
     except Exception as e:
         return _err("base_fee_history", e)
 
@@ -872,14 +942,13 @@ async def base_fee_history(blocks: int = 10) -> str:
 
 @mcp.tool()
 async def base_gas_price() -> str:
-    """Current Base gas price from the RPC gas-price oracle (eth_gasPrice), in gwei and wei."""
+    """Current Base gas price (eth_gasPrice), rounded to 2 significant figures. The exact oracle value is a paid lookup."""
     try:
         wei = int(await _rpc("eth_gasPrice", []), 16)
         return _join(
             [
-                "Base gas price (eth_gasPrice)",
-                f"{wei / 1e9:.4f} gwei",
-                f"{wei} wei",
+                "Base gas price (eth_gasPrice) — lite preview",
+                f"≈{_coarse(wei / 1e9)} gwei",
             ]
         )
     except Exception as e:
@@ -888,14 +957,13 @@ async def base_gas_price() -> str:
 
 @mcp.tool()
 async def base_priority_fee() -> str:
-    """Suggested priority fee (tip) for Base right now (eth_maxPriorityFeePerGas), in gwei."""
+    """Suggested priority fee (tip) for Base right now (eth_maxPriorityFeePerGas), rounded to 2 significant figures. The exact value is a paid lookup."""
     try:
         wei = int(await _rpc("eth_maxPriorityFeePerGas", []), 16)
         return _join(
             [
-                "Base priority fee suggestion",
-                f"{wei / 1e9:.4f} gwei",
-                f"{wei} wei",
+                "Base priority fee suggestion — lite preview",
+                f"≈{_coarse(wei / 1e9)} gwei",
             ]
         )
     except Exception as e:
@@ -904,18 +972,18 @@ async def base_priority_fee() -> str:
 
 @mcp.tool()
 async def base_transfer_cost() -> str:
-    """Estimated cost of a plain ETH transfer on Base right now: 21,000 gas at the current gas price, in ETH and USD."""
+    """Rounded cost of a plain ETH transfer on Base right now (21,000 gas at the current gas price), in ETH and USD. Exact figures are a paid lookup."""
     try:
         wei = int(await _rpc("eth_gasPrice", []), 16)
         cost_eth = 21000 * wei / 1e18
         lines = [
-            "Cost of a plain ETH transfer on Base (21,000 gas)",
-            f"Gas price: {wei / 1e9:.4f} gwei",
-            f"Cost: {cost_eth:.6f} ETH",
+            "Cost of a plain ETH transfer on Base (21,000 gas) — lite preview",
+            f"Cost: ≈{_coarse(cost_eth, 3)} ETH",
         ]
         price = await _eth_price_usd()
         if price:
-            lines.append(f"Cost in USD: ${cost_eth * price:.4f} (ETH at {_fmt_usd(price)})")
+            usd = cost_eth * price
+            lines.append(f"Cost in USD: {'under $0.01' if usd < 0.01 else '≈' + _coarse_usd(usd)}")
         return _join(lines)
     except Exception as e:
         return _err("base_transfer_cost", e)
@@ -923,7 +991,7 @@ async def base_transfer_cost() -> str:
 
 @mcp.tool()
 async def gas_cost_estimate(gwei: float, gas_units: int) -> str:
-    """Cost of a transaction at a given gas price and gas amount: in ETH and USD at the live ETH price."""
+    """Approximate cost of a transaction at a given gas price and gas amount, in ETH and USD at the live ETH price. Lite figures are rounded — exact conversions are a paid lookup."""
     try:
         g = float(gwei)
         units = int(gas_units)
@@ -931,12 +999,12 @@ async def gas_cost_estimate(gwei: float, gas_units: int) -> str:
             return "Error: gwei must be >= 0 and gas_units > 0."
         cost_eth = g * units / 1e9
         lines = [
-            f"Gas cost at {g} gwei for {units:,} gas",
-            f"Cost: {cost_eth:.6f} ETH",
+            f"Gas cost at {g} gwei for {units:,} gas (approximate)",
+            f"Cost: ≈{_coarse(cost_eth, 3)} ETH",
         ]
         price = await _eth_price_usd()
         if price:
-            lines.append(f"Cost in USD: ${cost_eth * price:.2f} (ETH at {_fmt_usd(price)})")
+            lines.append(f"Cost in USD: ≈{_coarse_usd(cost_eth * price)}")
         return _join(lines)
     except Exception as e:
         return _err("gas_cost_estimate", e)
@@ -944,7 +1012,7 @@ async def gas_cost_estimate(gwei: float, gas_units: int) -> str:
 
 @mcp.tool()
 async def base_tx_costs() -> str:
-    """What common Base operations cost right now at the current base fee: ETH transfer, ERC20 transfer, approve, typical swap — in ETH and USD (typical gas amounts, labelled estimates)."""
+    """Rounded costs of common Base operations right now (ETH transfer, ERC20 transfer, approve, typical swap) at the current base fee, in ETH and USD. Exact figures are a paid lookup; gas amounts are typical estimates."""
     try:
         block = await _rpc("eth_getBlockByNumber", ["latest", False])
         base_fee_gwei = int(block["baseFeePerGas"], 16) / 1e9
@@ -955,11 +1023,11 @@ async def base_tx_costs() -> str:
             ("ERC20 approve", 46000),
             ("DEX swap (typical)", 150000),
         ]
-        lines = [f"Typical Base transaction costs at base fee {base_fee_gwei:.4f} gwei"]
+        lines = [f"Typical Base transaction costs at base fee ≈{_coarse(base_fee_gwei)} gwei (lite preview)"]
         for name, gas in ops:
             cost_eth = base_fee_gwei * gas / 1e9
-            usd = f", ${cost_eth * price:.4f}" if price else ""
-            lines.append(f"{name} (~{gas:,} gas): {cost_eth:.6f} ETH{usd}")
+            usd = f", ≈{_coarse_usd(cost_eth * price)}" if price else ""
+            lines.append(f"{name} (~{gas:,} gas): ≈{_coarse(cost_eth, 3)} ETH{usd}")
         lines.append("Gas amounts are typical estimates; actual usage varies by contract.")
         return _join(lines)
     except Exception as e:
@@ -973,9 +1041,9 @@ async def base_tx_costs() -> str:
 def _pair_line(p) -> str:
     return (
         f"{(p.get('baseToken') or {}).get('symbol')}/{(p.get('quoteToken') or {}).get('symbol')} "
-        f"on {p.get('dexId')}: {_fmt_usd(p.get('priceUsd'))}, "
-        f"liquidity {_fmt_big((p.get('liquidity') or {}).get('usd'))}, "
-        f"24h vol {_fmt_big((p.get('volume') or {}).get('h24'))}"
+        f"on {p.get('dexId')}: ≈{_coarse_usd(p.get('priceUsd'))}, "
+        f"liquidity ≈{_coarse_usd((p.get('liquidity') or {}).get('usd'))}, "
+        f"24h vol ≈{_coarse_usd((p.get('volume') or {}).get('h24'))}"
     )
 
 
@@ -1000,18 +1068,21 @@ async def token_pairs(token: str) -> str:
 
 @mcp.tool()
 async def token_liquidity(token: str) -> str:
-    """Total liquidity across a token's Base DEX pairs, pair count, and the deepest pair. Source: DexScreener."""
+    """Liquidity preview for a token on Base: a total-liquidity band, a pair-count bucket, and which DEX holds the deepest pair. Exact totals are a paid lookup. Source: DexScreener."""
     try:
         pairs = await _pairs_for_query(token)
         if not pairs:
             return f"Error: no Base DEX pairs found for '{token}'."
         total = sum(float((p.get("liquidity") or {}).get("usd") or 0) for p in pairs)
         best = _best_pair(pairs)
+        total_band = _band(total, [10_000, 100_000, 1_000_000, 10_000_000], ["under $10K", "$10K–$100K", "$100K–$1M", "$1M–$10M", "over $10M"])
+        count_bucket = _band(len(pairs), [2, 6, 21], ["1 pair", "2–5 pairs", "6–20 pairs", "over 20 pairs"])
         return _join(
             [
-                f"Liquidity for {token} on Base",
-                f"Total across {len(pairs)} pairs: {_fmt_usd(total)}",
-                f"Deepest pair: {_pair_line(best)}",
+                f"Liquidity for {token} on Base — lite preview",
+                f"Total liquidity: {total_band}",
+                f"Pairs: {count_bucket}",
+                f"Deepest pair is on: {best.get('dexId')}",
             ]
         )
     except Exception as e:
@@ -1020,7 +1091,7 @@ async def token_liquidity(token: str) -> str:
 
 @mcp.tool()
 async def token_volume(token: str) -> str:
-    """Trading volume of a token's best Base pair over 24h / 6h / 1h / 5m. Source: DexScreener."""
+    """Rounded 24h trading volume of a token's best Base pair. The multi-window volume breakdown (6h/1h/5m) is a paid lookup. Source: DexScreener."""
     try:
         best = _best_pair(await _pairs_for_query(token))
         if not best:
@@ -1029,11 +1100,8 @@ async def token_volume(token: str) -> str:
         sym = (best.get("baseToken") or {}).get("symbol")
         return _join(
             [
-                f"Volume for {sym} (best Base pair on {best.get('dexId')})",
-                f"24h: {_fmt_usd(vol.get('h24'))}",
-                f"6h: {_fmt_usd(vol.get('h6'))}",
-                f"1h: {_fmt_usd(vol.get('h1'))}",
-                f"5m: {_fmt_usd(vol.get('m5'))}",
+                f"Volume for {sym} (best Base pair on {best.get('dexId')}) — lite preview",
+                f"24h: ≈{_coarse_usd(vol.get('h24'))}",
             ]
         )
     except Exception as e:
@@ -1042,24 +1110,17 @@ async def token_volume(token: str) -> str:
 
 @mcp.tool()
 async def token_price_change(token: str) -> str:
-    """Price changes of a token's best Base pair over 24h / 6h / 1h / 5m. Source: DexScreener."""
+    """24h price change of a token's best Base pair, rounded to the nearest whole percent. The multi-window changes (6h/1h/5m) are a paid lookup. Source: DexScreener."""
     try:
         best = _best_pair(await _pairs_for_query(token))
         if not best:
             return f"Error: no Base DEX pair found for '{token}'."
         ch = best.get("priceChange") or {}
         sym = (best.get("baseToken") or {}).get("symbol")
-
-        def f(v):
-            return f"{v}%" if v is not None else "n/a"
-
         return _join(
             [
-                f"Price change for {sym} (best Base pair, now {_fmt_usd(best.get('priceUsd'))})",
-                f"24h: {f(ch.get('h24'))}",
-                f"6h: {f(ch.get('h6'))}",
-                f"1h: {f(ch.get('h1'))}",
-                f"5m: {f(ch.get('m5'))}",
+                f"Price change for {sym} (best Base pair) — lite preview",
+                f"24h: {_whole_pct(ch.get('h24'))}",
             ]
         )
     except Exception as e:
@@ -1068,25 +1129,37 @@ async def token_price_change(token: str) -> str:
 
 @mcp.tool()
 async def token_txns(token: str) -> str:
-    """Buy/sell transaction counts for a token's best Base pair over 24h / 6h / 1h / 5m. Source: DexScreener."""
+    """24h trading tilt for a token's best Base pair: whether flow is buy-heavy, sell-heavy or balanced, plus a bucketed trade count. Exact buy/sell counts per window are a paid lookup. Source: DexScreener."""
     try:
         best = _best_pair(await _pairs_for_query(token))
         if not best:
             return f"Error: no Base DEX pair found for '{token}'."
         txns = best.get("txns") or {}
         sym = (best.get("baseToken") or {}).get("symbol")
-        lines = [f"Transactions for {sym} (best Base pair on {best.get('dexId')})"]
-        for window in ("h24", "h6", "h1", "m5"):
-            w = txns.get(window) or {}
-            lines.append(f"{window}: {w.get('buys', 0)} buys / {w.get('sells', 0)} sells")
-        return _join(lines)
+        w = txns.get("h24") or {}
+        buys = int(w.get("buys", 0) or 0)
+        sells = int(w.get("sells", 0) or 0)
+        total = buys + sells
+        if total == 0:
+            tilt = "no trades in the last 24h"
+        else:
+            ratio = buys / total
+            tilt = "buy-heavy" if ratio > 0.6 else "sell-heavy" if ratio < 0.4 else "balanced"
+        bucket = _band(total, [1, 51, 501, 5001], ["no trades in 24h", "1–50 trades", "51–500 trades", "501–5,000 trades", "over 5,000 trades"])
+        return _join(
+            [
+                f"Transactions for {sym} (best Base pair on {best.get('dexId')}) — lite preview",
+                f"24h flow: {tilt}",
+                f"24h trades: {bucket}",
+            ]
+        )
     except Exception as e:
         return _err("token_txns", e)
 
 
 @mcp.tool()
 async def token_fdv(token: str) -> str:
-    """Fully diluted valuation and market cap of a token from its best Base pair. Source: DexScreener."""
+    """Rounded market cap and FDV of a token from its best Base pair (2 significant figures). Exact valuations are a paid lookup. Source: DexScreener."""
     try:
         best = _best_pair(await _pairs_for_query(token))
         if not best:
@@ -1094,10 +1167,9 @@ async def token_fdv(token: str) -> str:
         sym = (best.get("baseToken") or {}).get("symbol")
         return _join(
             [
-                f"Valuation for {sym} on Base",
-                f"Price: {_fmt_usd(best.get('priceUsd'))}",
-                f"Market cap: {_fmt_usd(best.get('marketCap'))}",
-                f"FDV: {_fmt_usd(best.get('fdv'))}",
+                f"Valuation for {sym} on Base — lite preview",
+                f"Market cap: ≈{_coarse_usd(best.get('marketCap'))}",
+                f"FDV: ≈{_coarse_usd(best.get('fdv'))}",
             ]
         )
     except Exception as e:
@@ -1106,7 +1178,7 @@ async def token_fdv(token: str) -> str:
 
 @mcp.tool()
 async def token_balance(token_address: str, wallet: str) -> str:
-    """ERC20 balance of any Base token for any wallet, read on-chain (balanceOf + decimals)."""
+    """Rounded ERC20 balance preview of any Base token for any wallet (2 significant figures, read on-chain). Exact balances are a paid lookup."""
     try:
         if not _is_address(token_address) or not _is_address(wallet):
             return "Error: token_balance needs a token contract address and a wallet address (0x, 42 chars each)."
@@ -1120,9 +1192,8 @@ async def token_balance(token_address: str, wallet: str) -> str:
             pass
         return _join(
             [
-                f"Balance of {token} for {addr} (Base)",
-                f"{raw / (10 ** decimals):,.6f} {symbol or ''}".rstrip(),
-                f"Raw: {raw}",
+                f"Balance of {token} for {addr} (Base) — lite preview",
+                f"≈{_coarse(raw / (10 ** decimals))} {symbol or ''}".rstrip(),
             ]
         )
     except Exception as e:
@@ -1131,7 +1202,7 @@ async def token_balance(token_address: str, wallet: str) -> str:
 
 @mcp.tool()
 async def token_supply(contract_address: str) -> str:
-    """Total supply of a Base ERC20, read on-chain and formatted with its decimals."""
+    """Rounded total supply preview of a Base ERC20 (2 significant figures, read on-chain). The exact supply is a paid lookup."""
     try:
         if not _is_address(contract_address):
             return "Error: token_supply needs a contract address (0x, 42 chars)."
@@ -1145,9 +1216,8 @@ async def token_supply(contract_address: str) -> str:
             pass
         return _join(
             [
-                f"Total supply of {token} (Base)",
-                f"{supply / (10 ** decimals):,.4f} {symbol or ''}".rstrip(),
-                f"Raw: {supply} (decimals: {decimals})",
+                f"Total supply of {token} (Base) — lite preview",
+                f"≈{_coarse(supply / (10 ** decimals))} {symbol or ''}".rstrip(),
             ]
         )
     except Exception as e:
@@ -1155,52 +1225,96 @@ async def token_supply(contract_address: str) -> str:
 
 
 @mcp.tool()
-async def token_decimals(contract_address: str) -> str:
-    """Decimals of a Base ERC20 contract, read on-chain."""
+async def token_links(token: str) -> str:
+    """Official links for a token (symbol or Base contract address): websites and socials as listed on DexScreener. A lite-only extra — not part of the paid catalog."""
     try:
-        if not _is_address(contract_address):
-            return "Error: token_decimals needs a contract address (0x, 42 chars)."
-        token = contract_address.strip()
-        decimals = await _erc20_decimals(token)
-        return _join([f"Decimals of {token} (Base): {decimals}"])
+        pairs = await _pairs_for_query(token)
+        if not pairs:
+            return f"Error: no Base DEX pair found for '{token}'."
+        by_liq = sorted(pairs, key=lambda p: float((p.get("liquidity") or {}).get("usd") or 0), reverse=True)
+        best = next(
+            (p for p in by_liq if (p.get("info") or {}).get("websites") or (p.get("info") or {}).get("socials")),
+            by_liq[0],
+        )
+        info = best.get("info") or {}
+        sym = (best.get("baseToken") or {}).get("symbol")
+        lines = [f"Official links for {sym} (via DexScreener)"]
+        for w in info.get("websites") or []:
+            url = w.get("url") if isinstance(w, dict) else str(w)
+            if url:
+                lines.append(f"Website: {url}")
+        for s in info.get("socials") or []:
+            if isinstance(s, dict):
+                handle = s.get("handle") or s.get("url") or ""
+                lines.append(f"{str(s.get('type', 'social')).capitalize()}: {handle}")
+        if len(lines) == 1:
+            lines.append("No official website or socials listed.")
+        return _join(lines)
     except Exception as e:
-        return _err("token_decimals", e)
+        return _err("token_links", e)
 
 
 @mcp.tool()
 async def token_allowance(token_address: str, owner: str, spender: str) -> str:
-    """ERC20 allowance an owner granted a spender on Base, read on-chain. Flags unlimited (max) approvals."""
+    """Allowance risk category for an owner → spender pair on Base, read on-chain: none, limited, or UNLIMITED. The exact allowance amount is a paid lookup."""
     try:
         if not all(_is_address(a) for a in (token_address, owner, spender)):
             return "Error: token_allowance needs token, owner and spender addresses (0x, 42 chars each)."
         token = token_address.strip()
         raw = await _erc20_uint(token, SEL_ALLOWANCE, _addr32(owner.strip()) + _addr32(spender.strip()))
-        decimals = await _erc20_decimals(token)
-        lines = [
-            f"Allowance on Base: {owner} -> {spender}",
-            f"Token: {token}",
-            f"Allowance: {raw / (10 ** decimals):,.6f}",
-            f"Raw: {raw}",
-        ]
-        if raw >= 2**200:
-            lines.append("This is effectively an unlimited (max) approval.")
-        return _join(lines)
+        if raw == 0:
+            verdict = "No allowance — the spender cannot move this token."
+        elif raw >= 2**200:
+            verdict = "UNLIMITED allowance — the spender can move the owner's full balance of this token."
+        else:
+            verdict = "A limited allowance is set (exact amount is a paid lookup)."
+        return _join(
+            [
+                f"Allowance on Base: {owner} -> {spender}",
+                f"Token: {token}",
+                verdict,
+            ]
+        )
     except Exception as e:
         return _err("token_allowance", e)
 
 
 @mcp.tool()
-async def token_name_symbol(contract_address: str) -> str:
-    """Name and symbol of a Base ERC20 contract, read on-chain."""
+async def function_selector(query: str) -> str:
+    """Explain a common EVM 4-byte function selector (e.g. "0x70a08231") or look one up by function name (e.g. "balanceOf"). A small built-in reference table — educational, not part of the paid catalog."""
+    table = {
+        "70a08231": ("balanceOf(address)", "Read an account's balance of a token."),
+        "a9059cbb": ("transfer(address,uint256)", "Send tokens to an address."),
+        "095ea7b3": ("approve(address,uint256)", "Grant an allowance to a spender."),
+        "23b872dd": ("transferFrom(address,address,uint256)", "Move tokens using an allowance."),
+        "dd62ed3e": ("allowance(address,address)", "Read the allowance an owner granted a spender."),
+        "18160ddd": ("totalSupply()", "Read a token's total supply."),
+        "06fdde03": ("name()", "Read a token contract's name."),
+        "95d89b41": ("symbol()", "Read a token contract's symbol."),
+        "313ce567": ("decimals()", "Read a token contract's decimals."),
+        "6352211e": ("ownerOf(uint256)", "Read the owner of an NFT token id."),
+        "0dfe1681": ("token0()", "First token of a V3 pool or pair."),
+        "d21220a7": ("token1()", "Second token of a V3 pool or pair."),
+        "3850c7bd": ("slot0()", "Current price state of a Uniswap V3 pool."),
+        "1a686502": ("liquidity()", "In-range liquidity of a Uniswap V3 pool."),
+        "ddca3f43": ("fee()", "Fee tier of a Uniswap V3 pool."),
+        "feaf968c": ("latestRoundData()", "Latest answer from a Chainlink aggregator."),
+    }
     try:
-        if not _is_address(contract_address):
-            return "Error: token_name_symbol needs a contract address (0x, 42 chars)."
-        token = contract_address.strip()
-        name = await _erc20_str(token, SEL_NAME)
-        symbol = await _erc20_str(token, SEL_SYMBOL)
-        return _join([f"Token {token} (Base)", f"Name: {name}", f"Symbol: {symbol}"])
+        q = query.strip().lower()
+        if q.startswith("0x"):
+            key = q[2:10]
+            hit = table.get(key)
+            if not hit:
+                return f"Error: selector 0x{key} is not in the lite reference table (it covers the most common ERC20 / NFT / DEX / oracle functions)."
+            sig, desc = hit
+            return _join([f"Selector 0x{key}", f"Function: {sig}", f"What it does: {desc}"])
+        for key, (sig, desc) in table.items():
+            if sig.lower().startswith(q):
+                return _join([f"Function: {sig}", f"Selector: 0x{key}", f"What it does: {desc}"])
+        return f"Error: no function matching '{query}' in the lite reference table."
     except Exception as e:
-        return _err("token_name_symbol", e)
+        return _err("function_selector", e)
 
 
 @mcp.tool()
@@ -1226,16 +1340,24 @@ async def token_search(query: str) -> str:
 
 @mcp.tool()
 async def eth_price() -> str:
-    """Live ETH price in USD (plus 24h change) from the best WETH pair on Base. Source: DexScreener."""
+    """Coarse ETH price preview (2 significant figures) plus 24h direction, from the best WETH pair on Base. The exact price is a paid lookup. Source: DexScreener."""
     try:
         best = _best_pair(await _base_pairs_for_token(WETH))
         if not best:
             return "Error: no WETH pair found on Base."
         change = (best.get("priceChange") or {}).get("h24")
+        if change is None:
+            direction = "24h direction: n/a"
+        elif float(change) > 0.5:
+            direction = "24h direction: up"
+        elif float(change) < -0.5:
+            direction = "24h direction: down"
+        else:
+            direction = "24h direction: roughly flat"
         lines = [
-            "Ether (ETH)",
-            f"Price: {_fmt_usd(best.get('priceUsd'))}",
-            f"24h change: {change}%" if change is not None else "24h change: n/a",
+            "Ether (ETH) — lite preview",
+            f"Price: ≈{_coarse_usd(best.get('priceUsd'))}",
+            direction,
             f"Reference pair: WETH/{(best.get('quoteToken') or {}).get('symbol')} on {best.get('dexId')}",
         ]
         return _join(lines)
@@ -1245,18 +1367,21 @@ async def eth_price() -> str:
 
 @mcp.tool()
 async def token_price_eth(token: str) -> str:
-    """Price of a token denominated in its pair's quote asset (usually ETH) on its best Base pair, plus the USD price. Source: DexScreener."""
+    """Rounded price of a token denominated in its pair's quote asset (usually ETH) on its best Base pair. The exact native price is a paid lookup. Source: DexScreener."""
     try:
         best = _best_pair(await _pairs_for_query(token))
         if not best:
             return f"Error: no Base DEX pair found for '{token}'."
         sym = (best.get("baseToken") or {}).get("symbol")
         quote = (best.get("quoteToken") or {}).get("symbol")
+        try:
+            native = _coarse(float(best.get("priceNative")), 3)
+        except (TypeError, ValueError):
+            native = "n/a"
         return _join(
             [
-                f"{sym} price in {quote} terms (best Base pair on {best.get('dexId')})",
-                f"Price: {best.get('priceNative')} {quote}",
-                f"USD price: {_fmt_usd(best.get('priceUsd'))}",
+                f"{sym} price in {quote} terms (best Base pair on {best.get('dexId')}) — lite preview",
+                f"Price: ≈{native} {quote}",
             ]
         )
     except Exception as e:
@@ -1268,7 +1393,7 @@ async def token_price_eth(token: str) -> str:
 
 @mcp.tool()
 async def dex_search(query: str) -> str:
-    """Search DEX pairs across all chains by token name, symbol or address — top 10 by liquidity. Source: DexScreener."""
+    """Search DEX pairs across all chains by token name, symbol or address — top 10 by liquidity, with rounded prices. Source: DexScreener."""
     try:
         data = await _get_json(f"{DEXSCREENER}/latest/dex/search", params={"q": query})
         pairs = data.get("pairs") if isinstance(data, dict) else None
@@ -1279,12 +1404,12 @@ async def dex_search(query: str) -> str:
             key=lambda p: float((p.get("liquidity") or {}).get("usd") or 0),
             reverse=True,
         )[:10]
-        lines = [f"DEX search for '{query}' ({len(pairs)} shown)"]
+        lines = [f"DEX search for '{query}' ({len(pairs)} shown) — lite preview"]
         for i, p in enumerate(pairs):
             lines.append(
                 f"{i + 1}. [{p.get('chainId')}] {(p.get('baseToken') or {}).get('symbol')}/"
                 f"{(p.get('quoteToken') or {}).get('symbol')} on {p.get('dexId')}: "
-                f"{_fmt_usd(p.get('priceUsd'))}, liquidity {_fmt_big((p.get('liquidity') or {}).get('usd'))}"
+                f"≈{_coarse_usd(p.get('priceUsd'))}, liquidity ≈{_coarse_usd((p.get('liquidity') or {}).get('usd'))}"
             )
         return _join(lines)
     except Exception as e:
@@ -1293,7 +1418,7 @@ async def dex_search(query: str) -> str:
 
 @mcp.tool()
 async def dex_pair_lookup(pair_address: str) -> str:
-    """Full summary of one Base DEX pair by its pair contract address: tokens, price, liquidity, volume, market cap. Source: DexScreener."""
+    """Lite preview of one Base DEX pair by its pair contract address: tokens, rounded price, liquidity band. Exact pair data is a paid lookup. Source: DexScreener."""
     try:
         if not _is_address(pair_address):
             return "Error: dex_pair_lookup needs a pair address (0x, 42 chars)."
@@ -1302,17 +1427,16 @@ async def dex_pair_lookup(pair_address: str) -> str:
         if not pairs:
             return f"Error: pair {pair_address} not found on Base."
         p = pairs[0]
+        liq = float((p.get("liquidity") or {}).get("usd") or 0)
+        depth = _band(liq, [10_000, 250_000], ["thin (under $10K)", "moderate ($10K–$250K)", "deep (over $250K)"])
         return _join(
             [
-                f"Pair {(p.get('baseToken') or {}).get('symbol')}/{(p.get('quoteToken') or {}).get('symbol')} on {p.get('dexId')} (Base)",
+                f"Pair {(p.get('baseToken') or {}).get('symbol')}/{(p.get('quoteToken') or {}).get('symbol')} on {p.get('dexId')} (Base) — lite preview",
                 f"Pair address: {p.get('pairAddress')}",
                 f"Base token: {(p.get('baseToken') or {}).get('address')}",
                 f"Quote token: {(p.get('quoteToken') or {}).get('address')}",
-                f"Price: {_fmt_usd(p.get('priceUsd'))}",
-                f"Liquidity: {_fmt_usd((p.get('liquidity') or {}).get('usd'))}",
-                f"24h volume: {_fmt_usd((p.get('volume') or {}).get('h24'))}",
-                f"Market cap: {_fmt_usd(p.get('marketCap'))}",
-                f"URL: {p.get('url')}",
+                f"Price: ≈{_coarse_usd(p.get('priceUsd'))}",
+                f"Liquidity: {depth}",
             ]
         )
     except Exception as e:
@@ -1376,19 +1500,20 @@ async def dex_new_profiles() -> str:
 
 @mcp.tool()
 async def dex_pairs_count(token: str) -> str:
-    """How many Base DEX pairs a token (contract address) has, and on which DEXes. Source: DexScreener."""
+    """Pair-count bucket for a Base token (contract address), plus how many distinct DEXes host its pairs. The exact pair list is a paid lookup. Source: DexScreener."""
     try:
         if not _is_address(token):
             return "Error: dex_pairs_count needs a token contract address (0x, 42 chars)."
         pairs = await _base_pairs_for_token(token.strip())
         if not pairs:
             return f"Error: no Base pairs found for {token}."
-        dexes = sorted({p.get("dexId") for p in pairs if p.get("dexId")})
+        dexes = {p.get("dexId") for p in pairs if p.get("dexId")}
+        bucket = _band(len(pairs), [2, 6, 21], ["1 pair", "2–5 pairs", "6–20 pairs", "over 20 pairs"])
         return _join(
             [
-                f"Base pairs for {token}",
-                f"Pair count (token as base): {len(pairs)}",
-                f"DEXes: {', '.join(dexes)}",
+                f"Base pairs for {token} — lite preview",
+                f"Pair count (token as base): {bucket}",
+                f"Distinct DEXes: {len(dexes)}",
             ]
         )
     except Exception as e:
@@ -1397,7 +1522,7 @@ async def dex_pairs_count(token: str) -> str:
 
 @mcp.tool()
 async def uniswap_v3_pool(pool_address: str) -> str:
-    """Live state of a Uniswap V3 pool on Base, read on-chain: both tokens, fee tier, current tick, in-pool liquidity, and the implied price both ways."""
+    """Lite preview of a Uniswap V3 pool on Base, read on-chain: both tokens, fee tier, a rounded implied price (one direction), and a rounded in-pool liquidity figure. Exact pool state (tick, full precision) is a paid lookup."""
     try:
         if not _is_address(pool_address):
             return "Error: uniswap_v3_pool needs a pool address (0x, 42 chars)."
@@ -1410,7 +1535,6 @@ async def uniswap_v3_pool(pool_address: str) -> str:
         fee = _decode_uint(await _eth_call(pool, "0x" + SEL_FEE))
         slot0 = await _eth_call(pool, "0x" + SEL_SLOT0)
         sqrt_price = _word(slot0, 0)
-        tick = _word_signed(slot0, 1)
         liquidity = _decode_uint(await _eth_call(pool, "0x" + SEL_LIQUIDITY))
         d0 = await _erc20_decimals(t0)
         d1 = await _erc20_decimals(t1)
@@ -1425,17 +1549,14 @@ async def uniswap_v3_pool(pool_address: str) -> str:
             pass
         ratio = (sqrt_price / 2**96) ** 2
         price0_in_1 = ratio * 10 ** (d0 - d1)
-        price1_in_0 = (1.0 / price0_in_1) if price0_in_1 else 0.0
         return _join(
             [
-                f"Uniswap V3 pool {pool} (Base)",
+                f"Uniswap V3 pool {pool} (Base) — lite preview",
                 f"Token0: {s0} ({t0})",
                 f"Token1: {s1} ({t1})",
                 f"Fee tier: {fee / 10000}%",
-                f"Current tick: {tick}",
-                f"In-pool liquidity: {liquidity:,}",
-                f"Price: 1 {s0} = {price0_in_1:,.6f} {s1}",
-                f"Price: 1 {s1} = {price1_in_0:,.6f} {s0}",
+                f"Price: 1 {s0} ≈ {_coarse(price0_in_1, 3)} {s1}",
+                f"In-pool liquidity (raw units): ≈{_coarse(liquidity)}",
             ]
         )
     except Exception as e:
@@ -1463,38 +1584,41 @@ async def _yields_pools():
 
 def _pool_line(p) -> str:
     apy = p.get("apy")
-    apy_s = f"{float(apy):.2f}%" if isinstance(apy, (int, float)) else "n/a"
+    apy_s = f"≈{round(float(apy))}%" if isinstance(apy, (int, float)) else "n/a"
     return (
         f"{p.get('project')} {p.get('symbol')} ({p.get('chain')}): "
-        f"APY {apy_s}, TVL {_fmt_big(p.get('tvlUsd'))}"
+        f"APY {apy_s}, TVL ≈{_coarse_usd(p.get('tvlUsd'))}"
     )
 
 
 @mcp.tool()
 async def base_tvl() -> str:
-    """Total value locked (TVL) on Base right now. Source: DeFiLlama."""
+    """Rounded total value locked (TVL) on Base right now (2 significant figures). The exact figure is a paid lookup. Source: DeFiLlama."""
     try:
         chains = await _llama_chains()
         base = next((c for c in chains if str(c.get("name", "")).lower() == "base"), None)
         if not base:
             return "Error: Base not found in DeFiLlama chain list."
-        return _join(["Base TVL (DeFiLlama)", f"TVL: {_fmt_big(base.get('tvl'))}"])
+        return _join(["Base TVL (DeFiLlama) — lite preview", f"TVL: ≈{_coarse_usd(base.get('tvl'))}"])
     except Exception as e:
         return _err("base_tvl", e)
 
 
 @mcp.tool()
 async def chain_tvl(chain: str) -> str:
-    """Total value locked (TVL) for any chain by name (e.g. "Ethereum", "Solana", "Arbitrum"). Source: DeFiLlama."""
+    """TVL preview for any chain by name (e.g. "Ethereum", "Solana", "Arbitrum"): its TVL rank and a rounded TVL. Exact figures are a paid lookup. Source: DeFiLlama."""
     try:
         chains = await _llama_chains()
         match = next((c for c in chains if str(c.get("name", "")).lower() == chain.strip().lower()), None)
         if not match:
             return f"Error: chain '{chain}' not found on DeFiLlama."
+        ordered = sorted(chains, key=lambda c: float(c.get("tvl") or 0), reverse=True)
+        rank = ordered.index(match) + 1
         return _join(
             [
-                f"{match.get('name')} TVL (DeFiLlama)",
-                f"TVL: {_fmt_big(match.get('tvl'))}",
+                f"{match.get('name')} TVL (DeFiLlama) — lite preview",
+                f"TVL rank: #{rank} of {len(chains)}",
+                f"TVL: ≈{_coarse_usd(match.get('tvl'))}",
                 f"Native token: {match.get('tokenSymbol')}",
             ]
         )
@@ -1504,12 +1628,12 @@ async def chain_tvl(chain: str) -> str:
 
 @mcp.tool()
 async def top_chains_tvl() -> str:
-    """Top 15 chains by total value locked. Source: DeFiLlama."""
+    """Top 15 chains by total value locked, with rounded TVL figures. Source: DeFiLlama."""
     try:
         chains = await _llama_chains()
         top = sorted(chains, key=lambda c: float(c.get("tvl") or 0), reverse=True)[:15]
-        lines = ["Top chains by TVL (DeFiLlama)"]
-        lines += [f"{i + 1}. {c.get('name')}: {_fmt_big(c.get('tvl'))}" for i, c in enumerate(top)]
+        lines = ["Top chains by TVL (DeFiLlama) — lite preview"]
+        lines += [f"{i + 1}. {c.get('name')}: ≈{_coarse_usd(c.get('tvl'))}" for i, c in enumerate(top)]
         return _join(lines)
     except Exception as e:
         return _err("top_chains_tvl", e)
@@ -1517,20 +1641,20 @@ async def top_chains_tvl() -> str:
 
 @mcp.tool()
 async def protocol_tvl(protocol: str) -> str:
-    """Total value locked for one DeFi protocol by its DeFiLlama slug (e.g. "aave-v3", "uniswap-v3", "aerodrome")."""
+    """Rounded TVL for one DeFi protocol by its DeFiLlama slug (e.g. "aave-v3", "uniswap-v3", "aerodrome"). The exact figure is a paid lookup."""
     try:
         slug = protocol.strip().lower().replace(" ", "-")
         data = await _get_json(f"{LLAMA}/tvl/{slug}")
         if not isinstance(data, (int, float)):
             return f"Error: protocol '{protocol}' not found on DeFiLlama."
-        return _join([f"{protocol} TVL (DeFiLlama)", f"TVL: {_fmt_big(data)}"])
+        return _join([f"{protocol} TVL (DeFiLlama) — lite preview", f"TVL: ≈{_coarse_usd(data)}"])
     except Exception as e:
         return _err("protocol_tvl", e)
 
 
 @mcp.tool()
 async def protocol_info(protocol: str) -> str:
-    """Summary of one DeFi protocol (by slug or name): category, current TVL, 1d/7d change, chains, description. Source: DeFiLlama."""
+    """Lite summary of one DeFi protocol (by slug or name): category, rounded TVL, whole-percent 1d/7d changes, how many chains it runs on, and a short description. Source: DeFiLlama."""
     try:
         protos = await _llama_protocols()
         key = protocol.strip().lower()
@@ -1560,12 +1684,13 @@ async def protocol_info(protocol: str) -> str:
         desc = (match.get("description") or "").strip()
         if len(desc) > 240:
             desc = desc[:237] + "..."
+        chains = match.get("chains") or []
         lines = [
-            f"{match.get('name')} ({match.get('symbol')}) — DeFiLlama summary",
+            f"{match.get('name')} ({match.get('symbol')}) — DeFiLlama summary (lite)",
             f"Category: {match.get('category')}",
-            f"TVL: {_fmt_big(match.get('tvl'))}",
-            f"Change 1d: {_fmt_pct(match.get('change_1d'))} | 7d: {_fmt_pct(match.get('change_7d'))}",
-            f"Chains: {', '.join(match.get('chains') or [])}",
+            f"TVL: ≈{_coarse_usd(match.get('tvl'))}",
+            f"Change 1d: {_whole_pct(match.get('change_1d'))} | 7d: {_whole_pct(match.get('change_7d'))}",
+            f"Chains: {len(chains)}" + (f" (incl. {', '.join(chains[:5])})" if chains else ""),
         ]
         if desc:
             lines.append(f"About: {desc}")
@@ -1578,13 +1703,13 @@ async def protocol_info(protocol: str) -> str:
 
 @mcp.tool()
 async def top_protocols() -> str:
-    """Top 15 DeFi protocols by TVL across all chains. Source: DeFiLlama."""
+    """Top 15 DeFi protocols by TVL across all chains, with rounded TVL figures. Source: DeFiLlama."""
     try:
         protos = await _llama_protocols()
         top = sorted(protos, key=lambda p: float(p.get("tvl") or 0), reverse=True)[:15]
-        lines = ["Top protocols by TVL (DeFiLlama)"]
+        lines = ["Top protocols by TVL (DeFiLlama) — lite preview"]
         lines += [
-            f"{i + 1}. {p.get('name')} ({p.get('symbol')}): {_fmt_big(p.get('tvl'))}"
+            f"{i + 1}. {p.get('name')} ({p.get('symbol')}): ≈{_coarse_usd(p.get('tvl'))}"
             for i, p in enumerate(top)
         ]
         return _join(lines)
@@ -1594,16 +1719,16 @@ async def top_protocols() -> str:
 
 @mcp.tool()
 async def top_base_protocols() -> str:
-    """Top 15 DeFi protocols deployed on Base, by TVL. Source: DeFiLlama."""
+    """Top 15 DeFi protocols deployed on Base, by TVL, with rounded figures. Source: DeFiLlama."""
     try:
         protos = await _llama_protocols()
         on_base = [p for p in protos if "Base" in (p.get("chains") or [])]
         top = sorted(on_base, key=lambda p: float(p.get("tvl") or 0), reverse=True)[:15]
-        lines = ["Top protocols on Base by TVL (DeFiLlama)"]
+        lines = ["Top protocols on Base by TVL (DeFiLlama) — lite preview"]
         for i, p in enumerate(top):
             base_part = (p.get("chainTvls") or {}).get("Base")
-            extra = f" (Base: {_fmt_big(base_part)})" if base_part else ""
-            lines.append(f"{i + 1}. {p.get('name')} ({p.get('symbol')}): {_fmt_big(p.get('tvl'))}{extra}")
+            extra = f" (Base: ≈{_coarse_usd(base_part)})" if base_part else ""
+            lines.append(f"{i + 1}. {p.get('name')} ({p.get('symbol')}): ≈{_coarse_usd(p.get('tvl'))}{extra}")
         return _join(lines)
     except Exception as e:
         return _err("top_base_protocols", e)
@@ -1611,18 +1736,18 @@ async def top_base_protocols() -> str:
 
 @mcp.tool()
 async def dex_volume_global() -> str:
-    """Global DEX trading volume (24h and 7d totals) plus the top 5 DEXes by 24h volume. Source: DeFiLlama."""
+    """Global DEX trading volume preview: rounded 24h/7d totals and the top 3 DEXes by name. Exact volumes are a paid lookup. Source: DeFiLlama."""
     try:
         data = await _get_cached(f"{LLAMA}/overview/dexs", ttl=60.0)
         protos = (data or {}).get("protocols") or []
-        top = sorted(protos, key=lambda x: float(x.get("total24h") or 0), reverse=True)[:5]
+        top = sorted(protos, key=lambda x: float(x.get("total24h") or 0), reverse=True)[:3]
         lines = [
-            "Global DEX volume (DeFiLlama)",
-            f"24h: {_fmt_big(data.get('total24h'))}",
-            f"7d: {_fmt_big(data.get('total7d'))}",
+            "Global DEX volume (DeFiLlama) — lite preview",
+            f"24h: ≈{_coarse_usd(data.get('total24h'))}",
+            f"7d: ≈{_coarse_usd(data.get('total7d'))}",
             "Top DEXes by 24h volume:",
         ]
-        lines += [f"{i + 1}. {p.get('name')}: {_fmt_big(p.get('total24h'))}" for i, p in enumerate(top)]
+        lines += [f"{i + 1}. {p.get('name')}" for i, p in enumerate(top)]
         return _join(lines)
     except Exception as e:
         return _err("dex_volume_global", e)
@@ -1630,18 +1755,18 @@ async def dex_volume_global() -> str:
 
 @mcp.tool()
 async def dex_volume_base() -> str:
-    """DEX trading volume on Base (24h and 7d totals) plus the top 5 Base DEXes by 24h volume. Source: DeFiLlama."""
+    """Base DEX trading volume preview: rounded 24h/7d totals and the top 3 Base DEXes by name. Exact volumes are a paid lookup. Source: DeFiLlama."""
     try:
         data = await _get_cached(f"{LLAMA}/overview/dexs/Base", ttl=60.0)
         protos = (data or {}).get("protocols") or []
-        top = sorted(protos, key=lambda x: float(x.get("total24h") or 0), reverse=True)[:5]
+        top = sorted(protos, key=lambda x: float(x.get("total24h") or 0), reverse=True)[:3]
         lines = [
-            "Base DEX volume (DeFiLlama)",
-            f"24h: {_fmt_big(data.get('total24h'))}",
-            f"7d: {_fmt_big(data.get('total7d'))}",
+            "Base DEX volume (DeFiLlama) — lite preview",
+            f"24h: ≈{_coarse_usd(data.get('total24h'))}",
+            f"7d: ≈{_coarse_usd(data.get('total7d'))}",
             "Top Base DEXes by 24h volume:",
         ]
-        lines += [f"{i + 1}. {p.get('name')}: {_fmt_big(p.get('total24h'))}" for i, p in enumerate(top)]
+        lines += [f"{i + 1}. {p.get('name')}" for i, p in enumerate(top)]
         return _join(lines)
     except Exception as e:
         return _err("dex_volume_base", e)
@@ -1649,17 +1774,17 @@ async def dex_volume_base() -> str:
 
 @mcp.tool()
 async def dex_fees_top() -> str:
-    """Top 10 protocols by fees generated in the last 24h, with the all-protocol 24h total. Source: DeFiLlama."""
+    """Top 3 protocols by fees generated in the last 24h (rounded), with the rounded all-protocol 24h total. The full fee table is a paid lookup. Source: DeFiLlama."""
     try:
         data = await _get_cached(f"{LLAMA}/overview/fees", ttl=60.0)
         protos = (data or {}).get("protocols") or []
-        top = sorted(protos, key=lambda x: float(x.get("total24h") or 0), reverse=True)[:10]
+        top = sorted(protos, key=lambda x: float(x.get("total24h") or 0), reverse=True)[:3]
         lines = [
-            "Top protocols by 24h fees (DeFiLlama)",
-            f"All protocols, 24h fees: {_fmt_big(data.get('total24h'))}",
+            "Top protocols by 24h fees (DeFiLlama) — lite preview",
+            f"All protocols, 24h fees: ≈{_coarse_usd(data.get('total24h'))}",
         ]
         lines += [
-            f"{i + 1}. {p.get('name')}: {_fmt_big(p.get('total24h'))} (7d: {_fmt_big(p.get('total7d'))})"
+            f"{i + 1}. {p.get('name')}: ≈{_coarse_usd(p.get('total24h'))}"
             for i, p in enumerate(top)
         ]
         return _join(lines)
@@ -1669,13 +1794,13 @@ async def dex_fees_top() -> str:
 
 @mcp.tool()
 async def yields_top() -> str:
-    """Top 10 yield pools by APY across all chains. Source: DeFiLlama Yields."""
+    """Top 3 yield pools by APY across all chains (whole-percent APYs, rounded TVLs). The full top-10 table with exact APYs is a paid lookup. Source: DeFiLlama Yields."""
     try:
         pools = await _yields_pools()
         if not pools:
             return "Error: no yield pools returned by DeFiLlama."
-        top = sorted(pools, key=lambda p: float(p.get("apy") or 0), reverse=True)[:10]
-        lines = ["Top yield pools by APY (DeFiLlama Yields)"]
+        top = sorted(pools, key=lambda p: float(p.get("apy") or 0), reverse=True)[:3]
+        lines = ["Top yield pools by APY (DeFiLlama Yields) — lite preview"]
         lines += [f"{i + 1}. {_pool_line(p)}" for i, p in enumerate(top)]
         return _join(lines)
     except Exception as e:
@@ -1684,14 +1809,14 @@ async def yields_top() -> str:
 
 @mcp.tool()
 async def yields_base() -> str:
-    """Top 10 yield pools on Base by APY. Source: DeFiLlama Yields."""
+    """Top 3 yield pools on Base by APY (whole-percent APYs, rounded TVLs). The full top-10 table with exact APYs is a paid lookup. Source: DeFiLlama Yields."""
     try:
         pools = await _yields_pools()
         on_base = [p for p in pools if p.get("chain") == "Base"]
         if not on_base:
             return "Error: no Base yield pools returned by DeFiLlama."
-        top = sorted(on_base, key=lambda p: float(p.get("apy") or 0), reverse=True)[:10]
-        lines = ["Top Base yield pools by APY (DeFiLlama Yields)"]
+        top = sorted(on_base, key=lambda p: float(p.get("apy") or 0), reverse=True)[:3]
+        lines = ["Top Base yield pools by APY (DeFiLlama Yields) — lite preview"]
         lines += [f"{i + 1}. {_pool_line(p)}" for i, p in enumerate(top)]
         return _join(lines)
     except Exception as e:
@@ -1700,14 +1825,14 @@ async def yields_base() -> str:
 
 @mcp.tool()
 async def yields_stablecoins() -> str:
-    """Top 10 stablecoin yield pools by APY across chains. Source: DeFiLlama Yields."""
+    """Top 3 stablecoin yield pools by APY across chains (whole-percent APYs, rounded TVLs). The full top-10 table with exact APYs is a paid lookup. Source: DeFiLlama Yields."""
     try:
         pools = await _yields_pools()
         stables = [p for p in pools if p.get("stablecoin") is True]
         if not stables:
             return "Error: no stablecoin yield pools returned by DeFiLlama."
-        top = sorted(stables, key=lambda p: float(p.get("apy") or 0), reverse=True)[:10]
-        lines = ["Top stablecoin yield pools by APY (DeFiLlama Yields)"]
+        top = sorted(stables, key=lambda p: float(p.get("apy") or 0), reverse=True)[:3]
+        lines = ["Top stablecoin yield pools by APY (DeFiLlama Yields) — lite preview"]
         lines += [f"{i + 1}. {_pool_line(p)}" for i, p in enumerate(top)]
         return _join(lines)
     except Exception as e:
@@ -1716,15 +1841,15 @@ async def yields_stablecoins() -> str:
 
 @mcp.tool()
 async def yields_token(symbol: str) -> str:
-    """Top 10 yield pools involving a token symbol (e.g. "USDC", "ETH"), by APY. Source: DeFiLlama Yields."""
+    """Top 3 yield pools involving a token symbol (e.g. "USDC", "ETH"), by APY (whole-percent APYs, rounded TVLs). The full top-10 table with exact APYs is a paid lookup. Source: DeFiLlama Yields."""
     try:
         pools = await _yields_pools()
         key = symbol.strip().upper()
         mine = [p for p in pools if key in str(p.get("symbol", "")).upper()]
         if not mine:
             return f"Error: no yield pools found for symbol '{symbol}'."
-        top = sorted(mine, key=lambda p: float(p.get("apy") or 0), reverse=True)[:10]
-        lines = [f"Top yield pools for {key} by APY (DeFiLlama Yields)"]
+        top = sorted(mine, key=lambda p: float(p.get("apy") or 0), reverse=True)[:3]
+        lines = [f"Top yield pools for {key} by APY (DeFiLlama Yields) — lite preview"]
         lines += [f"{i + 1}. {_pool_line(p)}" for i, p in enumerate(top)]
         return _join(lines)
     except Exception as e:
@@ -1748,17 +1873,15 @@ def _circ(asset) -> float:
 
 @mcp.tool()
 async def top_stablecoins() -> str:
-    """Top 10 stablecoins by circulating supply, with peg type and current price. Source: DeFiLlama Stablecoins."""
+    """Top 3 stablecoins by circulating supply (rounded), with peg type. The full top-10 table with prices is a paid lookup. Source: DeFiLlama Stablecoins."""
     try:
         assets = await _stablecoin_assets()
-        top = sorted(assets, key=_circ, reverse=True)[:10]
-        lines = ["Top stablecoins by circulating supply (DeFiLlama)"]
+        top = sorted(assets, key=_circ, reverse=True)[:3]
+        lines = ["Top stablecoins by circulating supply (DeFiLlama) — lite preview"]
         for i, a in enumerate(top):
-            price = a.get("price")
-            price_s = f", price ${float(price):.4f}" if isinstance(price, (int, float)) else ""
             lines.append(
-                f"{i + 1}. {a.get('name')} ({a.get('symbol')}): {_fmt_big(_circ(a))} "
-                f"[{a.get('pegType')}/{a.get('pegMechanism')}]{price_s}"
+                f"{i + 1}. {a.get('name')} ({a.get('symbol')}): ≈{_coarse_usd(_circ(a))} "
+                f"[{a.get('pegType')}/{a.get('pegMechanism')}]"
             )
         return _join(lines)
     except Exception as e:
@@ -1767,7 +1890,7 @@ async def top_stablecoins() -> str:
 
 @mcp.tool()
 async def stablecoin_info(asset: str) -> str:
-    """One stablecoin by symbol, name or CoinGecko id (e.g. "USDC"): total circulating supply, peg type/mechanism, price, and its top 5 chains. Source: DeFiLlama Stablecoins."""
+    """Lite summary of one stablecoin by symbol, name or CoinGecko id (e.g. "USDC"): rounded circulating supply, peg type/mechanism, and its top 3 chains (rounded). Exact supply and price are paid lookups. Source: DeFiLlama Stablecoins."""
     try:
         assets = await _stablecoin_assets()
         key = asset.strip().lower()
@@ -1788,12 +1911,10 @@ async def stablecoin_info(asset: str) -> str:
         if not match:
             return f"Error: stablecoin '{asset}' not found on DeFiLlama."
         lines = [
-            f"{match.get('name')} ({match.get('symbol')}) — stablecoin summary",
-            f"Circulating: {_fmt_big(_circ(match))}",
+            f"{match.get('name')} ({match.get('symbol')}) — stablecoin summary (lite)",
+            f"Circulating: ≈{_coarse_usd(_circ(match))}",
             f"Peg: {match.get('pegType')} / {match.get('pegMechanism')}",
         ]
-        if isinstance(match.get("price"), (int, float)):
-            lines.append(f"Price: ${float(match['price']):.4f}")
         cc = match.get("chainCirculating") or {}
         per_chain = []
         for ch, v in cc.items():
@@ -1802,7 +1923,7 @@ async def stablecoin_info(asset: str) -> str:
                 per_chain.append((ch, amt))
         per_chain.sort(key=lambda x: x[1], reverse=True)
         if per_chain:
-            lines.append("Top chains: " + ", ".join(f"{ch} {_fmt_big(amt)}" for ch, amt in per_chain[:5]))
+            lines.append("Top chains: " + ", ".join(f"{ch} ≈{_coarse_usd(amt)}" for ch, amt in per_chain[:3]))
         return _join(lines)
     except Exception as e:
         return _err("stablecoin_info", e)
@@ -1810,14 +1931,14 @@ async def stablecoin_info(asset: str) -> str:
 
 @mcp.tool()
 async def stablecoin_total() -> str:
-    """Total circulating supply of all tracked stablecoins, and how many there are. Source: DeFiLlama Stablecoins."""
+    """Rounded total circulating supply of all tracked stablecoins, and how many there are. The exact total is a paid lookup. Source: DeFiLlama Stablecoins."""
     try:
         assets = await _stablecoin_assets()
         total = sum(_circ(a) for a in assets)
         return _join(
             [
-                "All stablecoins (DeFiLlama)",
-                f"Total circulating: {_fmt_big(total)}",
+                "All stablecoins (DeFiLlama) — lite preview",
+                f"Total circulating: ≈{_coarse_usd(total)}",
                 f"Tracked stablecoins: {len(assets)}",
             ]
         )
@@ -1827,7 +1948,7 @@ async def stablecoin_total() -> str:
 
 @mcp.tool()
 async def stablecoin_chains() -> str:
-    """Top 10 chains by stablecoin supply hosted on them. Source: DeFiLlama Stablecoins."""
+    """Top 10 chains by stablecoin supply hosted on them, with rounded figures. Source: DeFiLlama Stablecoins."""
     try:
         rows = await _get_cached(f"{STABLECOINS_API}/stablecoinchains", ttl=60.0)
 
@@ -1841,8 +1962,8 @@ async def stablecoin_chains() -> str:
             return 0.0
 
         top = sorted(rows if isinstance(rows, list) else [], key=amt, reverse=True)[:10]
-        lines = ["Top chains by stablecoin supply (DeFiLlama)"]
-        lines += [f"{i + 1}. {r.get('name')}: {_fmt_big(amt(r))}" for i, r in enumerate(top)]
+        lines = ["Top chains by stablecoin supply (DeFiLlama) — lite preview"]
+        lines += [f"{i + 1}. {r.get('name')}: ≈{_coarse_usd(amt(r))}" for i, r in enumerate(top)]
         return _join(lines)
     except Exception as e:
         return _err("stablecoin_chains", e)
@@ -1850,7 +1971,7 @@ async def stablecoin_chains() -> str:
 
 @mcp.tool()
 async def stablecoins_base() -> str:
-    """Top 10 stablecoins by circulating supply on Base. Source: DeFiLlama Stablecoins."""
+    """Top 10 stablecoins by circulating supply on Base, with rounded figures. Source: DeFiLlama Stablecoins."""
     try:
         assets = await _stablecoin_assets()
         out = []
@@ -1860,9 +1981,9 @@ async def stablecoins_base() -> str:
             if isinstance(amt, (int, float)) and amt > 0:
                 out.append((a, amt))
         out.sort(key=lambda x: x[1], reverse=True)
-        lines = ["Top stablecoins on Base by supply (DeFiLlama)"]
+        lines = ["Top stablecoins on Base by supply (DeFiLlama) — lite preview"]
         lines += [
-            f"{i + 1}. {a.get('name')} ({a.get('symbol')}): {_fmt_big(amt)}"
+            f"{i + 1}. {a.get('name')} ({a.get('symbol')}): ≈{_coarse_usd(amt)}"
             for i, (a, amt) in enumerate(out[:10])
         ]
         return _join(lines)
@@ -1872,7 +1993,7 @@ async def stablecoins_base() -> str:
 
 @mcp.tool()
 async def stablecoin_pegs() -> str:
-    """Stablecoins trading furthest from their peg right now (largest price deviations; the tail is mostly illiquid or dead coins). Source: DeFiLlama Stablecoins."""
+    """The 5 stablecoins trading furthest from their peg right now (rounded prices and deviations; the tail is mostly illiquid or dead coins). Source: DeFiLlama Stablecoins."""
     try:
         data = await _get_cached(f"{STABLECOINS_API}/stablecoinprices", ttl=60.0)
         prices = {}
@@ -1885,10 +2006,10 @@ async def stablecoin_pegs() -> str:
             if isinstance(v, (int, float)) and v > 0:
                 out.append((k, v, (v - 1) * 100))
         out.sort(key=lambda x: abs(x[2]), reverse=True)
-        lines = ["Largest stablecoin peg deviations (DeFiLlama)"]
+        lines = ["Largest stablecoin peg deviations (DeFiLlama) — lite preview"]
         lines += [
-            f"{i + 1}. {k}: ${v:.4f} ({dev:+.2f}% from $1.00)"
-            for i, (k, v, dev) in enumerate(out[:10])
+            f"{i + 1}. {k}: ${v:.3f} ({dev:+.1f}% from $1.00)"
+            for i, (k, v, dev) in enumerate(out[:5])
         ]
         return _join(lines)
     except Exception as e:
@@ -1901,18 +2022,19 @@ async def stablecoin_pegs() -> str:
 
 @mcp.tool()
 async def fear_greed() -> str:
-    """Current Crypto Fear & Greed Index value and classification. Source: Alternative.me."""
+    """Current Crypto Fear & Greed classification only (e.g. "Greed") — the numeric index value is a paid lookup. Source: Alternative.me."""
     try:
         data = await _get_cached(f"{FNG}/fng/", ttl=60.0, params={"limit": 1})
         items = (data or {}).get("data") or []
         if not items:
             return "Error: no Fear & Greed data returned."
         it = items[0]
+        day = datetime.fromtimestamp(int(it.get("timestamp", 0)), timezone.utc).strftime("%Y-%m-%d")
         return _join(
             [
-                "Crypto Fear & Greed Index",
-                f"Value: {it.get('value')} — {it.get('value_classification')}",
-                f"Updated: {_fmt_ts(it.get('timestamp'))}",
+                "Crypto Fear & Greed Index — lite preview",
+                f"Sentiment: {it.get('value_classification')}",
+                f"Date: {day}",
             ]
         )
     except Exception as e:
@@ -1921,38 +2043,61 @@ async def fear_greed() -> str:
 
 @mcp.tool()
 async def fear_greed_week() -> str:
-    """The last 7 days of the Crypto Fear & Greed Index, day by day. Source: Alternative.me."""
+    """Fear & Greed over the last 7 days as a summary: the average (rounded to the nearest 5), the week's trend, and the latest classification. The day-by-day values are a paid lookup. Source: Alternative.me."""
     try:
         data = await _get_cached(f"{FNG}/fng/", ttl=60.0, params={"limit": 7})
         items = (data or {}).get("data") or []
         if not items:
             return "Error: no Fear & Greed data returned."
-        lines = ["Fear & Greed Index — last 7 days"]
+        values = []
         for it in items:
-            day = datetime.fromtimestamp(int(it.get("timestamp", 0)), timezone.utc).strftime("%Y-%m-%d")
-            lines.append(f"{day}: {it.get('value')} ({it.get('value_classification')})")
-        return _join(lines)
+            try:
+                values.append(int(it.get("value")))
+            except (TypeError, ValueError):
+                pass
+        if not values:
+            return "Error: no Fear & Greed values returned."
+        avg = sum(values) / len(values)
+        avg5 = round(avg / 5) * 5
+        if avg5 <= 24:
+            band = "Extreme Fear"
+        elif avg5 <= 44:
+            band = "Fear"
+        elif avg5 <= 55:
+            band = "Neutral"
+        elif avg5 <= 74:
+            band = "Greed"
+        else:
+            band = "Extreme Greed"
+        diff = values[0] - values[-1]
+        trend = "sentiment improving" if diff > 3 else "sentiment worsening" if diff < -3 else "sentiment flat"
+        return _join(
+            [
+                "Fear & Greed Index — last 7 days (lite summary)",
+                f"Average: ≈{avg5} ({band})",
+                f"Trend over the week: {trend}",
+                f"Latest: {items[0].get('value_classification')}",
+            ]
+        )
     except Exception as e:
         return _err("fear_greed_week", e)
 
 
 @mcp.tool()
 async def market_global() -> str:
-    """Global crypto market stats: total market cap, 24h volume, BTC/ETH dominance, active coins. Source: CoinGecko."""
+    """Global crypto market preview: rounded total market cap and 24h volume, whole-percent 24h change and BTC/ETH dominance. Exact figures are a paid lookup. Source: CoinGecko."""
     try:
         data = await _get_cached(f"{COINGECKO}/global", ttl=60.0)
         d = (data or {}).get("data") or {}
         pct = d.get("market_cap_percentage") or {}
         return _join(
             [
-                "Global crypto market (CoinGecko)",
-                f"Total market cap: {_fmt_big((d.get('total_market_cap') or {}).get('usd'))}",
-                f"24h volume: {_fmt_big((d.get('total_volume') or {}).get('usd'))}",
-                f"Market cap change 24h: {_fmt_pct(d.get('market_cap_change_percentage_24h_usd'))}",
-                f"BTC dominance: {float(pct.get('btc')):.1f}%" if pct.get("btc") is not None else "BTC dominance: n/a",
-                f"ETH dominance: {float(pct.get('eth')):.1f}%" if pct.get("eth") is not None else "ETH dominance: n/a",
-                f"Active cryptocurrencies: {d.get('active_cryptocurrencies'):,}" if d.get("active_cryptocurrencies") else "Active cryptocurrencies: n/a",
-                f"Markets/exchanges tracked: {d.get('markets')}",
+                "Global crypto market (CoinGecko) — lite preview",
+                f"Total market cap: ≈{_coarse_usd((d.get('total_market_cap') or {}).get('usd'))}",
+                f"24h volume: ≈{_coarse_usd((d.get('total_volume') or {}).get('usd'))}",
+                f"Market cap change 24h: {_whole_pct(d.get('market_cap_change_percentage_24h_usd'))}",
+                f"BTC dominance: {round(float(pct['btc']))}%" if pct.get("btc") is not None else "BTC dominance: n/a",
+                f"ETH dominance: {round(float(pct['eth']))}%" if pct.get("eth") is not None else "ETH dominance: n/a",
             ]
         )
     except Exception as e:
@@ -1961,20 +2106,20 @@ async def market_global() -> str:
 
 @mcp.tool()
 async def top_coins() -> str:
-    """Top 10 cryptocurrencies by market cap, with price and 24h change. Source: CoinGecko."""
+    """Top 3 cryptocurrencies by market cap, with rounded prices, whole-percent 24h changes and rounded market caps. The full top-10 table with exact figures is a paid lookup. Source: CoinGecko."""
     try:
         data = await _get_cached(
             f"{COINGECKO}/coins/markets",
             ttl=60.0,
-            params={"vs_currency": "usd", "order": "market_cap_desc", "per_page": 10, "page": 1},
+            params={"vs_currency": "usd", "order": "market_cap_desc", "per_page": 3, "page": 1},
         )
         coins = data if isinstance(data, list) else []
-        lines = ["Top 10 coins by market cap (CoinGecko)"]
+        lines = ["Top 3 coins by market cap (CoinGecko) — lite preview"]
         for c in coins:
             lines.append(
                 f"{c.get('market_cap_rank')}. {c.get('name')} ({str(c.get('symbol')).upper()}): "
-                f"{_fmt_usd(c.get('current_price'))} ({_fmt_pct(c.get('price_change_percentage_24h'))} 24h), "
-                f"mcap {_fmt_big(c.get('market_cap'))}"
+                f"≈{_coarse_usd(c.get('current_price'))} ({_whole_pct(c.get('price_change_percentage_24h'))} 24h), "
+                f"mcap ≈{_coarse_usd(c.get('market_cap'))}"
             )
         return _join(lines)
     except Exception as e:
@@ -1983,18 +2128,16 @@ async def top_coins() -> str:
 
 @mcp.tool()
 async def trending_coins() -> str:
-    """Coins trending on CoinGecko search right now, top 10. Source: CoinGecko."""
+    """The top 3 coins trending on CoinGecko search right now (names and market-cap ranks). The full trending list with prices is a paid lookup. Source: CoinGecko."""
     try:
         data = await _get_cached(f"{COINGECKO}/search/trending", ttl=60.0)
         coins = (data or {}).get("coins") or []
-        lines = ["Trending on CoinGecko"]
-        for i, c in enumerate(coins[:10]):
+        lines = ["Trending on CoinGecko — lite preview"]
+        for i, c in enumerate(coins[:3]):
             item = c.get("item") or {}
-            price = (item.get("data") or {}).get("price")
-            price_s = f": {_fmt_usd(price)}" if isinstance(price, (int, float)) else ""
             rank = item.get("market_cap_rank")
             rank_s = f" (rank #{rank})" if rank else ""
-            lines.append(f"{i + 1}. {item.get('name')} ({item.get('symbol')}){rank_s}{price_s}")
+            lines.append(f"{i + 1}. {item.get('name')} ({item.get('symbol')}){rank_s}")
         return _join(lines)
     except Exception as e:
         return _err("trending_coins", e)
@@ -2002,58 +2145,50 @@ async def trending_coins() -> str:
 
 @mcp.tool()
 async def coin_price(coin_id: str) -> str:
-    """Live USD price and 24h change for one coin by CoinGecko id (e.g. "bitcoin", "ethereum", "aerodrome-finance")."""
+    """Rounded USD price preview for one coin by CoinGecko id (e.g. "bitcoin", "ethereum", "aerodrome-finance"). The exact price is a paid lookup."""
     try:
         cid = coin_id.strip().lower()
         data = await _get_cached(
             f"{COINGECKO}/simple/price",
             ttl=60.0,
-            params={"ids": cid, "vs_currencies": "usd", "include_24hr_change": "true"},
+            params={"ids": cid, "vs_currencies": "usd"},
         )
         entry = (data or {}).get(cid)
         if not entry:
             return f"Error: coin '{coin_id}' not found on CoinGecko."
-        change = entry.get("usd_24h_change")
-        lines = [
-            f"{cid} (CoinGecko)",
-            f"Price: {_fmt_usd(entry.get('usd'))}",
-            f"24h change: {_fmt_pct(change)}" if change is not None else "24h change: n/a",
-        ]
-        return _join(lines)
+        return _join(
+            [
+                f"{cid} (CoinGecko) — lite preview",
+                f"Price: ≈{_coarse_usd(entry.get('usd'))}",
+            ]
+        )
     except Exception as e:
         return _err("coin_price", e)
 
 
 @mcp.tool()
-async def coin_prices(coin_ids: str) -> str:
-    """USD prices, market caps and 24h changes for several coins at once — comma-separated CoinGecko ids (e.g. "bitcoin,ethereum,solana"), up to 10."""
+async def eth_btc_ratio() -> str:
+    """The ETH/BTC ratio — how much BTC one ETH is worth — a derived market gauge that is not part of the paid catalog. Source: CoinGecko."""
     try:
-        ids = [s.strip().lower() for s in coin_ids.split(",") if s.strip()][:10]
-        if not ids:
-            return "Error: coin_prices needs at least one CoinGecko id."
         data = await _get_cached(
             f"{COINGECKO}/simple/price",
             ttl=60.0,
-            params={
-                "ids": ",".join(ids),
-                "vs_currencies": "usd",
-                "include_24hr_change": "true",
-                "include_market_cap": "true",
-            },
+            params={"ids": "bitcoin,ethereum", "vs_currencies": "usd"},
         )
-        lines = ["Coin prices (CoinGecko)"]
-        for cid in ids:
-            entry = (data or {}).get(cid)
-            if not entry:
-                lines.append(f"{cid}: not found")
-                continue
-            lines.append(
-                f"{cid}: {_fmt_usd(entry.get('usd'))} "
-                f"({_fmt_pct(entry.get('usd_24h_change'))} 24h), mcap {_fmt_big(entry.get('usd_market_cap'))}"
-            )
-        return _join(lines)
+        btc = ((data or {}).get("bitcoin") or {}).get("usd")
+        eth = ((data or {}).get("ethereum") or {}).get("usd")
+        if not btc or not eth:
+            return "Error: could not fetch BTC and ETH prices from CoinGecko."
+        ratio = float(eth) / float(btc)
+        return _join(
+            [
+                "ETH / BTC ratio (CoinGecko)",
+                f"1 ETH ≈ {_coarse(ratio, 3)} BTC",
+                f"(from ETH ≈{_coarse_usd(eth)} and BTC ≈{_coarse_usd(btc)})",
+            ]
+        )
     except Exception as e:
-        return _err("coin_prices", e)
+        return _err("eth_btc_ratio", e)
 
 
 async def _cg_coin(coin_id: str):
@@ -2071,65 +2206,75 @@ async def _cg_coin(coin_id: str):
 
 @mcp.tool()
 async def coin_info(coin_id: str) -> str:
-    """Summary for one coin by CoinGecko id: price, market cap + rank, 24h volume, 24h/7d change, supplies, homepage."""
+    """Lite summary for one coin by CoinGecko id: name, market-cap rank, and a rounded market cap. Prices, changes, supplies and links are paid lookups."""
     try:
         cid = coin_id.strip().lower()
         data = await _cg_coin(cid)
         if not isinstance(data, dict) or not data.get("id"):
             return f"Error: coin '{coin_id}' not found on CoinGecko."
         md = data.get("market_data") or {}
-        lines = [
-            f"{data.get('name')} ({str(data.get('symbol')).upper()}) — CoinGecko summary",
-            f"Price: {_fmt_usd((md.get('current_price') or {}).get('usd'))}",
-            f"Market cap: {_fmt_big((md.get('market_cap') or {}).get('usd'))} (rank #{data.get('market_cap_rank')})",
-            f"24h volume: {_fmt_big((md.get('total_volume') or {}).get('usd'))}",
-            f"Change 24h: {_fmt_pct(md.get('price_change_percentage_24h'))} | 7d: {_fmt_pct(md.get('price_change_percentage_7d'))}",
-            f"Circulating supply: {float(md['circulating_supply']):,.0f}" if md.get("circulating_supply") else "Circulating supply: n/a",
-            f"Total supply: {float(md['total_supply']):,.0f}" if md.get("total_supply") else "Total supply: n/a",
-            f"Max supply: {float(md['max_supply']):,.0f}" if md.get("max_supply") else "Max supply: none/infinite",
-        ]
-        homepage = ((data.get("links") or {}).get("homepage") or [None])[0]
-        if homepage:
-            lines.append(f"Homepage: {homepage}")
-        return _join(lines)
+        return _join(
+            [
+                f"{data.get('name')} ({str(data.get('symbol')).upper()}) — CoinGecko summary (lite)",
+                f"Market cap rank: #{data.get('market_cap_rank')}",
+                f"Market cap: ≈{_coarse_usd((md.get('market_cap') or {}).get('usd'))}",
+            ]
+        )
     except Exception as e:
         return _err("coin_info", e)
 
 
 @mcp.tool()
-async def coin_ath(coin_id: str) -> str:
-    """All-time high for one coin by CoinGecko id: ATH price, date, and how far the current price is below it."""
+async def market_mood() -> str:
+    """A one-word read on overall crypto market mood (Risk-on / Cautious / Risk-off), synthesized from the Fear & Greed classification and the global market's 24h direction. A lite-only derived gauge — not part of the paid catalog."""
     try:
-        cid = coin_id.strip().lower()
-        data = await _cg_coin(cid)
-        if not isinstance(data, dict) or not data.get("id"):
-            return f"Error: coin '{coin_id}' not found on CoinGecko."
-        md = data.get("market_data") or {}
-        ath = (md.get("ath") or {}).get("usd")
-        ath_date = (md.get("ath_date") or {}).get("usd")
-        ath_change = (md.get("ath_change_percentage") or {}).get("usd")
-        return _join(
-            [
-                f"{data.get('name')} ({str(data.get('symbol')).upper()}) all-time high (CoinGecko)",
-                f"ATH: {_fmt_usd(ath)}",
-                f"ATH date: {str(ath_date)[:10] if ath_date else 'n/a'}",
-                f"Current price: {_fmt_usd((md.get('current_price') or {}).get('usd'))}",
-                f"From ATH: {_fmt_pct(ath_change)}" if ath_change is not None else "From ATH: n/a",
-            ]
-        )
+        score = 0
+        notes = []
+        try:
+            fng = await _get_cached(f"{FNG}/fng/", ttl=60.0, params={"limit": 1})
+            items = (fng or {}).get("data") or []
+            if items:
+                val = int(items[0].get("value"))
+                cls = items[0].get("value_classification")
+                if val >= 55:
+                    score += 1
+                elif val <= 45:
+                    score -= 1
+                notes.append(f"sentiment is {cls}")
+        except Exception:
+            pass
+        try:
+            g = await _get_cached(f"{COINGECKO}/global", ttl=60.0)
+            chg = ((g or {}).get("data") or {}).get("market_cap_change_percentage_24h_usd")
+            if chg is not None:
+                if float(chg) > 1:
+                    score += 1
+                    notes.append("the total market rose over the last day")
+                elif float(chg) < -1:
+                    score -= 1
+                    notes.append("the total market fell over the last day")
+                else:
+                    notes.append("the total market was roughly flat over the last day")
+        except Exception:
+            pass
+        mood = "Risk-on" if score >= 2 else "Risk-off" if score <= -2 else "Cautious"
+        lines = ["Crypto market mood (lite gauge)", f"Mood: {mood}"]
+        if notes:
+            lines.append("Why: " + "; ".join(notes) + ".")
+        return _join(lines)
     except Exception as e:
-        return _err("coin_ath", e)
+        return _err("market_mood", e)
 
 
 @mcp.tool()
 async def coin_change(coin_id: str) -> str:
-    """Price changes for one coin by CoinGecko id over 24h / 7d / 30d, with current price and rank."""
+    """7d price change for one coin by CoinGecko id, rounded to the nearest whole percent, with a rounded current price and its rank. The full 24h/7d/30d change table is a paid lookup."""
     try:
         cid = coin_id.strip().lower()
         data = await _get_cached(
             f"{COINGECKO}/coins/markets",
             ttl=60.0,
-            params={"vs_currency": "usd", "ids": cid, "price_change_percentage": "24h,7d,30d"},
+            params={"vs_currency": "usd", "ids": cid, "price_change_percentage": "7d"},
         )
         rows = data if isinstance(data, list) else []
         if not rows:
@@ -2137,11 +2282,9 @@ async def coin_change(coin_id: str) -> str:
         c = rows[0]
         return _join(
             [
-                f"{c.get('name')} ({str(c.get('symbol')).upper()}) price changes (CoinGecko)",
-                f"Price: {_fmt_usd(c.get('current_price'))} (rank #{c.get('market_cap_rank')})",
-                f"24h: {_fmt_pct(c.get('price_change_percentage_24h_in_currency'))}",
-                f"7d: {_fmt_pct(c.get('price_change_percentage_7d_in_currency'))}",
-                f"30d: {_fmt_pct(c.get('price_change_percentage_30d_in_currency'))}",
+                f"{c.get('name')} ({str(c.get('symbol')).upper()}) — lite preview (CoinGecko)",
+                f"Price: ≈{_coarse_usd(c.get('current_price'))} (rank #{c.get('market_cap_rank')})",
+                f"7d: {_whole_pct(c.get('price_change_percentage_7d_in_currency'))}",
             ]
         )
     except Exception as e:
@@ -2171,15 +2314,16 @@ async def defi_global() -> str:
 
 @mcp.tool()
 async def btc_dominance() -> str:
-    """Market-cap dominance table: BTC, ETH and the next-largest assets' share of total crypto market cap. Source: CoinGecko."""
+    """BTC and ETH market-cap dominance, rounded to whole percents. The full dominance table is a paid lookup. Source: CoinGecko."""
     try:
         data = await _get_cached(f"{COINGECKO}/global", ttl=60.0)
         pct = ((data or {}).get("data") or {}).get("market_cap_percentage") or {}
         if not pct:
             return "Error: no dominance data returned by CoinGecko."
-        top = sorted(pct.items(), key=lambda kv: float(kv[1] or 0), reverse=True)[:8]
-        lines = ["Market cap dominance (CoinGecko)"]
-        lines += [f"{k.upper()}: {float(v):.2f}%" for k, v in top]
+        lines = ["Market cap dominance (CoinGecko) — lite preview"]
+        for key in ("btc", "eth"):
+            if pct.get(key) is not None:
+                lines.append(f"{key.upper()}: {round(float(pct[key]))}%")
         return _join(lines)
     except Exception as e:
         return _err("btc_dominance", e)
@@ -2207,16 +2351,16 @@ async def exchange_rates() -> str:
 
 @mcp.tool()
 async def ens_avatar(name: str) -> str:
-    """Avatar URL set on an ENS name, plus its resolved address. Source: ENSIdeas."""
+    """Whether an ENS name has an avatar set (yes/no) — the avatar URL itself is a paid lookup. Source: ENSIdeas."""
     try:
         data = await _get_json(f"{ENSIDEAS}/ens/resolve/{name.strip()}")
         if not isinstance(data, dict) or not data.get("address"):
             return f"Error: ENS name '{name}' not found."
         return _join(
             [
-                f"ENS avatar for {name}",
-                f"Address: {data.get('address')}",
-                f"Avatar: {data.get('avatar') or 'none set'}",
+                f"ENS avatar for {name} — lite preview",
+                f"Avatar set: {'yes' if data.get('avatar') else 'no'}",
+                f"Address: {_mask_addr(data.get('address'))} (masked preview)",
             ]
         )
     except Exception as e:
@@ -2225,36 +2369,40 @@ async def ens_avatar(name: str) -> str:
 
 @mcp.tool()
 async def ens_profile(name: str) -> str:
-    """Public profile summary for an ENS name: address, avatar, description, website and socials. Source: ensdata.net."""
+    """Which public profile fields an ENS name has set (a presence checklist — the field values are a paid lookup). Source: ensdata.net."""
     try:
         data = await _get_json(f"{ENSDATA}/{name.strip()}")
         if not isinstance(data, dict) or not data.get("address"):
             return f"Error: ENS name '{name}' not found."
-        lines = [
-            f"ENS profile: {name}",
-            f"Address: {data.get('address')}",
-            f"Avatar: {data.get('avatar')}",
-            f"Description: {data.get('description')}",
-            f"URL: {data.get('url')}",
+        fields = [
+            ("description", "Description"),
+            ("url", "Website"),
+            ("avatar", "Avatar"),
+            ("twitter", "Twitter"),
+            ("github", "GitHub"),
+            ("discord", "Discord"),
+            ("telegram", "Telegram"),
         ]
-        for key in ("twitter", "github", "discord", "telegram"):
-            if data.get(key):
-                lines.append(f"{key.capitalize()}: {data[key]}")
-        return _join(lines)
+        set_names = [label for key, label in fields if data.get(key)]
+        return _join(
+            [
+                f"ENS profile: {name} — lite preview",
+                f"Address: {_mask_addr(data.get('address'))} (masked preview)",
+                f"Fields set: {', '.join(set_names) if set_names else 'none of the common public fields'}",
+            ]
+        )
     except Exception as e:
         return _err("ens_profile", e)
 
 
 @mcp.tool()
 async def ens_records(name: str) -> str:
-    """Text records set on an ENS name: description, URL, socials, content hash. Source: ensdata.net."""
+    """Which text-record keys an ENS name has set (key names and count only — the record values are a paid lookup). Source: ensdata.net."""
     try:
         data = await _get_json(f"{ENSDATA}/{name.strip()}")
         if not isinstance(data, dict) or not data.get("address"):
             return f"Error: ENS name '{name}' not found."
-        lines = [f"ENS text records: {name}", f"Address: {data.get('address')}"]
-        found = False
-        for key, label in (
+        keys = [
             ("description", "Description"),
             ("url", "URL"),
             ("twitter", "Twitter"),
@@ -2264,32 +2412,38 @@ async def ens_records(name: str) -> str:
             ("contentHash", "Content hash"),
             ("header", "Header"),
             ("pgp", "PGP"),
-        ):
-            if data.get(key):
-                lines.append(f"{label}: {data[key]}")
-                found = True
-        if not found:
-            lines.append("No public text records set.")
-        return _join(lines)
+        ]
+        present = [label for key, label in keys if data.get(key)]
+        return _join(
+            [
+                f"ENS text records: {name} — lite preview",
+                f"Address: {_mask_addr(data.get('address'))} (masked preview)",
+                f"Records set ({len(present)}): {', '.join(present) if present else 'none'}",
+            ]
+        )
     except Exception as e:
         return _err("ens_records", e)
 
 
 @mcp.tool()
 async def ens_content_hash(name: str) -> str:
-    """Content hash (decentralized website pointer) and avatar set on an ENS name. Source: ensdata.net."""
+    """Whether an ENS name has a content hash (decentralized website pointer) set, and its scheme (e.g. ipfs). The hash itself is a paid lookup. Source: ensdata.net."""
     try:
         data = await _get_json(f"{ENSDATA}/{name.strip()}")
         if not isinstance(data, dict) or not data.get("address"):
             return f"Error: ENS name '{name}' not found."
-        return _join(
-            [
-                f"ENS content hash: {name}",
-                f"Address: {data.get('address')}",
-                f"Content hash: {data.get('contentHash') or 'none set'}",
-                f"Avatar: {data.get('avatar')}",
-            ]
-        )
+        ch = data.get("contentHash")
+        lines = [
+            f"ENS content hash: {name} — lite preview",
+            f"Address: {_mask_addr(data.get('address'))} (masked preview)",
+        ]
+        if ch:
+            scheme = str(ch).split("://")[0] if "://" in str(ch) else "non-standard format"
+            lines.append("Content hash set: yes")
+            lines.append(f"Type: {scheme}")
+        else:
+            lines.append("Content hash set: no")
+        return _join(lines)
     except Exception as e:
         return _err("ens_content_hash", e)
 
@@ -2305,105 +2459,174 @@ async def _wallet_token_line(address: str, token: str, label: str) -> str:
 
 @mcp.tool()
 async def wallet_eth_value(address: str) -> str:
-    """USD value of an address's ETH balance on Base, at the live ETH price."""
+    """Rounded USD value preview of an address's ETH balance on Base, at a rounded live ETH price. Exact balances and values are paid lookups."""
     try:
         if not _is_address(address):
             return "Error: wallet_eth_value needs an address (0x, 42 chars)."
         addr = address.strip()
         wei = int(await _rpc("eth_getBalance", [addr, "latest"]), 16)
         eth = wei / 1e18
-        lines = [f"Wallet {addr} (Base)", f"ETH: {eth:.6f}"]
+        lines = [f"Wallet {addr} (Base) — lite preview", f"ETH: ≈{_coarse(eth, 3)}"]
         price = await _eth_price_usd()
         if price:
-            lines.append(f"Value: ${eth * price:,.2f} (ETH at {_fmt_usd(price)})")
+            lines.append(f"Value: ≈{_coarse_usd(eth * price)} (ETH at ≈{_coarse_usd(price)})")
         return _join(lines)
     except Exception as e:
         return _err("wallet_eth_value", e)
 
 
 @mcp.tool()
-async def wallet_usdc_balance(address: str) -> str:
-    """USDC balance of an address on Base, read on-chain."""
+async def base_tps() -> str:
+    """Base network throughput right now: average transactions per second over the last few blocks — a derived lite gauge, not part of the paid catalog. Source: Base public RPC."""
     try:
-        if not _is_address(address):
-            return "Error: wallet_usdc_balance needs an address (0x, 42 chars)."
-        addr = address.strip()
-        return _join([f"Wallet {addr} (Base)", await _wallet_token_line(addr, USDC, "USDC")])
-    except Exception as e:
-        return _err("wallet_usdc_balance", e)
-
-
-@mcp.tool()
-async def wallet_weth_balance(address: str) -> str:
-    """WETH (wrapped ETH) balance of an address on Base, read on-chain."""
-    try:
-        if not _is_address(address):
-            return "Error: wallet_weth_balance needs an address (0x, 42 chars)."
-        addr = address.strip()
-        return _join([f"Wallet {addr} (Base)", await _wallet_token_line(addr, WETH, "WETH")])
-    except Exception as e:
-        return _err("wallet_weth_balance", e)
-
-
-@mcp.tool()
-async def wallet_dai_balance(address: str) -> str:
-    """DAI balance of an address on Base, read on-chain."""
-    try:
-        if not _is_address(address):
-            return "Error: wallet_dai_balance needs an address (0x, 42 chars)."
-        addr = address.strip()
-        return _join([f"Wallet {addr} (Base)", await _wallet_token_line(addr, SYMBOL_ADDRESSES["DAI"], "DAI")])
-    except Exception as e:
-        return _err("wallet_dai_balance", e)
-
-
-@mcp.tool()
-async def wallet_aero_balance(address: str) -> str:
-    """AERO (Aerodrome) balance of an address on Base, read on-chain."""
-    try:
-        if not _is_address(address):
-            return "Error: wallet_aero_balance needs an address (0x, 42 chars)."
-        addr = address.strip()
-        return _join([f"Wallet {addr} (Base)", await _wallet_token_line(addr, SYMBOL_ADDRESSES["AERO"], "AERO")])
-    except Exception as e:
-        return _err("wallet_aero_balance", e)
-
-
-@mcp.tool()
-async def wallet_cbeth_balance(address: str) -> str:
-    """cbETH (Coinbase Wrapped Staked ETH) balance of an address on Base, read on-chain."""
-    try:
-        if not _is_address(address):
-            return "Error: wallet_cbeth_balance needs an address (0x, 42 chars)."
-        addr = address.strip()
-        return _join([f"Wallet {addr} (Base)", await _wallet_token_line(addr, SYMBOL_ADDRESSES["CBETH"], "cbETH")])
-    except Exception as e:
-        return _err("wallet_cbeth_balance", e)
-
-
-@mcp.tool()
-async def wallet_is_contract(address: str) -> str:
-    """Whether an address on Base is a smart contract (has deployed bytecode), and its code size."""
-    try:
-        if not _is_address(address):
-            return "Error: wallet_is_contract needs an address (0x, 42 chars)."
-        addr = address.strip()
-        code = await _rpc("eth_getCode", [addr, "latest"])
-        size = (len(code) - 2) // 2 if code and code != "0x" else 0
+        latest = await _rpc("eth_getBlockByNumber", ["latest", False])
+        latest_num = int(latest["number"], 16)
+        counts = [len(latest.get("transactions", []))]
+        for num in range(latest_num - 1, latest_num - 5, -1):
+            b = await _rpc("eth_getBlockByNumber", [hex(num), False])
+            counts.append(len(b.get("transactions", [])))
+        # Block timestamps have 1s resolution, so measure the block time
+        # over a 20-block window and combine it with the 5-block average
+        # tx count — a 4-block span can round to ~1s and inflate the TPS.
+        older = await _rpc("eth_getBlockByNumber", [hex(latest_num - 20), False])
+        span = int(latest["timestamp"], 16) - int(older["timestamp"], 16)
+        if span <= 0:
+            return "Error: could not measure block times."
+        avg_tx = sum(counts) / len(counts)
+        tps = avg_tx / (span / 20.0)
         return _join(
             [
-                f"Address {addr} (Base)",
-                f"Is contract: {'yes' if size > 0 else 'no (externally owned account)'}",
-                f"Code size: {size:,} bytes",
+                "Base throughput (last 5 blocks)",
+                f"≈{tps:.0f} transactions per second",
+                f"Average block: ≈{_coarse(sum(counts) / len(counts), 3)} transactions",
             ]
         )
     except Exception as e:
-        return _err("wallet_is_contract", e)
+        return _err("base_tps", e)
+
+
+@mcp.tool()
+async def stablecoin_dominance() -> str:
+    """Stablecoins' share of the total crypto market cap — a derived lite gauge, not part of the paid catalog. Sources: DeFiLlama Stablecoins + CoinGecko."""
+    try:
+        assets = await _stablecoin_assets()
+        total_stable = sum(_circ(a) for a in assets)
+        g = await _get_cached(f"{COINGECKO}/global", ttl=60.0)
+        mcap = ((g or {}).get("data") or {}).get("total_market_cap", {}).get("usd")
+        if not mcap:
+            return "Error: global market cap unavailable from CoinGecko."
+        share = total_stable / float(mcap) * 100
+        return _join(
+            [
+                "Stablecoin dominance (derived)",
+                f"Stablecoins are ≈{share:.1f}% of total crypto market cap",
+                f"Stablecoin supply: ≈{_coarse_usd(total_stable)} of ≈{_coarse_usd(mcap)} total",
+            ]
+        )
+    except Exception as e:
+        return _err("stablecoin_dominance", e)
+
+
+@mcp.tool()
+async def yields_median_base() -> str:
+    """The MEDIAN APY across Base yield pools with a positive APY — the typical earning pool, not the top of the table (top-pool lists are paid lookups). A lite-only derived statistic. Source: DeFiLlama Yields."""
+    try:
+        pools = await _yields_pools()
+        apys = sorted(
+            float(p.get("apy"))
+            for p in pools
+            if p.get("chain") == "Base" and isinstance(p.get("apy"), (int, float)) and float(p.get("apy")) > 0
+        )
+        if not apys:
+            return "Error: no Base yield pools returned by DeFiLlama."
+        med = statistics.median(apys)
+        return _join(
+            [
+                "Base yield pools — median APY (DeFiLlama Yields)",
+                f"Median APY: ≈{med:.1f}%",
+                f"Pools counted: {len(apys)}",
+            ]
+        )
+    except Exception as e:
+        return _err("yields_median_base", e)
+
+
+@mcp.tool()
+async def base_network_info() -> str:
+    """Base mainnet reference card: chain ID, native currency, block target, explorer, bridge and public RPC. Static educational reference — not part of the paid catalog."""
+    return _join(
+        [
+            "Base mainnet — reference card",
+            "Chain ID: 8453 (0x2105)",
+            "Native currency: ETH (gas is paid in ETH)",
+            "Block target: ~2 seconds",
+            "Type: Ethereum L2 (OP Stack rollup), sequencer run by Coinbase",
+            "Explorer: https://basescan.org",
+            "Bridge: https://bridge.base.org",
+            "Public RPC: https://mainnet.base.org",
+        ]
+    )
+
+
+@mcp.tool()
+async def top_gainer_today() -> str:
+    """The biggest 24h gainer among the top 100 coins by market cap (whole-percent gain, rounded price) — a derived lite stat, not part of the paid catalog. Source: CoinGecko."""
+    try:
+        data = await _get_cached(
+            f"{COINGECKO}/coins/markets",
+            ttl=60.0,
+            params={"vs_currency": "usd", "order": "market_cap_desc", "per_page": 100, "page": 1},
+        )
+        coins = [
+            c
+            for c in (data if isinstance(data, list) else [])
+            if isinstance(c.get("price_change_percentage_24h"), (int, float))
+        ]
+        if not coins:
+            return "Error: no market data returned by CoinGecko."
+        best = max(coins, key=lambda c: float(c["price_change_percentage_24h"]))
+        return _join(
+            [
+                "Biggest 24h gainer in the top 100 (CoinGecko)",
+                f"{best.get('name')} ({str(best.get('symbol')).upper()}): {_whole_pct(best.get('price_change_percentage_24h'))} in 24h",
+                f"Price: ≈{_coarse_usd(best.get('current_price'))} (rank #{best.get('market_cap_rank')})",
+            ]
+        )
+    except Exception as e:
+        return _err("top_gainer_today", e)
+
+
+@mcp.tool()
+async def market_breadth() -> str:
+    """Market breadth: how many of the top 100 coins by market cap are up in the last 24h — a derived lite gauge, not part of the paid catalog. Source: CoinGecko."""
+    try:
+        data = await _get_cached(
+            f"{COINGECKO}/coins/markets",
+            ttl=60.0,
+            params={"vs_currency": "usd", "order": "market_cap_desc", "per_page": 100, "page": 1},
+        )
+        coins = [
+            c
+            for c in (data if isinstance(data, list) else [])
+            if isinstance(c.get("price_change_percentage_24h"), (int, float))
+        ]
+        if not coins:
+            return "Error: no market data returned by CoinGecko."
+        up = sum(1 for c in coins if float(c["price_change_percentage_24h"]) > 0)
+        return _join(
+            [
+                "Market breadth — top 100 coins (CoinGecko)",
+                f"Up in 24h: {up} of {len(coins)} ({round(up / len(coins) * 100)}%)",
+                f"Down or flat: {len(coins) - up}",
+            ]
+        )
+    except Exception as e:
+        return _err("market_breadth", e)
 
 
 @mcp.tool()
 async def wallet_known_holdings(address: str) -> str:
-    """Which of the well-known Base tokens (WETH, USDC, AERO, cbETH, DAI, USDbC, HIGHER) an address holds, with amounts. Read on-chain."""
+    """Which of the well-known Base tokens (WETH, USDC, AERO, cbETH, DAI, USDbC, HIGHER) an address holds — names only; the amounts are a paid lookup. Read on-chain."""
     try:
         if not _is_address(address):
             return "Error: wallet_known_holdings needs an address (0x, 42 chars)."
@@ -2413,17 +2636,16 @@ async def wallet_known_holdings(address: str) -> str:
             # ETH and WETH share one contract; label it WETH (the ERC20).
             if token not in seen or symbol == "WETH":
                 seen[token] = "WETH" if token == WETH else symbol
-        lines = [f"Known-token holdings of {addr} (Base)"]
-        held = 0
+        held_names = []
         for token, symbol in seen.items():
             raw = await _erc20_uint(token, SEL_BALANCE_OF, _addr32(addr))
             if raw > 0:
-                decimals = await _erc20_decimals(token)
-                lines.append(f"{symbol}: {raw / (10 ** decimals):,.6f}")
-                held += 1
-        lines.append(f"Tokens held: {held} of {len(seen)} checked")
-        if held == 0:
-            lines.append("No balance in any of the checked tokens.")
+                held_names.append(symbol)
+        lines = [f"Known-token holdings of {addr} (Base) — lite preview"]
+        if held_names:
+            lines.append("Holds: " + ", ".join(held_names))
+        else:
+            lines.append("None of the well-known tokens (WETH, USDC, AERO, cbETH, DAI, USDbC, HIGHER) show a balance.")
         return _join(lines)
     except Exception as e:
         return _err("wallet_known_holdings", e)
@@ -2446,11 +2668,16 @@ async def _chainlink_read(key: str) -> list:
     updated = _word(raw, 3)
     price = answer / (10 ** decimals)
     age = max(0, int(time.time()) - updated) if updated else None
+    age_s = (
+        "n/a"
+        if age is None
+        else _band(age, [60, 300, 3600], ["under a minute ago", "a few minutes ago", "within the hour", "over an hour ago"])
+    )
     lines = [
         f"Chainlink {desc or feed['pair']} on Base",
-        f"Price: ${price:,.4f}" if price < 100 else f"Price: {_fmt_usd(price)}",
+        f"Price: ≈{_coarse_usd(price)}",
         f"Feed: {addr}",
-        f"Last update: {_fmt_ts(updated)}" + (f" ({age}s ago)" if age is not None else ""),
+        f"Last update: {age_s}",
     ]
     return lines
 
@@ -2474,12 +2701,24 @@ async def chainlink_btc() -> str:
 
 
 @mcp.tool()
-async def chainlink_usdc() -> str:
-    """Chainlink USDC/USD price on Base, read on-chain from the aggregator, with last-update time."""
+async def chainlink_staleness() -> str:
+    """How fresh each tracked Chainlink feed on Base is (ETH/USD, BTC/USD, USDC/USD) — update ages only, no prices (prices are paid lookups). A lite health check. Source: Chainlink via Base RPC."""
     try:
-        return _join(await _chainlink_read("usdc"))
+        lines = ["Chainlink feed freshness on Base"]
+        for key in ("eth", "btc", "usdc"):
+            feed = CHAINLINK_FEEDS[key]
+            raw = await _eth_call(feed["address"], "0x" + SEL_LATEST_ROUND)
+            updated = _word(raw, 3)
+            age = max(0, int(time.time()) - updated) if updated else None
+            age_s = (
+                "unknown"
+                if age is None
+                else _band(age, [60, 300, 3600], ["fresh — under a minute old", "a few minutes old", "within the hour", "over an hour old"])
+            )
+            lines.append(f"{feed['pair']}: {age_s}")
+        return _join(lines)
     except Exception as e:
-        return _err("chainlink_usdc", e)
+        return _err("chainlink_staleness", e)
 
 
 @mcp.tool()
@@ -2500,7 +2739,7 @@ async def chainlink_feeds() -> str:
 
 @mcp.tool()
 async def convert_eth_usd(amount_eth: float) -> str:
-    """Convert an ETH amount to USD at the live ETH price (DexScreener WETH pair)."""
+    """Approximate conversion of an ETH amount to USD at a rounded live ETH price. Lite conversions are approximate — exact conversions are a paid lookup."""
     try:
         amt = float(amount_eth)
         price = await _eth_price_usd()
@@ -2508,8 +2747,8 @@ async def convert_eth_usd(amount_eth: float) -> str:
             return "Error: could not fetch the live ETH price."
         return _join(
             [
-                f"{amt} ETH = ${amt * price:,.2f}",
-                f"ETH price: {_fmt_usd(price)}",
+                f"{amt} ETH ≈ {_coarse_usd(amt * price)}",
+                f"At a rounded ETH price of ≈{_coarse_usd(price)}",
             ]
         )
     except Exception as e:
@@ -2518,7 +2757,7 @@ async def convert_eth_usd(amount_eth: float) -> str:
 
 @mcp.tool()
 async def convert_usd_eth(amount_usd: float) -> str:
-    """Convert a USD amount to ETH at the live ETH price (DexScreener WETH pair)."""
+    """Approximate conversion of a USD amount to ETH at a rounded live ETH price. Lite conversions are approximate — exact conversions are a paid lookup."""
     try:
         amt = float(amount_usd)
         price = await _eth_price_usd()
@@ -2526,8 +2765,8 @@ async def convert_usd_eth(amount_usd: float) -> str:
             return "Error: could not fetch the live ETH price."
         return _join(
             [
-                f"${amt:,.2f} = {amt / price:.6f} ETH",
-                f"ETH price: {_fmt_usd(price)}",
+                f"${amt:,.2f} ≈ {_coarse(amt / price, 4)} ETH",
+                f"At a rounded ETH price of ≈{_coarse_usd(price)}",
             ]
         )
     except Exception as e:
@@ -2535,66 +2774,63 @@ async def convert_usd_eth(amount_usd: float) -> str:
 
 
 @mcp.tool()
-async def convert_wei(amount_wei: str) -> str:
-    """Convert a wei amount to ether and gwei (1 ETH = 10^18 wei = 10^9 gwei)."""
-    try:
-        wei = int(str(amount_wei).strip())
-        if wei < 0:
-            return "Error: amount must be >= 0."
-        return _join(
-            [
-                f"{wei} wei",
-                f"= {wei / 1e18:.6f} ETH",
-                f"= {wei / 1e9:.4f} gwei",
-            ]
-        )
-    except Exception as e:
-        return _err("convert_wei", e)
+async def eth_units() -> str:
+    """Ethereum denomination reference: wei, gwei, szabo, finney and ether, and what each is typically used for. Static educational reference — not part of the paid catalog."""
+    return _join(
+        [
+            "Ethereum denominations",
+            "1 wei = 1 wei (the smallest unit; contract values are stored in wei)",
+            "1 gwei = 1,000,000,000 wei (10^9) — gas prices are quoted in gwei",
+            "1 szabo (microether) = 10^12 wei",
+            "1 finney (milliether) = 10^15 wei",
+            "1 ether (ETH) = 10^18 wei = 10^9 gwei — account balances are shown in ether",
+            "Rule of thumb: cost in ETH = gas used x gas price in gwei / 10^9.",
+        ]
+    )
 
 
 @mcp.tool()
-async def convert_gwei(amount_gwei: float) -> str:
-    """Convert a gwei amount to wei and ETH, plus its USD value at the live ETH price."""
+async def contract_storage(contract_address: str, slot: str = "0") -> str:
+    """Read one storage slot of any Base contract (eth_getStorageAt) — a raw dev utility that is not part of the paid catalog. Slot accepts a decimal or 0x-hex index."""
     try:
-        g = float(amount_gwei)
-        if g < 0:
-            return "Error: amount must be >= 0."
-        eth = g / 1e9
-        lines = [
-            f"{g} gwei",
-            f"= {int(g * 1e9)} wei",
-            f"= {eth:.9f} ETH",
-        ]
-        price = await _eth_price_usd()
-        if price:
-            lines.append(f"Value: ${eth * price:.6f} (ETH at {_fmt_usd(price)})")
+        if not _is_address(contract_address):
+            return "Error: contract_storage needs a contract address (0x, 42 chars)."
+        try:
+            slot_int = int(str(slot).strip(), 0)
+        except Exception:
+            return "Error: slot must be an integer (decimal or 0x-hex)."
+        if slot_int < 0:
+            return "Error: slot must be >= 0."
+        addr = contract_address.strip()
+        raw = await _rpc("eth_getStorageAt", [addr, hex(slot_int), "latest"])
+        lines = [f"Storage of {addr} (Base), slot {slot_int}", f"Raw: {raw}"]
+        try:
+            value = int(raw, 16)
+            lines.append(f"As integer: {value}")
+            body = bytes.fromhex(raw[2:])
+            if len(body) == 32 and body[:12] == b"\x00" * 12 and any(body[12:]):
+                lines.append(f"As address: 0x{body[12:].hex()}")
+        except Exception:
+            pass
         return _join(lines)
     except Exception as e:
-        return _err("convert_gwei", e)
+        return _err("contract_storage", e)
 
 
 @mcp.tool()
-async def address_info(address: str) -> str:
-    """Quick facts about any Base address: format validity, contract or account, nonce, ETH balance."""
-    try:
-        if not _is_address(address):
-            return f"Error: '{address}' is not a valid address format (0x + 40 hex chars)."
-        addr = address.strip()
-        code = await _rpc("eth_getCode", [addr, "latest"])
-        is_contract = bool(code and code != "0x")
-        nonce = int(await _rpc("eth_getTransactionCount", [addr, "latest"]), 16)
-        wei = int(await _rpc("eth_getBalance", [addr, "latest"]), 16)
-        return _join(
-            [
-                f"Address {addr} (Base)",
-                "Format: valid",
-                f"Type: {'smart contract' if is_contract else 'externally owned account'}",
-                f"Nonce (txs sent): {nonce}",
-                f"ETH balance: {wei / 1e18:.6f}",
-            ]
-        )
-    except Exception as e:
-        return _err("address_info", e)
+async def base_sepolia_info() -> str:
+    """Base Sepolia TESTNET reference card: chain ID, RPC, explorer and where to get test ETH. Static educational reference — not part of the paid catalog."""
+    return _join(
+        [
+            "Base Sepolia (testnet) — reference card",
+            "Chain ID: 84532 (0x14a34)",
+            "Native currency: test ETH (no real value)",
+            "Public RPC: https://sepolia.base.org",
+            "Explorer: https://sepolia.basescan.org",
+            "Test ETH: bridge Sepolia ETH or use a faucet — the Coinbase Developer Platform faucet and the list at docs.base.org are the usual starting points",
+            "Use testnet for contract deploys and agent dry-runs before touching mainnet.",
+        ]
+    )
 
 
 @mcp.tool()
