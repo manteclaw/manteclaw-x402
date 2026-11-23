@@ -41,7 +41,9 @@ for _var in ("NO_PROXY", "no_proxy"):
         os.environ[_var] = ",".join(_kept)
 
 import asyncio
+import hashlib
 import math
+import sys
 import time
 import base64
 import inspect
@@ -58,6 +60,7 @@ import httpx
 # x402 v2.9.0 imports
 from x402 import x402ResourceServer
 from x402.http import HTTPFacilitatorClient, FacilitatorConfig
+from x402.schemas import SupportedResponse
 from x402.http.middleware.fastapi import payment_middleware
 from x402.mechanisms.evm.exact import ExactEvmServerScheme
 from x402.extensions.bazaar import OutputConfig, declare_discovery_extension
@@ -91,7 +94,165 @@ facilitator = HTTPFacilitatorClient(
     FacilitatorConfig(url="https://facilitator.payai.network")
 )
 
-server = x402ResourceServer(facilitator)
+
+class DualFacilitatorClient:
+    """Route verify/settle across the active facilitator clients.
+
+    x402ResourceServer maps network -> scheme -> ONE facilitator client
+    (first registered wins), so handing it two clients would silently
+    shadow the second. This wrapper is the single client the resource
+    server sees; internally it routes each call to exactly one real
+    client:
+
+    - Routing is deterministic per resource: sha256 of the resource
+      string, modulo the number of active clients. verify and settle
+      receive the same payload + requirements, so a given resource
+      always lands on the same facilitator for both steps (a facilitator
+      can only settle a payment it verified).
+    - verify: if the chosen client RAISES (transport/HTTP error), try
+      the other client once. A normal response — even is_valid=False —
+      is returned as-is, no fallback.
+    - settle: NO fallback, ever. If the chosen facilitator's settle
+      raises, the payment may already have landed on-chain; retrying on
+      the other facilitator could double-settle. Errors propagate.
+    - get_supported: merged across active clients (kinds deduped by
+      network+scheme+x402Version, extensions unioned, signers merged).
+      A client that raises is logged and excluded; if ALL raise, the
+      first error propagates — the same failure mode as a lone
+      facilitator being down at startup.
+    """
+
+    def __init__(self, clients):
+        # clients: list of (name, FacilitatorClient) in preference order.
+        self._clients = list(clients)
+
+    @staticmethod
+    def _resource_key(payload, requirements) -> str:
+        # V2 PaymentRequirements carries no resource field; the resource
+        # URL rides on the payload (echoed from the 402) and, for V1, on
+        # the requirements themselves. Final fallback is the canonical
+        # requirements dump — identical across verify and settle.
+        res = getattr(requirements, "resource", None)
+        if isinstance(res, str) and res:
+            return res
+        if res is not None and getattr(res, "url", None):
+            return res.url
+        pres = getattr(payload, "resource", None)
+        if pres is not None and getattr(pres, "url", None):
+            return pres.url
+        if isinstance(pres, str) and pres:
+            return pres
+        try:
+            return requirements.model_dump_json(by_alias=True)
+        except Exception:
+            return str(requirements)
+
+    def _pick(self, payload, requirements) -> int:
+        if len(self._clients) == 1:
+            return 0
+        digest = hashlib.sha256(
+            self._resource_key(payload, requirements).encode()
+        ).hexdigest()
+        return int(digest, 16) % len(self._clients)
+
+    async def verify(self, payload, requirements):
+        idx = self._pick(payload, requirements)
+        name, client = self._clients[idx]
+        try:
+            return await client.verify(payload, requirements)
+        except Exception:
+            if len(self._clients) == 1:
+                raise
+            # Transport/HTTP failure only — a returned VerifyResponse
+            # (even a negative one) never reaches this branch.
+            for other_name, other in self._clients:
+                if other is client:
+                    continue
+                print(
+                    f"[facilitator] verify via {name} raised; "
+                    f"falling back to {other_name}",
+                    file=sys.stderr,
+                )
+                return await other.verify(payload, requirements)
+            raise
+
+    async def settle(self, payload, requirements):
+        idx = self._pick(payload, requirements)
+        # No fallback: see class docstring (double-settle risk).
+        return await self._clients[idx][1].settle(payload, requirements)
+
+    def get_supported(self):
+        kinds, seen = [], set()
+        extensions, signers = [], {}
+        first_error = None
+        answered = 0
+        for name, client in self._clients:
+            try:
+                supported = client.get_supported()
+            except Exception as exc:
+                print(
+                    f"[facilitator] get_supported from {name} failed: {exc}",
+                    file=sys.stderr,
+                )
+                if first_error is None:
+                    first_error = exc
+                continue
+            answered += 1
+            for kind in supported.kinds:
+                key = (str(kind.network), kind.scheme, kind.x402_version)
+                if key not in seen:
+                    seen.add(key)
+                    kinds.append(kind)
+            for ext in supported.extensions:
+                if ext not in extensions:
+                    extensions.append(ext)
+            for family, addrs in (supported.signers or {}).items():
+                bucket = signers.setdefault(family, [])
+                for addr in addrs:
+                    if addr not in bucket:
+                        bucket.append(addr)
+        if answered == 0 and first_error is not None:
+            raise first_error
+        return SupportedResponse(
+            kinds=kinds, extensions=extensions, signers=signers
+        )
+
+
+# Coinbase CDP facilitator — added Nov 21, 2026 as a SECOND facilitator
+# (Alex's call: add, don't switch) so the service can also settle via
+# CDP and appear in Coinbase's Bazaar. Built only when both CDP keys are
+# in the environment; without them the service runs on PayAI alone,
+# exactly as before. Keys live in Fly secrets / .env — never in code.
+# NOTE: cdp-sdk 1.53.0 names the helper create_facilitator_config (the
+# "v2" is in the URL it returns: https://api.cdp.coinbase.com/platform/
+# v2/x402); its return value is a plain dict {url, create_headers},
+# which HTTPFacilitatorClient accepts directly.
+_cdp_client = None
+_cdp_key_id = os.environ.get("CDP_API_KEY_ID")
+_cdp_key_secret = os.environ.get("CDP_API_KEY_SECRET")
+if _cdp_key_id and _cdp_key_secret:
+    try:
+        from cdp.x402 import create_facilitator_config
+
+        _cdp_client = HTTPFacilitatorClient(
+            create_facilitator_config(_cdp_key_id, _cdp_key_secret)
+        )
+    except Exception as _exc:  # a broken CDP setup must not kill PayAI
+        print(
+            f"[facilitator] CDP client disabled (init failed): {_exc}",
+            file=sys.stderr,
+        )
+        _cdp_client = None
+
+_facilitator_clients = [("payai", facilitator)]
+if _cdp_client is not None:
+    _facilitator_clients.append(("cdp", _cdp_client))
+print(
+    f"[facilitator] active: {[name for name, _ in _facilitator_clients]}",
+    file=sys.stderr,
+)
+
+server = x402ResourceServer(DualFacilitatorClient(_facilitator_clients))
 server.register(network="eip155:8453", server=ExactEvmServerScheme())
 
 # ===== shared HTTP client (free public APIs, no keys) =====
@@ -4112,10 +4273,18 @@ def _middleware_pattern(path: str) -> str:
     return re.sub(r"\{(\w+)\}", r":\1", path)
 
 
+# Public origin of the deployed service. Route configs advertise the
+# resource as an absolute URL: Coinbase CDP's Bazaar validator rejects
+# bare paths in its discovery simulation ("resource must start with
+# 'https://' when protocol type is http").
+PUBLIC_ORIGIN = "https://manteclaw-x402.fly.dev"
+
+
 def _resource_for(path: str) -> str:
-    """v3 convention: the resource is the path up to the first parameter."""
+    """v3 convention: the resource is the path up to the first parameter,
+    made absolute with PUBLIC_ORIGIN (CDP Bazaar requires https://)."""
     idx = path.find("/{")
-    return path if idx == -1 else path[:idx]
+    return PUBLIC_ORIGIN + (path if idx == -1 else path[:idx])
 
 
 # ===== BAZAAR DISCOVERY DECLARATIONS (PayAI catalog) =====

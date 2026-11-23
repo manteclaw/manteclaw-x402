@@ -15,3 +15,11 @@ web3==7.16.0
 eth-account==0.13.7
 x402[extensions]==2.9.0
 pydantic==2.13.4
+# cdp-sdk: Coinbase CDP x402 facilitator config (create_facilitator_config)
+# for the optional second facilitator in server-v5.py, built only when
+# CDP_API_KEY_ID / CDP_API_KEY_SECRET are set. Left unpinned: 1.53.0 is
+# what the dual-facilitator change was built and locally verified
+# against. (In-place pip installs of it upgrade web3/eth-account;
+# a fresh resolve against the pins above succeeds — pip backtracks
+# cdp-sdk's transitive solana/websockets instead.)
+cdp-sdk
