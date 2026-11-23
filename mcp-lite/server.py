@@ -374,6 +374,24 @@ async def health(request: Request) -> JSONResponse:
     return JSONResponse({"status": "ok", "service": "manteclaw-mcp-lite"})
 
 
+# Glama listing ownership verification (public by design — this token is
+# meant to be served openly so Glama can confirm we run this server).
+_GLAMA_CLAIM = {
+    "$schema": "https://glama.ai/mcp/schemas/connector.json",
+    "claim": "glama_claim_uL6_nSyDswxysn9fwue16BGvgxFfF17s",
+}
+
+
+@mcp.custom_route("/.well-known/glama.json", methods=["GET"])
+async def glama_claim_root(request: Request) -> JSONResponse:
+    return JSONResponse(_GLAMA_CLAIM)
+
+
+@mcp.custom_route("/mcp/.well-known/glama.json", methods=["GET"])
+async def glama_claim_endpoint(request: Request) -> JSONResponse:
+    return JSONResponse(_GLAMA_CLAIM)
+
+
 
 # ===== original tools (unchanged) =====
 
