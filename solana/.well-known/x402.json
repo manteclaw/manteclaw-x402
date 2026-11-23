@@ -1,0 +1,1208 @@
+{
+  "name": "Manteclaw Agent Services (Solana settlement)",
+  "description": "x402 pay-per-call APIs serving Base/EVM data \u2014 gas, token prices and security, wallet analytics, DEX pairs and Uniswap V3 pools, blocks and transactions, NFTs, DeFi yields and TVL, lending, stablecoins, Chainlink oracles, governance, memecoins, prediction markets, ENS, and utilities. Payments are USDC on Solana.",
+  "version": "5.0.0",
+  "wallet": "Bkd6W9THp8qKgCYcamEkYx4Rk6TTHkUnRsegMaDZXwz2",
+  "network": "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp",
+  "asset": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+  "scheme": "exact",
+  "endpoints": [
+    {
+      "path": "/defi/gas-tracker",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Current Base gas prices (slow/average/fast). $0.01 USDC per call."
+    },
+    {
+      "path": "/defi/token-price/{token_address}",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Get token price via DEX liquidity pool analysis. $0.01 USDC per call."
+    },
+    {
+      "path": "/defi/wallet-analyzer/{address}",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Analyze wallet activity on Base. $0.01 USDC per call."
+    },
+    {
+      "path": "/defi/token-security/{token_address}",
+      "price": "0.02",
+      "currency": "usdc",
+      "description": "Quick token security check on Base. $0.02 USDC per call."
+    },
+    {
+      "path": "/mcp/status",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "MCP server status. $0.01 USDC per call."
+    },
+    {
+      "path": "/mcp/tools",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "MCP tools list. $0.01 USDC per call."
+    },
+    {
+      "path": "/tokens/{address}/price",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Live USD price of a Base token from DEX pairs. $0.01 USDC per call."
+    },
+    {
+      "path": "/tokens/{address}/pairs",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "All DEX pairs for a Base token, with liquidity and volume. $0.01 USDC per call."
+    },
+    {
+      "path": "/tokens/{address}/market",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Market cap, FDV, 24h volume and liquidity for a Base token. $0.01 USDC per call."
+    },
+    {
+      "path": "/tokens/{address}/txns",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Buy/sell counts for a Base token across 5m, 1h, 6h and 24h. $0.01 USDC per call."
+    },
+    {
+      "path": "/tokens/{address}/liquidity",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Liquidity per DEX pair for a Base token. $0.01 USDC per call."
+    },
+    {
+      "path": "/tokens/{address}/info",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "On-chain ERC20 metadata: name, symbol, decimals, total supply. $0.01 USDC per call."
+    },
+    {
+      "path": "/tokens/{address}/supply",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "ERC20 total supply for a Base token. $0.01 USDC per call."
+    },
+    {
+      "path": "/tokens/{address}/name",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "ERC20 name for a Base token. $0.01 USDC per call."
+    },
+    {
+      "path": "/tokens/{address}/symbol",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "ERC20 symbol for a Base token. $0.01 USDC per call."
+    },
+    {
+      "path": "/tokens/{address}/decimals",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "ERC20 decimals for a Base token. $0.01 USDC per call."
+    },
+    {
+      "path": "/tokens/{address}/balance/{wallet}",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "ERC20 balance of a wallet for a Base token. $0.01 USDC per call."
+    },
+    {
+      "path": "/tokens/{address}/allowance/{owner}/{spender}",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "ERC20 allowance a wallet granted to a spender. $0.01 USDC per call."
+    },
+    {
+      "path": "/tokens/{address}/price-change",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Price change for a Base token over 5m, 1h, 6h and 24h. $0.01 USDC per call."
+    },
+    {
+      "path": "/tokens/{address}/coingecko",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "CoinGecko USD price for a Base token contract. $0.01 USDC per call."
+    },
+    {
+      "path": "/tokens/search/{query}",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Search DEX pairs by token name, symbol or address. $0.01 USDC per call."
+    },
+    {
+      "path": "/tokens/trending",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Top boosted tokens on Dexscreener right now. $0.01 USDC per call."
+    },
+    {
+      "path": "/tokens/new",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Newest token profiles on Dexscreener. $0.01 USDC per call."
+    },
+    {
+      "path": "/tokens/boosts",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Latest boosted tokens on Dexscreener. $0.01 USDC per call."
+    },
+    {
+      "path": "/wallets/{address}/balance",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "ETH balance of a Base wallet. $0.01 USDC per call."
+    },
+    {
+      "path": "/wallets/{address}/nonce",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Transaction count (nonce) of a Base wallet. $0.01 USDC per call."
+    },
+    {
+      "path": "/wallets/{address}/is-contract",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Whether a Base address is a smart contract. $0.01 USDC per call."
+    },
+    {
+      "path": "/wallets/{address}/code",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Bytecode size and hash for a Base address. $0.01 USDC per call."
+    },
+    {
+      "path": "/wallets/{address}/tokens",
+      "price": "0.02",
+      "currency": "usdc",
+      "description": "Balances of the top Base tokens for a wallet. $0.02 USDC per call."
+    },
+    {
+      "path": "/wallets/{address}/portfolio",
+      "price": "0.02",
+      "currency": "usdc",
+      "description": "USD portfolio value of a Base wallet (ETH + top tokens). $0.02 USDC per call."
+    },
+    {
+      "path": "/wallets/{address}/ens",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Reverse ENS name for a Base wallet address. $0.01 USDC per call."
+    },
+    {
+      "path": "/wallets/{address}/eth-value",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "USD value of a Base wallet's ETH balance. $0.01 USDC per call."
+    },
+    {
+      "path": "/wallets/{address}/token-count",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "How many of the top Base tokens a wallet holds. $0.01 USDC per call."
+    },
+    {
+      "path": "/wallets/{address}/usdc-balance",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "USDC balance of a Base wallet. $0.01 USDC per call."
+    },
+    {
+      "path": "/wallets/{address}/weth-balance",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "WETH balance of a Base wallet. $0.01 USDC per call."
+    },
+    {
+      "path": "/wallets/{address}/aero-balance",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "AERO balance of a Base wallet. $0.01 USDC per call."
+    },
+    {
+      "path": "/dex/pairs/{chain}/{pair}",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Detail for one DEX pair by chain and pair address. $0.01 USDC per call."
+    },
+    {
+      "path": "/dex/search/{query}",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Search DEX pairs by token name, symbol or address. $0.01 USDC per call."
+    },
+    {
+      "path": "/dex/trending",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Top boosted DEX pairs right now. $0.01 USDC per call."
+    },
+    {
+      "path": "/dex/latest-profiles",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Newest token profiles on Dexscreener. $0.01 USDC per call."
+    },
+    {
+      "path": "/dex/latest-boosts",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Latest boosted tokens on Dexscreener. $0.01 USDC per call."
+    },
+    {
+      "path": "/dex/pool/{pool}/info",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Uniswap V3 pool state: tokens, fee, liquidity, tick. $0.01 USDC per call."
+    },
+    {
+      "path": "/dex/pool/{pool}/price",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Implied price from a Uniswap V3 pool, both directions. $0.01 USDC per call."
+    },
+    {
+      "path": "/dex/volume",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "24h trading volume across tracked DEXs. $0.01 USDC per call."
+    },
+    {
+      "path": "/dex/volume/base",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "24h DEX trading volume on Base. $0.01 USDC per call."
+    },
+    {
+      "path": "/dex/volume/{protocol}",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Volume summary for one DEX protocol. $0.01 USDC per call."
+    },
+    {
+      "path": "/dex/fees/{protocol}",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Fee and revenue summary for one protocol. $0.01 USDC per call."
+    },
+    {
+      "path": "/dex/top",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Top 10 DEXs by 24h volume. $0.01 USDC per call."
+    },
+    {
+      "path": "/chain/block/latest",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Latest Base block with gas and transaction count. $0.01 USDC per call."
+    },
+    {
+      "path": "/chain/block/{number}",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Base block by number. $0.01 USDC per call."
+    },
+    {
+      "path": "/chain/block/{number}/transactions",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Transaction hashes in a Base block. $0.01 USDC per call."
+    },
+    {
+      "path": "/chain/transaction/{hash}",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Detail for a Base transaction. $0.01 USDC per call."
+    },
+    {
+      "path": "/chain/transaction/{hash}/receipt",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Receipt for a Base transaction: status, gas used, logs. $0.01 USDC per call."
+    },
+    {
+      "path": "/chain/transaction/{hash}/logs",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Event logs for a Base transaction (from its receipt). $0.01 USDC per call."
+    },
+    {
+      "path": "/chain/transaction/{hash}/input",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Decoded input data for a Base transaction. $0.01 USDC per call."
+    },
+    {
+      "path": "/chain/gas/fee-history",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Base fee history for the last 10 blocks. $0.01 USDC per call."
+    },
+    {
+      "path": "/chain/gas/priority-fee",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Current max priority fee on Base. $0.01 USDC per call."
+    },
+    {
+      "path": "/chain/gas/estimate-transfer/{to}",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Estimated gas for a plain ETH transfer on Base. $0.01 USDC per call."
+    },
+    {
+      "path": "/chain/gas/oracle",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Combined gas oracle: gas price, priority fee, fee history. $0.01 USDC per call."
+    },
+    {
+      "path": "/chain/stats",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Live Base chain stats: block, gas, chain id, client. $0.01 USDC per call."
+    },
+    {
+      "path": "/chain/syncing",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Whether the Base node is syncing (from latest block age). $0.01 USDC per call."
+    },
+    {
+      "path": "/chain/client",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Client version of the Base RPC node. $0.01 USDC per call."
+    },
+    {
+      "path": "/chain/network",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Chain id and latest block for Base. $0.01 USDC per call."
+    },
+    {
+      "path": "/chain/address/{address}/code",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Bytecode for a Base address, with size and hash. $0.01 USDC per call."
+    },
+    {
+      "path": "/nfts/{collection}/info",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "ERC721 collection name and symbol. $0.01 USDC per call."
+    },
+    {
+      "path": "/nfts/{collection}/owner/{tokenId}",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Owner of one NFT by token id. $0.01 USDC per call."
+    },
+    {
+      "path": "/nfts/{collection}/token/{tokenId}",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "NFT tokenURI plus fetched metadata. $0.01 USDC per call."
+    },
+    {
+      "path": "/nfts/{collection}/balance/{wallet}",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "How many NFTs of a collection a wallet holds. $0.01 USDC per call."
+    },
+    {
+      "path": "/nfts/{collection}/interfaces",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Which token standards an NFT contract supports (ERC721/1155/Enumerable). $0.01 USDC per call."
+    },
+    {
+      "path": "/nfts/{collection}/supply",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Total supply of an enumerable NFT collection. $0.01 USDC per call."
+    },
+    {
+      "path": "/nfts/{collection}/exists/{tokenId}",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Whether an NFT token id exists. $0.01 USDC per call."
+    },
+    {
+      "path": "/defi/tvl",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Total value locked on Base. $0.01 USDC per call."
+    },
+    {
+      "path": "/defi/tvl/{protocol}",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Total value locked for one protocol. $0.01 USDC per call."
+    },
+    {
+      "path": "/defi/protocols",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Top protocols by TVL. $0.01 USDC per call."
+    },
+    {
+      "path": "/defi/protocols/base",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Top protocols on Base by TVL. $0.01 USDC per call."
+    },
+    {
+      "path": "/defi/yields/top",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Highest-APY yield pools across chains. $0.01 USDC per call."
+    },
+    {
+      "path": "/defi/yields/base",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Highest-APY yield pools on Base. $0.01 USDC per call."
+    },
+    {
+      "path": "/defi/yields/stable",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Highest-APY stablecoin yield pools. $0.01 USDC per call."
+    },
+    {
+      "path": "/defi/yields/pool/{pool}",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Yield details for one pool by id. $0.01 USDC per call."
+    },
+    {
+      "path": "/defi/stablecoins",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Largest stablecoins by circulating supply. $0.01 USDC per call."
+    },
+    {
+      "path": "/defi/aave/reserves",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Aave V3 reserve assets on Base. $0.01 USDC per call."
+    },
+    {
+      "path": "/ens/resolve/{name}",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Resolve an ENS name to its address. $0.01 USDC per call."
+    },
+    {
+      "path": "/ens/reverse/{address}",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Reverse-resolve a wallet address to its ENS name. $0.01 USDC per call."
+    },
+    {
+      "path": "/ens/avatar/{name}",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Avatar URL for an ENS name. $0.01 USDC per call."
+    },
+    {
+      "path": "/ens/profile/{name}",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Full public profile for an ENS name. $0.01 USDC per call."
+    },
+    {
+      "path": "/utils/eth-usd",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Live ETH price in USD. $0.01 USDC per call."
+    },
+    {
+      "path": "/utils/convert/eth-usd/{amount}",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Convert an ETH amount to USD at the live price. $0.01 USDC per call."
+    },
+    {
+      "path": "/utils/convert/usd-eth/{amount}",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Convert a USD amount to ETH at the live price. $0.01 USDC per call."
+    },
+    {
+      "path": "/utils/convert/wei/{amount}",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Convert wei to ether and gwei. $0.01 USDC per call."
+    },
+    {
+      "path": "/utils/convert/ether-wei/{amount}",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Convert ether to wei. $0.01 USDC per call."
+    },
+    {
+      "path": "/utils/address/validate/{address}",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Validate an Ethereum address and return its checksum form. $0.01 USDC per call."
+    },
+    {
+      "path": "/utils/address/keccak/{text}",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Keccak-256 hash of text. $0.01 USDC per call."
+    },
+    {
+      "path": "/utils/gas-cost/{gwei}/{gas}",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Cost of a transaction in ETH and USD at the live ETH price. $0.01 USDC per call."
+    },
+    {
+      "path": "/utils/coin-price/{coin}",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Live USD price for a coin by CoinGecko id. $0.01 USDC per call."
+    },
+    {
+      "path": "/utils/market/global",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Global crypto market stats from CoinGecko. $0.01 USDC per call."
+    },
+    {
+      "path": "/utils/market/trending",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Trending coins on CoinGecko. $0.01 USDC per call."
+    },
+    {
+      "path": "/utils/market/top",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Top 10 cryptocurrencies by market cap. $0.01 USDC per call."
+    },
+    {
+      "path": "/utils/fear-greed",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Crypto Fear & Greed Index. $0.01 USDC per call."
+    },
+    {
+      "path": "/utils/coin/{coin}",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Detail for a coin by CoinGecko id. $0.01 USDC per call."
+    },
+    {
+      "path": "/lending/aave/markets",
+      "price": "0.02",
+      "currency": "usdc",
+      "description": "All Aave V3 markets on Base with on-chain supply/borrow APY. $0.02 USDC per call."
+    },
+    {
+      "path": "/lending/aave/market/{asset}",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Aave V3 market for one asset: on-chain rates + aToken/debt tokens. $0.01 USDC per call."
+    },
+    {
+      "path": "/lending/aave/user/{wallet}",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Aave V3 account data for one wallet: collateral, debt, health factor. $0.01 USDC per call."
+    },
+    {
+      "path": "/lending/aave/tvl",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Aave V3 TVL on Base. $0.01 USDC per call."
+    },
+    {
+      "path": "/lending/compound/markets",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Compound V3 yield pools on Base, top 10 by TVL. $0.01 USDC per call."
+    },
+    {
+      "path": "/lending/compound/usdc",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Compound V3 Comet USDC market on Base: utilization, totals, APY. $0.01 USDC per call."
+    },
+    {
+      "path": "/lending/compound/user/{wallet}",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Compound V3 Comet USDC position for one wallet: supplied/borrowed. $0.01 USDC per call."
+    },
+    {
+      "path": "/lending/morpho/pools",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Morpho Blue yield pools on Base, top 10 by TVL. $0.01 USDC per call."
+    },
+    {
+      "path": "/lending/morpho/stable",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Highest-APY Morpho Blue stablecoin pools on Base. $0.01 USDC per call."
+    },
+    {
+      "path": "/lending/rates/{asset}",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Lending rates for one asset: Aave on-chain + yield pools. $0.01 USDC per call."
+    },
+    {
+      "path": "/lending/top-apy",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Top 10 lending APY pools on Base. $0.01 USDC per call."
+    },
+    {
+      "path": "/lending/stablecoin-rates",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Aave V3 supply/borrow APY for USDC, DAI and USDbC on Base. $0.01 USDC per call."
+    },
+    {
+      "path": "/lending/usdc-rate",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Aave V3 USDC market rates on Base. $0.01 USDC per call."
+    },
+    {
+      "path": "/lending/weth-rate",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Aave V3 WETH market rates on Base. $0.01 USDC per call."
+    },
+    {
+      "path": "/stablecoins/top",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Top 10 stablecoins by circulating supply. $0.01 USDC per call."
+    },
+    {
+      "path": "/stablecoins/{asset}",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "One stablecoin by id, symbol, or gecko_id, with per-chain supply. $0.01 USDC per call."
+    },
+    {
+      "path": "/stablecoins/chains",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Stablecoin supply by chain, top 15. $0.01 USDC per call."
+    },
+    {
+      "path": "/stablecoins/pegs",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Stablecoins furthest from their $1 peg right now. $0.01 USDC per call."
+    },
+    {
+      "path": "/stablecoins/chain/{chain}",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Top 15 stablecoins by circulating supply on one chain. $0.01 USDC per call."
+    },
+    {
+      "path": "/stablecoins/total",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Total circulating supply of all stablecoins. $0.01 USDC per call."
+    },
+    {
+      "path": "/oracles/feeds",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Chainlink price feeds on Base: ETH/USD, BTC/USD, USDC/USD. $0.01 USDC per call."
+    },
+    {
+      "path": "/oracles/price/{symbol}",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Chainlink price for one symbol (eth, btc, usdc). $0.01 USDC per call."
+    },
+    {
+      "path": "/oracles/eth",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Chainlink ETH/USD on Base. $0.01 USDC per call."
+    },
+    {
+      "path": "/oracles/btc",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Chainlink BTC/USD on Base. $0.01 USDC per call."
+    },
+    {
+      "path": "/oracles/usdc",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Chainlink USDC/USD on Base. $0.01 USDC per call."
+    },
+    {
+      "path": "/oracles/vs-coingecko",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Chainlink ETH/USD vs CoinGecko ETH price (oracle deviation check). $0.01 USDC per call."
+    },
+    {
+      "path": "/gov/proposals",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Latest 10 Snapshot proposals across all DAOs. $0.01 USDC per call."
+    },
+    {
+      "path": "/gov/space/{space}/proposals",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Latest 10 Snapshot proposals for one space. $0.01 USDC per call."
+    },
+    {
+      "path": "/gov/proposal/{proposal_id}",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "One Snapshot proposal by id, with scores. $0.01 USDC per call."
+    },
+    {
+      "path": "/gov/proposal/{proposal_id}/votes",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Top 20 votes on one Snapshot proposal, by voting power. $0.01 USDC per call."
+    },
+    {
+      "path": "/gov/space/{space}",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "One Snapshot space: name, about, proposal/follower counts. $0.01 USDC per call."
+    },
+    {
+      "path": "/chain/gas/base-fee",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Current base fee + predicted next-block base fee. $0.01 USDC per call."
+    },
+    {
+      "path": "/chain/gas/fee-history/{blocks}",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Fee history for the last N blocks (1-20). $0.01 USDC per call."
+    },
+    {
+      "path": "/chain/gas/transfer-cost",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Cost of a plain 21,000-gas ETH transfer on Base. $0.01 USDC per call."
+    },
+    {
+      "path": "/chain/gas/transfer-cost-usd",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Cost of a plain ETH transfer on Base in USD. $0.01 USDC per call."
+    },
+    {
+      "path": "/chain/gas/max-fee",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Current base fee + max priority fee. $0.01 USDC per call."
+    },
+    {
+      "path": "/nfts/{collection}/token/{token_id}/uri",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Raw tokenURI for one NFT token. $0.01 USDC per call."
+    },
+    {
+      "path": "/nfts/{collection}/token/{token_id}/image",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Image URL from one NFT token's metadata. $0.01 USDC per call."
+    },
+    {
+      "path": "/nfts/{collection}/token/{token_id}/attributes",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Traits/attributes from one NFT token's metadata. $0.01 USDC per call."
+    },
+    {
+      "path": "/nfts1155/{collection}/balance/{wallet}/{token_id}",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "ERC1155 balance of one wallet for one token id. $0.01 USDC per call."
+    },
+    {
+      "path": "/nfts1155/{collection}/uri/{token_id}",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "ERC1155 metadata URI for one token id. $0.01 USDC per call."
+    },
+    {
+      "path": "/nfts1155/{collection}/supply/{token_id}",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "ERC1155 total supply for one token id (if the contract tracks it). $0.01 USDC per call."
+    },
+    {
+      "path": "/defi/protocol/{slug}",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "One protocol's TVL detail by slug. $0.01 USDC per call."
+    },
+    {
+      "path": "/defi/chains",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "TVL by chain, top 20. $0.01 USDC per call."
+    },
+    {
+      "path": "/defi/chains/{chain}",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "TVL for one chain. $0.01 USDC per call."
+    },
+    {
+      "path": "/defi/chains/{chain}/history",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "TVL history for one chain: first, latest, 30-day change. $0.01 USDC per call."
+    },
+    {
+      "path": "/defi/fees/overview",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Top 10 protocols by 24h fees (all chains). $0.01 USDC per call."
+    },
+    {
+      "path": "/defi/yields/chart/{pool}",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "TVL/APY history for one yield pool (last 30 points). $0.01 USDC per call."
+    },
+    {
+      "path": "/defi/yields/il/{pool}",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Impermanent-loss risk + APY for one yield pool. $0.01 USDC per call."
+    },
+    {
+      "path": "/defi/yields/project/{project}",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Top 10 yield pools for one project, by APY. $0.01 USDC per call."
+    },
+    {
+      "path": "/defi/yields/token/{symbol}",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Top 10 yield pools for one token symbol, by APY. $0.01 USDC per call."
+    },
+    {
+      "path": "/defi/yields/stable/{chain}",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Top 10 stablecoin yield pools on one chain, by APY. $0.01 USDC per call."
+    },
+    {
+      "path": "/defi/dex/volume/7d",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Total DEX volume, last 7 days (all chains). $0.01 USDC per call."
+    },
+    {
+      "path": "/defi/dex/volume/base/7d",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Total DEX volume on Base, last 7 days. $0.01 USDC per call."
+    },
+    {
+      "path": "/dex/top/volume/{n}",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Top N DEXs by 24h volume (1-25). $0.01 USDC per call."
+    },
+    {
+      "path": "/dex/volume/{chain}",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Total DEX volume for one chain (24h + 7d). $0.01 USDC per call."
+    },
+    {
+      "path": "/dex/chains",
+      "price": "0.02",
+      "currency": "usdc",
+      "description": "DEX volume by chain for the major chains. $0.02 USDC per call."
+    },
+    {
+      "path": "/dex/top/fees",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Top 10 DEXs by 24h fees. $0.01 USDC per call."
+    },
+    {
+      "path": "/dex/fees/{protocol}/chains",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Fee breakdown by chain for one protocol. $0.01 USDC per call."
+    },
+    {
+      "path": "/dex/pair/{chain}/{pair}/txns",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Transactions + volume for one DEX pair. $0.01 USDC per call."
+    },
+    {
+      "path": "/dex/pairs/{token}",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Top 10 DEX pairs for one token, by liquidity. $0.01 USDC per call."
+    },
+    {
+      "path": "/dex/pair/{token}/{chain}",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Best DEX pair for one token on one chain, by liquidity. $0.01 USDC per call."
+    },
+    {
+      "path": "/wallets/{address}/approvals",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Token allowances a wallet granted to Permit2, routers, Aave. $0.01 USDC per call."
+    },
+    {
+      "path": "/wallets/{address}/approvals/{token}",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Allowances one wallet granted for one token. $0.01 USDC per call."
+    },
+    {
+      "path": "/wallets/{address}/token/{token}/value",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "One wallet's balance of one token + USD value. $0.01 USDC per call."
+    },
+    {
+      "path": "/wallets/{address}/cbeth-balance",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Wallet cbETH balance. $0.01 USDC per call."
+    },
+    {
+      "path": "/wallets/{address}/dai-balance",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Wallet DAI balance. $0.01 USDC per call."
+    },
+    {
+      "path": "/wallets/{address}/usdbc-balance",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Wallet USDbC balance. $0.01 USDC per call."
+    },
+    {
+      "path": "/wallets/{address}/higher-balance",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Wallet HIGHER balance. $0.01 USDC per call."
+    },
+    {
+      "path": "/memes/new-pairs",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Newest Base token profiles on Dexscreener. $0.01 USDC per call."
+    },
+    {
+      "path": "/memes/trending",
+      "price": "0.02",
+      "currency": "usdc",
+      "description": "Top 15 Base pairs by 24h volume across the main Base tokens. $0.02 USDC per call."
+    },
+    {
+      "path": "/memes/boosted",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Latest boosted Base tokens on Dexscreener. $0.01 USDC per call."
+    },
+    {
+      "path": "/memes/{token}/price-change",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Price changes (5m/1h/6h/24h) for one token's best pair. $0.01 USDC per call."
+    },
+    {
+      "path": "/memes/{token}/holders",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Holder count + top holders for one token. $0.01 USDC per call."
+    },
+    {
+      "path": "/predict/markets",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Top 15 active Polymarket markets by liquidity. $0.01 USDC per call."
+    },
+    {
+      "path": "/predict/trending",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Top 15 active Polymarket markets by 24h volume. $0.01 USDC per call."
+    },
+    {
+      "path": "/predict/search/{query}",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Search active Polymarket markets by keyword. $0.01 USDC per call."
+    },
+    {
+      "path": "/predict/events",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Latest 20 active Polymarket events. $0.01 USDC per call."
+    },
+    {
+      "path": "/predict/market/{slug}",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "One Polymarket market by slug, with outcomes and prices. $0.01 USDC per call."
+    },
+    {
+      "path": "/predict/markets/closing",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Active Polymarket markets ending soonest (next 15 by end date). $0.01 USDC per call."
+    },
+    {
+      "path": "/tokens/{address}/history/{days}",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Price history for one Base token (1-365 days). $0.01 USDC per call."
+    },
+    {
+      "path": "/tokens/{address}/audit",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Security audit flags for one Base token (GoPlus). $0.01 USDC per call."
+    },
+    {
+      "path": "/tokens/{address}/holders",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Holder count + top 10 holders for one Base token (GoPlus). $0.01 USDC per call."
+    },
+    {
+      "path": "/tokens/{address}/top-holder",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Largest holder of one Base token (GoPlus). $0.01 USDC per call."
+    },
+    {
+      "path": "/tokens/{address}/age",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Age of a token's oldest DEX pair (first listing date). $0.01 USDC per call."
+    },
+    {
+      "path": "/tokens/{address}/liquidity-usd",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Total DEX liquidity (USD) across all pairs for one token. $0.01 USDC per call."
+    },
+    {
+      "path": "/tokens/{address}/fdv",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Fully diluted valuation + market cap for one Base token. $0.01 USDC per call."
+    },
+    {
+      "path": "/chain/blocks/{count}",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Summaries of the last N blocks (1-10). $0.01 USDC per call."
+    },
+    {
+      "path": "/chain/pending/count",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Pending-block transaction count (live mempool snapshot). $0.01 USDC per call."
+    },
+    {
+      "path": "/chain/transaction/{tx_hash}/status",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Transaction receipt: status + confirmations. $0.01 USDC per call."
+    },
+    {
+      "path": "/chain/transaction/{tx_hash}/cost",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Transaction cost in ETH and USD. $0.01 USDC per call."
+    },
+    {
+      "path": "/chain/block/{number}/tx-count",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Transaction count + gas for one block number. $0.01 USDC per call."
+    },
+    {
+      "path": "/utils/coin/{coin}/history/{days}",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Price history for one CoinGecko coin (1-365 days). $0.01 USDC per call."
+    },
+    {
+      "path": "/utils/convert/usdc-eth/{amount}",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Convert a USDC amount to ETH at the current price. $0.01 USDC per call."
+    },
+    {
+      "path": "/utils/market/fear-greed/history",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Fear & Greed index, last 7 days. $0.01 USDC per call."
+    },
+    {
+      "path": "/utils/coin/{coin}/ath",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "All-time high/low for one CoinGecko coin (USD). $0.01 USDC per call."
+    },
+    {
+      "path": "/utils/convert/gwei-eth/{amount}",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Convert gwei to ETH. $0.01 USDC per call."
+    },
+    {
+      "path": "/utils/coin/{coin}/change",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "Price change (24h/7d/30d/1y) for one CoinGecko coin. $0.01 USDC per call."
+    },
+    {
+      "path": "/ens/{name}/records",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "ENS text records / socials for one name. $0.01 USDC per call."
+    },
+    {
+      "path": "/ens/{name}/content",
+      "price": "0.01",
+      "currency": "usdc",
+      "description": "ENS content hash + avatar for one name. $0.01 USDC per call."
+    }
+  ],
+  "contact": {
+    "github": "https://github.com/manteclaw"
+  }
+}

@@ -1,0 +1,30 @@
+# Pinned to the same versions as the Base service (known-good, May 2026
+# pins + Nov 2026 service), with the SVM mechanism added.
+# x402==2.9.0 is required: server-solana.py uses its 2.9.0 API
+# (x402ResourceServer, HTTPFacilitatorClient, payment_middleware,
+# ExactSvmServerScheme). Newer x402 releases changed that API.
+# The [extensions] extra adds jsonschema (needed by
+# x402.extensions.bazaar); the [svm] extra adds the Solana mechanism
+# (solana + solders) used for Solana settlement.
+#
+# solana is pinned to 0.39.0 ON PURPOSE: the [svm] extra declares only
+# "solana>=0.36.0", and a fresh resolve today picks solana 0.42.0, which
+# removed solana.rpc.api — the module x402 2.9.0's SVM signers import —
+# so the SVM mechanism fails to import on 0.42.0. The floor version
+# 0.36.7 is not usable either: it requires solders<0.27 while the [svm]
+# extra requires solders>=0.27. 0.39.0 is the newest line that both
+# satisfies the SDK's declared ranges (solders resolves to 0.27.x) and
+# still ships solana.rpc.api; verified working 2026-11-22. No cdp-sdk
+# here: the Base service's parked CDP dual-facilitator experiment is
+# deliberately not part of this build.
+fastapi==0.136.1
+uvicorn==0.46.0
+httpx==0.28.1
+python-dotenv==1.2.2
+qrcode==8.2
+Pillow==12.2.0
+web3==7.16.0
+eth-account==0.13.7
+x402[extensions,svm]==2.9.0
+solana==0.39.0
+pydantic==2.13.4
