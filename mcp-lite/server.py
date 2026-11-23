@@ -54,7 +54,7 @@ import httpx
 from mcp.server.fastmcp import FastMCP
 from mcp.server.transport_security import TransportSecuritySettings
 from starlette.requests import Request
-from starlette.responses import JSONResponse
+from starlette.responses import HTMLResponse, JSONResponse
 
 # ===== config =====
 
@@ -380,6 +380,32 @@ _GLAMA_CLAIM = {
     "$schema": "https://glama.ai/mcp/schemas/connector.json",
     "claim": "glama_claim_uL6_nSyDswxysn9fwue16BGvgxFfF17s",
 }
+
+
+@mcp.custom_route("/", methods=["GET"])
+async def landing(request: Request) -> HTMLResponse:
+    return HTMLResponse(
+        """<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<title>Manteclaw MCP Lite</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>body{background:#0f0f1a;color:#e8e8f0;font-family:system-ui,sans-serif;margin:0;padding:2rem 1rem}main{max-width:640px;margin:0 auto}h1{color:#00d4ff}a{color:#00d4ff}code{background:#1a1a2e;padding:.15rem .4rem;border-radius:4px}li{margin:.35rem 0}</style>
+</head><body><main>
+<h1>Manteclaw MCP Lite</h1>
+<p>A free MCP server with <strong>100 tools</strong> for Base L2 and crypto market data:
+gas, blocks, token prices, DEX pairs, DeFi TVL &amp; yields, stablecoins, ENS,
+wallet snapshots, Chainlink feeds and more.</p>
+<p><strong>MCP endpoint:</strong> <code>https://manteclaw-mcp-lite.fly.dev/mcp</code> (streamable HTTP)</p>
+<p>Add it to any MCP client with that URL — no API key, no payment.</p>
+<ul>
+<li><a href="https://manteclaw-x402.fly.dev/catalog">Full paid API catalog</a> — 200 pay-per-call endpoints (the deep data this lite edition samples)</li>
+<li><a href="https://glama.ai/mcp/connectors/dev.fly.manteclaw-mcp-lite/manteclaw-mcp-lite">Glama listing</a></li>
+<li><a href="https://github.com/manteclaw/manteclaw-mcp-lite">GitHub repo</a></li>
+<li><a href="https://payhip.com/Manteclaw">Manteclaw store</a></li>
+</ul>
+<p>Health check: <a href="/health">/health</a></p>
+</main></body></html>"""
+    )
 
 
 @mcp.custom_route("/.well-known/glama.json", methods=["GET"])
