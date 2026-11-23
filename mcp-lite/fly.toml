@@ -1,0 +1,27 @@
+# Fly.io config for Manteclaw MCP Lite (free funnel server).
+# Mirrors the x402 service: iad, shared-cpu-1x 256MB always-on ($2.19/mo,
+# under Fly.io's under-$5 bill waiver).
+app = "manteclaw-mcp-lite"
+primary_region = "iad"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = false
+  auto_start_machines = true
+  min_machines_running = 1
+  processes = ["app"]
+
+  [[http_service.checks]]
+    name = "health"
+    path = "/health"
+    interval = "30s"
+    timeout = "5s"
+    grace_period = "10s"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "256mb"
