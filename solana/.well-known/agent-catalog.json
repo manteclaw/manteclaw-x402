@@ -1,118 +1,688 @@
 {
   "agent_id": "manteclaw-x402-solana-services",
-  "agent_name": "ManteClaw x402 Services (Solana settlement)",
+  "agent_name": "ManteClaw x402 Services (Solana)",
   "assets": [
     {
-      "category": "gas",
-      "description": "Current Base gas prices (slow/average/fast). $0.01 USDC per call.",
-      "endpoint": "/defi/gas-tracker",
-      "id": "gas-tracker",
-      "name": "Gas Tracker",
-      "preview_endpoint": "/defi/gas-tracker",
-      "price_usdc": "0.01",
-      "tags": [
-        "gas",
-        "base",
-        "l2",
-        "pricing"
-      ],
-      "type": "data"
-    },
-    {
-      "category": "defi",
-      "description": "Get token price via DEX liquidity pool analysis. $0.01 USDC per call.",
-      "endpoint": "/defi/token-price/{token_address}",
-      "id": "token-price",
-      "name": "Token Price",
-      "preview_endpoint": "/defi/token-price/{token_address}",
-      "price_usdc": "0.01",
-      "tags": [
-        "token",
-        "base",
-        "defi"
-      ],
-      "type": "data"
-    },
-    {
-      "category": "analytics",
-      "description": "Analyze wallet activity on Base. $0.01 USDC per call.",
-      "endpoint": "/defi/wallet-analyzer/{address}",
-      "id": "wallet-analyzer",
-      "name": "Wallet Analyzer",
-      "preview_endpoint": "/defi/wallet-analyzer/{address}",
-      "price_usdc": "0.01",
-      "tags": [
-        "wallet",
-        "base",
-        "analytics"
-      ],
-      "type": "data"
-    },
-    {
-      "category": "security",
-      "description": "Quick token security check on Base. $0.02 USDC per call.",
-      "endpoint": "/defi/token-security/{token_address}",
-      "id": "token-security",
-      "name": "Token Security",
-      "preview_endpoint": "/defi/token-security/{token_address}",
-      "price_usdc": "0.02",
-      "tags": [
-        "token",
-        "security",
-        "base"
-      ],
-      "type": "data"
-    },
-    {
       "category": "status",
-      "description": "MCP server status. $0.01 USDC per call.",
+      "description": "MCP server status for the Solana x402 service. $0.01 USDC per call.",
       "endpoint": "/mcp/status",
       "id": "mcp-status",
-      "name": "Mcp Status",
+      "name": "mcp-status",
       "preview_endpoint": "/mcp/status",
       "price_usdc": "0.01",
       "tags": [
         "status",
-        "mcp"
+        "mcp",
+        "solana"
       ],
       "type": "data"
     },
     {
       "category": "status",
-      "description": "MCP tools list. $0.01 USDC per call.",
+      "description": "MCP tools list for the Solana x402 service. $0.01 USDC per call.",
       "endpoint": "/mcp/tools",
       "id": "mcp-tools",
-      "name": "Mcp Tools",
+      "name": "mcp-tools",
       "preview_endpoint": "/mcp/tools",
       "price_usdc": "0.01",
       "tags": [
         "tools",
-        "mcp"
+        "mcp",
+        "solana"
+      ],
+      "type": "data"
+    },
+    {
+      "category": "chain",
+      "description": "Current Solana slot (finalized). $0.01 USDC per call.",
+      "endpoint": "/chain/slot",
+      "id": "chain-slot",
+      "name": "chain-slot",
+      "preview_endpoint": "/chain/slot",
+      "price_usdc": "0.01",
+      "tags": [
+        "chain",
+        "slot",
+        "solana"
+      ],
+      "type": "data"
+    },
+    {
+      "category": "chain",
+      "description": "Latest finalized Solana block summary: hash, height, time, transaction count. $0.01 USDC per call.",
+      "endpoint": "/chain/block/latest",
+      "id": "chain-block-latest",
+      "name": "chain-block-latest",
+      "preview_endpoint": "/chain/block/latest",
+      "price_usdc": "0.01",
+      "tags": [
+        "chain",
+        "block",
+        "solana"
+      ],
+      "type": "data"
+    },
+    {
+      "category": "chain",
+      "description": "One Solana block by slot: hash, height, time, parent, transaction count and sample signatures. $0.01 USDC per call.",
+      "endpoint": "/chain/block/{slot}",
+      "id": "chain-block",
+      "name": "chain-block",
+      "preview_endpoint": "/chain/block/{slot}",
+      "price_usdc": "0.01",
+      "tags": [
+        "chain",
+        "block",
+        "solana"
+      ],
+      "type": "data"
+    },
+    {
+      "category": "chain",
+      "description": "Transaction signatures included in one Solana block (first 50 plus total count). $0.01 USDC per call.",
+      "endpoint": "/chain/block/{slot}/signatures",
+      "id": "chain-block-signatures",
+      "name": "chain-block-signatures",
+      "preview_endpoint": "/chain/block/{slot}/signatures",
+      "price_usdc": "0.01",
+      "tags": [
+        "chain",
+        "block",
+        "signatures"
+      ],
+      "type": "data"
+    },
+    {
+      "category": "chain",
+      "description": "Estimated Unix timestamp of one Solana slot (getBlockTime). $0.01 USDC per call.",
+      "endpoint": "/chain/block-time/{slot}",
+      "id": "chain-block-time",
+      "name": "chain-block-time",
+      "preview_endpoint": "/chain/block-time/{slot}",
+      "price_usdc": "0.01",
+      "tags": [
+        "chain",
+        "block",
+        "time"
+      ],
+      "type": "data"
+    },
+    {
+      "category": "chain",
+      "description": "The most recent slots that produced blocks on Solana (getBlocksWithLimit). $0.01 USDC per call.",
+      "endpoint": "/chain/blocks/recent",
+      "id": "chain-blocks-recent",
+      "name": "chain-blocks-recent",
+      "preview_endpoint": "/chain/blocks/recent",
+      "price_usdc": "0.01",
+      "tags": [
+        "chain",
+        "blocks",
+        "recent"
+      ],
+      "type": "data"
+    },
+    {
+      "category": "chain",
+      "description": "Solana block production for the current epoch: validator count, blocks produced, leader slots, top producers. $0.01 USDC per call.",
+      "endpoint": "/chain/block-production",
+      "id": "chain-block-production",
+      "name": "chain-block-production",
+      "preview_endpoint": "/chain/block-production",
+      "price_usdc": "0.01",
+      "tags": [
+        "chain",
+        "validators",
+        "blocks"
+      ],
+      "type": "data"
+    },
+    {
+      "category": "chain",
+      "description": "Block production of one Solana validator identity in the current epoch. $0.01 USDC per call.",
+      "endpoint": "/chain/block-production/{identity}",
+      "id": "chain-block-production-validator",
+      "name": "chain-block-production-validator",
+      "preview_endpoint": "/chain/block-production/{identity}",
+      "price_usdc": "0.01",
+      "tags": [
+        "chain",
+        "validators",
+        "blocks"
+      ],
+      "type": "data"
+    },
+    {
+      "category": "chain",
+      "description": "Current Solana epoch info: epoch, absolute slot, slot index, slots in epoch, block height, transaction count. $0.01 USDC per call.",
+      "endpoint": "/chain/epoch/info",
+      "id": "chain-epoch-info",
+      "name": "chain-epoch-info",
+      "preview_endpoint": "/chain/epoch/info",
+      "price_usdc": "0.01",
+      "tags": [
+        "chain",
+        "epoch",
+        "solana"
+      ],
+      "type": "data"
+    },
+    {
+      "category": "chain",
+      "description": "Solana epoch schedule: slots per epoch, leader schedule offset, warmup, first normal epoch/slot. $0.01 USDC per call.",
+      "endpoint": "/chain/epoch/schedule",
+      "id": "chain-epoch-schedule",
+      "name": "chain-epoch-schedule",
+      "preview_endpoint": "/chain/epoch/schedule",
+      "price_usdc": "0.01",
+      "tags": [
+        "chain",
+        "epoch",
+        "schedule"
+      ],
+      "type": "data"
+    },
+    {
+      "category": "chain",
+      "description": "Progress through the current Solana epoch: percent complete, slots remaining, estimated time to epoch end. $0.01 USDC per call.",
+      "endpoint": "/chain/epoch/progress",
+      "id": "chain-epoch-progress",
+      "name": "chain-epoch-progress",
+      "preview_endpoint": "/chain/epoch/progress",
+      "price_usdc": "0.01",
+      "tags": [
+        "chain",
+        "epoch",
+        "progress"
+      ],
+      "type": "data"
+    },
+    {
+      "category": "chain",
+      "description": "Leader schedule summary for one Solana epoch: validator count, total leader slots, top leaders. $0.01 USDC per call.",
+      "endpoint": "/chain/leader-schedule/{epoch}",
+      "id": "chain-leader-schedule",
+      "name": "chain-leader-schedule",
+      "preview_endpoint": "/chain/leader-schedule/{epoch}",
+      "price_usdc": "0.01",
+      "tags": [
+        "chain",
+        "epoch",
+        "leaders"
+      ],
+      "type": "data"
+    },
+    {
+      "category": "chain",
+      "description": "Solana slot leaders starting at a slot (limit capped at 100). $0.01 USDC per call.",
+      "endpoint": "/chain/slot-leaders/{start}/{limit}",
+      "id": "chain-slot-leaders",
+      "name": "chain-slot-leaders",
+      "preview_endpoint": "/chain/slot-leaders/{start}/{limit}",
+      "price_usdc": "0.01",
+      "tags": [
+        "chain",
+        "leaders",
+        "slots"
+      ],
+      "type": "data"
+    },
+    {
+      "category": "chain",
+      "description": "Solana supply: total, circulating and non-circulating SOL (non-circulating account list replaced by its count). $0.01 USDC per call.",
+      "endpoint": "/chain/supply",
+      "id": "chain-supply",
+      "name": "chain-supply",
+      "preview_endpoint": "/chain/supply",
+      "price_usdc": "0.01",
+      "tags": [
+        "chain",
+        "supply",
+        "sol"
+      ],
+      "type": "data"
+    },
+    {
+      "category": "chain",
+      "description": "Circulating SOL supply with its USD value at the live SOL price. $0.01 USDC per call.",
+      "endpoint": "/chain/supply/circulating",
+      "id": "chain-supply-circulating",
+      "name": "chain-supply-circulating",
+      "preview_endpoint": "/chain/supply/circulating",
+      "price_usdc": "0.01",
+      "tags": [
+        "chain",
+        "supply",
+        "circulating"
+      ],
+      "type": "data"
+    },
+    {
+      "category": "chain",
+      "description": "Current Solana inflation rate: total, validator and foundation percentages for the current epoch. $0.01 USDC per call.",
+      "endpoint": "/chain/inflation",
+      "id": "chain-inflation",
+      "name": "chain-inflation",
+      "preview_endpoint": "/chain/inflation",
+      "price_usdc": "0.01",
+      "tags": [
+        "chain",
+        "inflation",
+        "sol"
+      ],
+      "type": "data"
+    },
+    {
+      "category": "chain",
+      "description": "Solana inflation governor parameters: initial, terminal, taper, foundation percent and term. $0.01 USDC per call.",
+      "endpoint": "/chain/inflation/governor",
+      "id": "chain-inflation-governor",
+      "name": "chain-inflation-governor",
+      "preview_endpoint": "/chain/inflation/governor",
+      "price_usdc": "0.01",
+      "tags": [
+        "chain",
+        "inflation",
+        "governor"
+      ],
+      "type": "data"
+    },
+    {
+      "category": "chain",
+      "description": "Latest Solana performance sample: transactions per second over the most recent sample window. $0.01 USDC per call.",
+      "endpoint": "/chain/performance",
+      "id": "chain-performance",
+      "name": "chain-performance",
+      "preview_endpoint": "/chain/performance",
+      "price_usdc": "0.01",
+      "tags": [
+        "chain",
+        "performance",
+        "tps"
+      ],
+      "type": "data"
+    },
+    {
+      "category": "chain",
+      "description": "Recent Solana performance samples with average TPS (limit capped at 60). $0.01 USDC per call.",
+      "endpoint": "/chain/performance/{limit}",
+      "id": "chain-performance-history",
+      "name": "chain-performance-history",
+      "preview_endpoint": "/chain/performance/{limit}",
+      "price_usdc": "0.01",
+      "tags": [
+        "chain",
+        "performance",
+        "tps"
+      ],
+      "type": "data"
+    },
+    {
+      "category": "chain",
+      "description": "Solana cluster software version and feature set of the RPC node. $0.01 USDC per call.",
+      "endpoint": "/chain/version",
+      "id": "chain-version",
+      "name": "chain-version",
+      "preview_endpoint": "/chain/version",
+      "price_usdc": "0.01",
+      "tags": [
+        "chain",
+        "version",
+        "node"
+      ],
+      "type": "data"
+    },
+    {
+      "category": "chain",
+      "description": "Solana cluster nodes summary: node count, nodes with RPC, version histogram, sample nodes. $0.01 USDC per call.",
+      "endpoint": "/chain/cluster-nodes",
+      "id": "chain-cluster-nodes",
+      "name": "chain-cluster-nodes",
+      "preview_endpoint": "/chain/cluster-nodes",
+      "price_usdc": "0.01",
+      "tags": [
+        "chain",
+        "nodes",
+        "cluster"
+      ],
+      "type": "data"
+    },
+    {
+      "category": "chain",
+      "description": "Solana validator vote accounts summary: current and delinquent counts, total activated stake, largest validator share. $0.01 USDC per call.",
+      "endpoint": "/chain/vote-accounts",
+      "id": "chain-vote-accounts",
+      "name": "chain-vote-accounts",
+      "preview_endpoint": "/chain/vote-accounts",
+      "price_usdc": "0.01",
+      "tags": [
+        "chain",
+        "validators",
+        "stake"
+      ],
+      "type": "data"
+    },
+    {
+      "category": "chain",
+      "description": "Top 20 current Solana validators by activated stake: vote account, node identity, stake, commission, last vote. $0.01 USDC per call.",
+      "endpoint": "/chain/vote-accounts/current",
+      "id": "chain-vote-accounts-current",
+      "name": "chain-vote-accounts-current",
+      "preview_endpoint": "/chain/vote-accounts/current",
+      "price_usdc": "0.01",
+      "tags": [
+        "chain",
+        "validators",
+        "stake"
+      ],
+      "type": "data"
+    },
+    {
+      "category": "chain",
+      "description": "Delinquent Solana validators: count and the 20 with the most stake at risk. $0.01 USDC per call.",
+      "endpoint": "/chain/vote-accounts/delinquent",
+      "id": "chain-vote-accounts-delinquent",
+      "name": "chain-vote-accounts-delinquent",
+      "preview_endpoint": "/chain/vote-accounts/delinquent",
+      "price_usdc": "0.01",
+      "tags": [
+        "chain",
+        "validators",
+        "delinquent"
+      ],
+      "type": "data"
+    },
+    {
+      "category": "chain",
+      "description": "Block commitment for one Solana slot: per-cluster stake commitment levels and total active stake. $0.01 USDC per call.",
+      "endpoint": "/chain/block-commitment/{slot}",
+      "id": "chain-block-commitment",
+      "name": "chain-block-commitment",
+      "preview_endpoint": "/chain/block-commitment/{slot}",
+      "price_usdc": "0.01",
+      "tags": [
+        "chain",
+        "block",
+        "commitment"
+      ],
+      "type": "data"
+    },
+    {
+      "category": "chain",
+      "description": "Recent Solana prioritization fees (micro-lamports per compute unit): min, median, p75, p90, max across recent slots. $0.01 USDC per call.",
+      "endpoint": "/chain/prioritization-fees",
+      "id": "chain-prioritization-fees",
+      "name": "chain-prioritization-fees",
+      "preview_endpoint": "/chain/prioritization-fees",
+      "price_usdc": "0.01",
+      "tags": [
+        "chain",
+        "fees",
+        "priority"
+      ],
+      "type": "data"
+    },
+    {
+      "category": "chain",
+      "description": "Recent prioritization fees for transactions writing to one Solana account: median, p90 and max. $0.01 USDC per call.",
+      "endpoint": "/chain/prioritization-fees/{address}",
+      "id": "chain-prioritization-fees-account",
+      "name": "chain-prioritization-fees-account",
+      "preview_endpoint": "/chain/prioritization-fees/{address}",
+      "price_usdc": "0.01",
+      "tags": [
+        "chain",
+        "fees",
+        "priority"
+      ],
+      "type": "data"
+    },
+    {
+      "category": "chain",
+      "description": "Minimum ledger slot still available on the Solana RPC node. $0.01 USDC per call.",
+      "endpoint": "/chain/minimum-ledger-slot",
+      "id": "chain-minimum-ledger-slot",
+      "name": "chain-minimum-ledger-slot",
+      "preview_endpoint": "/chain/minimum-ledger-slot",
+      "price_usdc": "0.01",
+      "tags": [
+        "chain",
+        "ledger",
+        "slot"
+      ],
+      "type": "data"
+    },
+    {
+      "category": "chain",
+      "description": "Solana mainnet genesis hash. $0.01 USDC per call.",
+      "endpoint": "/chain/genesis-hash",
+      "id": "chain-genesis-hash",
+      "name": "chain-genesis-hash",
+      "preview_endpoint": "/chain/genesis-hash",
+      "price_usdc": "0.01",
+      "tags": [
+        "chain",
+        "genesis"
+      ],
+      "type": "data"
+    },
+    {
+      "category": "chain",
+      "description": "Identity public key of the Solana RPC node answering. $0.01 USDC per call.",
+      "endpoint": "/chain/identity",
+      "id": "chain-identity",
+      "name": "chain-identity",
+      "preview_endpoint": "/chain/identity",
+      "price_usdc": "0.01",
+      "tags": [
+        "chain",
+        "node",
+        "identity"
+      ],
+      "type": "data"
+    },
+    {
+      "category": "chain",
+      "description": "Solana cluster health as reported by the RPC node (getHealth). $0.01 USDC per call.",
+      "endpoint": "/chain/health",
+      "id": "chain-health",
+      "name": "chain-health",
+      "preview_endpoint": "/chain/health",
+      "price_usdc": "0.01",
+      "tags": [
+        "chain",
+        "health",
+        "node"
+      ],
+      "type": "data"
+    },
+    {
+      "category": "chain",
+      "description": "Highest full and incremental snapshot slots on the Solana RPC node. $0.01 USDC per call.",
+      "endpoint": "/chain/snapshot-slot",
+      "id": "chain-snapshot-slot",
+      "name": "chain-snapshot-slot",
+      "preview_endpoint": "/chain/snapshot-slot",
+      "price_usdc": "0.01",
+      "tags": [
+        "chain",
+        "snapshot",
+        "node"
+      ],
+      "type": "data"
+    },
+    {
+      "category": "chain",
+      "description": "Total transaction count processed by the Solana cluster. $0.01 USDC per call.",
+      "endpoint": "/chain/transaction-count",
+      "id": "chain-transaction-count",
+      "name": "chain-transaction-count",
+      "preview_endpoint": "/chain/transaction-count",
+      "price_usdc": "0.01",
+      "tags": [
+        "chain",
+        "transactions",
+        "count"
+      ],
+      "type": "data"
+    },
+    {
+      "category": "chain",
+      "description": "Activation state of one Solana stake account, computed from its on-chain delegation epochs (the legacy getStakeActivation RPC was removed). $0.01 USDC per call.",
+      "endpoint": "/chain/stake-activation/{address}",
+      "id": "chain-stake-activation",
+      "name": "chain-stake-activation",
+      "preview_endpoint": "/chain/stake-activation/{address}",
+      "price_usdc": "0.01",
+      "tags": [
+        "chain",
+        "stake",
+        "activation"
+      ],
+      "type": "data"
+    },
+    {
+      "category": "chain",
+      "description": "Minimum balance for rent exemption for a Solana account of the given data size in bytes. $0.01 USDC per call.",
+      "endpoint": "/chain/rent/{size}",
+      "id": "chain-rent",
+      "name": "chain-rent",
+      "preview_endpoint": "/chain/rent/{size}",
+      "price_usdc": "0.01",
+      "tags": [
+        "chain",
+        "rent",
+        "lamports"
       ],
       "type": "data"
     },
     {
       "category": "token",
-      "description": "Live USD price of a Base token from DEX pairs. $0.01 USDC per call.",
-      "endpoint": "/tokens/{address}/price",
-      "id": "token-live-price",
-      "name": "Token Live Price",
-      "preview_endpoint": "/tokens/{address}/price",
+      "description": "Live SPL token supply for one Solana mint (getTokenSupply): raw amount, decimals, formatted supply. $0.01 USDC per call.",
+      "endpoint": "/tokens/{mint}/supply",
+      "id": "token-supply",
+      "name": "token-supply",
+      "preview_endpoint": "/tokens/{mint}/supply",
+      "price_usdc": "0.01",
+      "tags": [
+        "token",
+        "supply",
+        "spl"
+      ],
+      "type": "data"
+    },
+    {
+      "category": "token",
+      "description": "SPL mint account info: decimals, supply, mint authority, freeze authority, token program. $0.01 USDC per call.",
+      "endpoint": "/tokens/{mint}/info",
+      "id": "token-info",
+      "name": "token-info",
+      "preview_endpoint": "/tokens/{mint}/info",
+      "price_usdc": "0.01",
+      "tags": [
+        "token",
+        "mint",
+        "spl"
+      ],
+      "type": "data"
+    },
+    {
+      "category": "token",
+      "description": "Decimals and initialization state of one SPL mint. $0.01 USDC per call.",
+      "endpoint": "/tokens/{mint}/decimals",
+      "id": "token-decimals",
+      "name": "token-decimals",
+      "preview_endpoint": "/tokens/{mint}/decimals",
+      "price_usdc": "0.01",
+      "tags": [
+        "token",
+        "decimals",
+        "spl"
+      ],
+      "type": "data"
+    },
+    {
+      "category": "token",
+      "description": "Mint and freeze authorities of one SPL token (null means the authority is revoked). $0.01 USDC per call.",
+      "endpoint": "/tokens/{mint}/authorities",
+      "id": "token-authorities",
+      "name": "token-authorities",
+      "preview_endpoint": "/tokens/{mint}/authorities",
+      "price_usdc": "0.01",
+      "tags": [
+        "token",
+        "authority",
+        "spl"
+      ],
+      "type": "data"
+    },
+    {
+      "category": "token",
+      "description": "Largest accounts holding one SPL token (getTokenLargestAccounts): top 20 token accounts with balances and share of supply. $0.01 USDC per call.",
+      "endpoint": "/tokens/{mint}/largest-accounts",
+      "id": "token-largest-accounts",
+      "name": "token-largest-accounts",
+      "preview_endpoint": "/tokens/{mint}/largest-accounts",
+      "price_usdc": "0.01",
+      "tags": [
+        "token",
+        "holders",
+        "spl"
+      ],
+      "type": "data"
+    },
+    {
+      "category": "token",
+      "description": "Holder concentration of one SPL token: share of supply held by the top 1, 5, 10 and 20 accounts. $0.02 USDC per call.",
+      "endpoint": "/tokens/{mint}/holders/concentration",
+      "id": "token-holder-concentration",
+      "name": "token-holder-concentration",
+      "preview_endpoint": "/tokens/{mint}/holders/concentration",
+      "price_usdc": "0.02",
+      "tags": [
+        "token",
+        "holders",
+        "concentration"
+      ],
+      "type": "data"
+    },
+    {
+      "category": "token",
+      "description": "Live USD price of one Solana token from Jupiter price v3, with 24h change and Jupiter-side liquidity. $0.01 USDC per call.",
+      "endpoint": "/tokens/{mint}/price",
+      "id": "token-price",
+      "name": "token-price",
+      "preview_endpoint": "/tokens/{mint}/price",
       "price_usdc": "0.01",
       "tags": [
         "token",
         "price",
-        "base"
+        "jupiter"
       ],
       "type": "data"
     },
     {
       "category": "token",
-      "description": "All DEX pairs for a Base token, with liquidity and volume. $0.01 USDC per call.",
-      "endpoint": "/tokens/{address}/pairs",
+      "description": "USD price of one Solana token from its deepest Dexscreener pair (token as base asset). $0.01 USDC per call.",
+      "endpoint": "/tokens/{mint}/price/dexscreener",
+      "id": "token-price-dexscreener",
+      "name": "token-price-dexscreener",
+      "preview_endpoint": "/tokens/{mint}/price/dexscreener",
+      "price_usdc": "0.01",
+      "tags": [
+        "token",
+        "price",
+        "dexscreener"
+      ],
+      "type": "data"
+    },
+    {
+      "category": "token",
+      "description": "All Solana DEX pairs where the token is the BASE asset, deepest first (Dexscreener, quote-side pairs excluded). $0.01 USDC per call.",
+      "endpoint": "/tokens/{mint}/pairs",
       "id": "token-pairs",
-      "name": "Token Pairs",
-      "preview_endpoint": "/tokens/{address}/pairs",
+      "name": "token-pairs",
+      "preview_endpoint": "/tokens/{mint}/pairs",
       "price_usdc": "0.01",
       "tags": [
         "token",
@@ -123,41 +693,26 @@
     },
     {
       "category": "token",
-      "description": "Market cap, FDV, 24h volume and liquidity for a Base token. $0.01 USDC per call.",
-      "endpoint": "/tokens/{address}/market",
-      "id": "token-market",
-      "name": "Token Market",
-      "preview_endpoint": "/tokens/{address}/market",
+      "description": "Deepest Solana DEX pair for one token (as base asset): price, liquidity, volume, market cap. $0.01 USDC per call.",
+      "endpoint": "/tokens/{mint}/best-pair",
+      "id": "token-best-pair",
+      "name": "token-best-pair",
+      "preview_endpoint": "/tokens/{mint}/best-pair",
       "price_usdc": "0.01",
       "tags": [
         "token",
-        "market",
-        "mcap"
+        "dex",
+        "pairs"
       ],
       "type": "data"
     },
     {
       "category": "token",
-      "description": "Buy/sell counts for a Base token across 5m, 1h, 6h and 24h. $0.01 USDC per call.",
-      "endpoint": "/tokens/{address}/txns",
-      "id": "token-txns",
-      "name": "Token Txns",
-      "preview_endpoint": "/tokens/{address}/txns",
-      "price_usdc": "0.01",
-      "tags": [
-        "token",
-        "transactions",
-        "dex"
-      ],
-      "type": "data"
-    },
-    {
-      "category": "token",
-      "description": "Liquidity per DEX pair for a Base token. $0.01 USDC per call.",
-      "endpoint": "/tokens/{address}/liquidity",
+      "description": "Total liquidity across a token's Solana pairs (as base asset), pair count, and the deepest pair. $0.01 USDC per call.",
+      "endpoint": "/tokens/{mint}/liquidity",
       "id": "token-liquidity",
-      "name": "Token Liquidity",
-      "preview_endpoint": "/tokens/{address}/liquidity",
+      "name": "token-liquidity",
+      "preview_endpoint": "/tokens/{mint}/liquidity",
       "price_usdc": "0.01",
       "tags": [
         "token",
@@ -168,113 +723,41 @@
     },
     {
       "category": "token",
-      "description": "On-chain ERC20 metadata: name, symbol, decimals, total supply. $0.01 USDC per call.",
-      "endpoint": "/tokens/{address}/info",
-      "id": "token-info",
-      "name": "Token Info",
-      "preview_endpoint": "/tokens/{address}/info",
+      "description": "Trading volume of one Solana token: total 24h volume across its base-asset pairs plus the best pair's volume windows. $0.01 USDC per call.",
+      "endpoint": "/tokens/{mint}/volume",
+      "id": "token-volume",
+      "name": "token-volume",
+      "preview_endpoint": "/tokens/{mint}/volume",
       "price_usdc": "0.01",
       "tags": [
         "token",
-        "erc20",
-        "metadata"
+        "volume",
+        "dex"
       ],
       "type": "data"
     },
     {
       "category": "token",
-      "description": "ERC20 total supply for a Base token. $0.01 USDC per call.",
-      "endpoint": "/tokens/{address}/supply",
-      "id": "token-supply",
-      "name": "Token Supply",
-      "preview_endpoint": "/tokens/{address}/supply",
+      "description": "24h volume of one Solana token broken down by DEX across its base-asset pairs. $0.01 USDC per call.",
+      "endpoint": "/tokens/{mint}/volume/cross-dex",
+      "id": "token-volume-cross-dex",
+      "name": "token-volume-cross-dex",
+      "preview_endpoint": "/tokens/{mint}/volume/cross-dex",
       "price_usdc": "0.01",
       "tags": [
         "token",
-        "supply",
-        "erc20"
+        "volume",
+        "dex"
       ],
       "type": "data"
     },
     {
       "category": "token",
-      "description": "ERC20 name for a Base token. $0.01 USDC per call.",
-      "endpoint": "/tokens/{address}/name",
-      "id": "token-name",
-      "name": "Token Name",
-      "preview_endpoint": "/tokens/{address}/name",
-      "price_usdc": "0.01",
-      "tags": [
-        "token",
-        "erc20"
-      ],
-      "type": "data"
-    },
-    {
-      "category": "token",
-      "description": "ERC20 symbol for a Base token. $0.01 USDC per call.",
-      "endpoint": "/tokens/{address}/symbol",
-      "id": "token-symbol",
-      "name": "Token Symbol",
-      "preview_endpoint": "/tokens/{address}/symbol",
-      "price_usdc": "0.01",
-      "tags": [
-        "token",
-        "erc20"
-      ],
-      "type": "data"
-    },
-    {
-      "category": "token",
-      "description": "ERC20 decimals for a Base token. $0.01 USDC per call.",
-      "endpoint": "/tokens/{address}/decimals",
-      "id": "token-decimals",
-      "name": "Token Decimals",
-      "preview_endpoint": "/tokens/{address}/decimals",
-      "price_usdc": "0.01",
-      "tags": [
-        "token",
-        "erc20"
-      ],
-      "type": "data"
-    },
-    {
-      "category": "token",
-      "description": "ERC20 balance of a wallet for a Base token. $0.01 USDC per call.",
-      "endpoint": "/tokens/{address}/balance/{wallet}",
-      "id": "token-balance",
-      "name": "Token Balance",
-      "preview_endpoint": "/tokens/{address}/balance/{wallet}",
-      "price_usdc": "0.01",
-      "tags": [
-        "token",
-        "balance",
-        "wallet"
-      ],
-      "type": "data"
-    },
-    {
-      "category": "token",
-      "description": "ERC20 allowance a wallet granted to a spender. $0.01 USDC per call.",
-      "endpoint": "/tokens/{address}/allowance/{owner}/{spender}",
-      "id": "token-allowance",
-      "name": "Token Allowance",
-      "preview_endpoint": "/tokens/{address}/allowance/{owner}/{spender}",
-      "price_usdc": "0.01",
-      "tags": [
-        "token",
-        "allowance",
-        "erc20"
-      ],
-      "type": "data"
-    },
-    {
-      "category": "token",
-      "description": "Price change for a Base token over 5m, 1h, 6h and 24h. $0.01 USDC per call.",
-      "endpoint": "/tokens/{address}/price-change",
+      "description": "Price changes (5m, 1h, 6h, 24h) of one Solana token on its deepest pair. $0.01 USDC per call.",
+      "endpoint": "/tokens/{mint}/price-change",
       "id": "token-price-change",
-      "name": "Token Price Change",
-      "preview_endpoint": "/tokens/{address}/price-change",
+      "name": "token-price-change",
+      "preview_endpoint": "/tokens/{mint}/price-change",
       "price_usdc": "0.01",
       "tags": [
         "token",
@@ -285,25 +768,250 @@
     },
     {
       "category": "token",
-      "description": "CoinGecko USD price for a Base token contract. $0.01 USDC per call.",
-      "endpoint": "/tokens/{address}/coingecko",
-      "id": "token-coingecko",
-      "name": "Token Coingecko",
-      "preview_endpoint": "/tokens/{address}/coingecko",
+      "description": "Buy/sell transaction counts (5m, 1h, 6h, 24h) for one Solana token on its deepest pair. $0.01 USDC per call.",
+      "endpoint": "/tokens/{mint}/txns",
+      "id": "token-txns",
+      "name": "token-txns",
+      "preview_endpoint": "/tokens/{mint}/txns",
       "price_usdc": "0.01",
       "tags": [
         "token",
-        "price",
+        "transactions",
+        "dex"
+      ],
+      "type": "data"
+    },
+    {
+      "category": "token",
+      "description": "Fully diluted valuation and market cap of one Solana token from its deepest pair. $0.01 USDC per call.",
+      "endpoint": "/tokens/{mint}/fdv",
+      "id": "token-fdv",
+      "name": "token-fdv",
+      "preview_endpoint": "/tokens/{mint}/fdv",
+      "price_usdc": "0.01",
+      "tags": [
+        "token",
+        "fdv",
+        "market-cap"
+      ],
+      "type": "data"
+    },
+    {
+      "category": "token",
+      "description": "Combined market snapshot for one Solana token: Jupiter price, on-chain supply, computed market cap, DEX liquidity, volume and FDV. $0.02 USDC per call.",
+      "endpoint": "/tokens/{mint}/market",
+      "id": "token-market",
+      "name": "token-market",
+      "preview_endpoint": "/tokens/{mint}/market",
+      "price_usdc": "0.02",
+      "tags": [
+        "token",
+        "market",
+        "snapshot"
+      ],
+      "type": "data"
+    },
+    {
+      "category": "token",
+      "description": "Websites and social links for one Solana token from its deepest pair's Dexscreener profile. $0.01 USDC per call.",
+      "endpoint": "/tokens/{mint}/links",
+      "id": "token-links",
+      "name": "token-links",
+      "preview_endpoint": "/tokens/{mint}/links",
+      "price_usdc": "0.01",
+      "tags": [
+        "token",
+        "links",
+        "socials"
+      ],
+      "type": "data"
+    },
+    {
+      "category": "token",
+      "description": "Earliest known DEX pair for one Solana token: when it first traded, on which DEX. $0.01 USDC per call.",
+      "endpoint": "/tokens/{mint}/first-pair",
+      "id": "token-first-pair",
+      "name": "token-first-pair",
+      "preview_endpoint": "/tokens/{mint}/first-pair",
+      "price_usdc": "0.01",
+      "tags": [
+        "token",
+        "dex",
+        "age"
+      ],
+      "type": "data"
+    },
+    {
+      "category": "token",
+      "description": "Pool reserves of a token's deepest Solana pair: base and quote amounts held in the pool. $0.01 USDC per call.",
+      "endpoint": "/tokens/{mint}/reserves",
+      "id": "token-reserves",
+      "name": "token-reserves",
+      "preview_endpoint": "/tokens/{mint}/reserves",
+      "price_usdc": "0.01",
+      "tags": [
+        "token",
+        "liquidity",
+        "reserves"
+      ],
+      "type": "data"
+    },
+    {
+      "category": "token",
+      "description": "GeckoTerminal pools for one Solana token, top 10 by reserve. $0.01 USDC per call.",
+      "endpoint": "/tokens/{mint}/pools",
+      "id": "token-pools-gt",
+      "name": "token-pools-gt",
+      "preview_endpoint": "/tokens/{mint}/pools",
+      "price_usdc": "0.01",
+      "tags": [
+        "token",
+        "pools",
+        "geckoterminal"
+      ],
+      "type": "data"
+    },
+    {
+      "category": "token",
+      "description": "GeckoTerminal token info for one Solana mint: name, symbol, decimals, supply, price, FDV, volume. $0.01 USDC per call.",
+      "endpoint": "/tokens/{mint}/info/geckoterminal",
+      "id": "token-info-gt",
+      "name": "token-info-gt",
+      "preview_endpoint": "/tokens/{mint}/info/geckoterminal",
+      "price_usdc": "0.01",
+      "tags": [
+        "token",
+        "info",
+        "geckoterminal"
+      ],
+      "type": "data"
+    },
+    {
+      "category": "token",
+      "description": "Jupiter token metadata for one Solana mint: name, tags, holder count, organic score, liquidity, FDV. $0.01 USDC per call.",
+      "endpoint": "/tokens/{mint}/info/jupiter",
+      "id": "token-info-jupiter",
+      "name": "token-info-jupiter",
+      "preview_endpoint": "/tokens/{mint}/info/jupiter",
+      "price_usdc": "0.01",
+      "tags": [
+        "token",
+        "info",
+        "jupiter"
+      ],
+      "type": "data"
+    },
+    {
+      "category": "token",
+      "description": "CoinGecko market data for one Solana token by contract: price, market cap rank, volume, 24h range. $0.01 USDC per call.",
+      "endpoint": "/tokens/{mint}/coingecko",
+      "id": "token-coingecko",
+      "name": "token-coingecko",
+      "preview_endpoint": "/tokens/{mint}/coingecko",
+      "price_usdc": "0.01",
+      "tags": [
+        "token",
+        "coingecko",
+        "market"
+      ],
+      "type": "data"
+    },
+    {
+      "category": "token",
+      "description": "All-time high and low for one Solana token from CoinGecko (by contract address). $0.01 USDC per call.",
+      "endpoint": "/tokens/{mint}/ath",
+      "id": "token-ath",
+      "name": "token-ath",
+      "preview_endpoint": "/tokens/{mint}/ath",
+      "price_usdc": "0.01",
+      "tags": [
+        "token",
+        "ath",
         "coingecko"
       ],
       "type": "data"
     },
     {
       "category": "token",
-      "description": "Search DEX pairs by token name, symbol or address. $0.01 USDC per call.",
+      "description": "CoinGecko community sentiment for one Solana token: watchlist count and up/down vote split. $0.01 USDC per call.",
+      "endpoint": "/tokens/{mint}/sentiment",
+      "id": "token-sentiment",
+      "name": "token-sentiment",
+      "preview_endpoint": "/tokens/{mint}/sentiment",
+      "price_usdc": "0.01",
+      "tags": [
+        "token",
+        "sentiment",
+        "coingecko"
+      ],
+      "type": "data"
+    },
+    {
+      "category": "token",
+      "description": "OHLCV candles for a Solana token's top GeckoTerminal pool (timeframe: day, hour or minute). $0.01 USDC per call.",
+      "endpoint": "/tokens/{mint}/ohlcv/{timeframe}",
+      "id": "token-ohlcv",
+      "name": "token-ohlcv",
+      "preview_endpoint": "/tokens/{mint}/ohlcv/{timeframe}",
+      "price_usdc": "0.01",
+      "tags": [
+        "token",
+        "ohlcv",
+        "geckoterminal"
+      ],
+      "type": "data"
+    },
+    {
+      "category": "token",
+      "description": "Recent trades in a Solana token's top GeckoTerminal pool (latest 20). $0.01 USDC per call.",
+      "endpoint": "/tokens/{mint}/top-pool/trades",
+      "id": "token-top-pool-trades",
+      "name": "token-top-pool-trades",
+      "preview_endpoint": "/tokens/{mint}/top-pool/trades",
+      "price_usdc": "0.01",
+      "tags": [
+        "token",
+        "trades",
+        "geckoterminal"
+      ],
+      "type": "data"
+    },
+    {
+      "category": "token",
+      "description": "Batch USD prices for up to 30 Solana mints in one Jupiter call (comma-separated mint list). $0.01 USDC per call.",
+      "endpoint": "/tokens/prices/{mints}",
+      "id": "token-prices-batch",
+      "name": "token-prices-batch",
+      "preview_endpoint": "/tokens/prices/{mints}",
+      "price_usdc": "0.01",
+      "tags": [
+        "token",
+        "price",
+        "batch"
+      ],
+      "type": "data"
+    },
+    {
+      "category": "token",
+      "description": "USD prices and 24h changes for the Solana majors: SOL, USDC, USDT, JUP, JTO, PYTH, WIF, BONK, RAY (Jupiter). $0.01 USDC per call.",
+      "endpoint": "/tokens/majors/prices",
+      "id": "token-majors-prices",
+      "name": "token-majors-prices",
+      "preview_endpoint": "/tokens/majors/prices",
+      "price_usdc": "0.01",
+      "tags": [
+        "token",
+        "price",
+        "majors"
+      ],
+      "type": "data"
+    },
+    {
+      "category": "token",
+      "description": "Search Solana DEX pairs by token name or symbol (Dexscreener, Solana only, top 10 by liquidity). $0.01 USDC per call.",
       "endpoint": "/tokens/search/{query}",
       "id": "token-search",
-      "name": "Token Search",
+      "name": "token-search",
       "preview_endpoint": "/tokens/search/{query}",
       "price_usdc": "0.01",
       "tags": [
@@ -315,130 +1023,160 @@
     },
     {
       "category": "token",
-      "description": "Top boosted tokens on Dexscreener right now. $0.01 USDC per call.",
-      "endpoint": "/tokens/trending",
-      "id": "token-trending",
-      "name": "Token Trending",
-      "preview_endpoint": "/tokens/trending",
+      "description": "Search Jupiter's Solana token index by name, symbol or mint: metadata, tags, holder counts, scores. $0.01 USDC per call.",
+      "endpoint": "/tokens/search/jupiter/{query}",
+      "id": "token-search-jupiter",
+      "name": "token-search-jupiter",
+      "preview_endpoint": "/tokens/search/jupiter/{query}",
       "price_usdc": "0.01",
       "tags": [
         "token",
-        "trending",
-        "dex"
+        "search",
+        "jupiter"
       ],
       "type": "data"
     },
     {
       "category": "token",
-      "description": "Newest token profiles on Dexscreener. $0.01 USDC per call.",
-      "endpoint": "/tokens/new",
-      "id": "token-new",
-      "name": "Token New",
-      "preview_endpoint": "/tokens/new",
+      "description": "Solana tokens with the highest 24h volume right now, from GeckoTerminal's top pools. $0.01 USDC per call.",
+      "endpoint": "/tokens/top/volume",
+      "id": "token-top-volume",
+      "name": "token-top-volume",
+      "preview_endpoint": "/tokens/top/volume",
       "price_usdc": "0.01",
       "tags": [
         "token",
-        "new",
-        "dex"
-      ],
-      "type": "data"
-    },
-    {
-      "category": "token",
-      "description": "Latest boosted tokens on Dexscreener. $0.01 USDC per call.",
-      "endpoint": "/tokens/boosts",
-      "id": "token-boosts",
-      "name": "Token Boosts",
-      "preview_endpoint": "/tokens/boosts",
-      "price_usdc": "0.01",
-      "tags": [
-        "token",
-        "boosts",
-        "dex"
+        "volume",
+        "top"
       ],
       "type": "data"
     },
     {
       "category": "wallet",
-      "description": "ETH balance of a Base wallet. $0.01 USDC per call.",
+      "description": "SOL balance of one Solana wallet (lamports and SOL). $0.01 USDC per call.",
       "endpoint": "/wallets/{address}/balance",
       "id": "wallet-balance",
-      "name": "Wallet Balance",
+      "name": "wallet-balance",
       "preview_endpoint": "/wallets/{address}/balance",
       "price_usdc": "0.01",
       "tags": [
         "wallet",
         "balance",
-        "base"
+        "sol"
       ],
       "type": "data"
     },
     {
       "category": "wallet",
-      "description": "Transaction count (nonce) of a Base wallet. $0.01 USDC per call.",
-      "endpoint": "/wallets/{address}/nonce",
-      "id": "wallet-nonce",
-      "name": "Wallet Nonce",
-      "preview_endpoint": "/wallets/{address}/nonce",
+      "description": "SOL balance of one wallet with its current USD value. $0.01 USDC per call.",
+      "endpoint": "/wallets/{address}/balance/usd",
+      "id": "wallet-balance-usd",
+      "name": "wallet-balance-usd",
+      "preview_endpoint": "/wallets/{address}/balance/usd",
       "price_usdc": "0.01",
       "tags": [
         "wallet",
-        "nonce",
-        "base"
+        "balance",
+        "usd"
       ],
       "type": "data"
     },
     {
       "category": "wallet",
-      "description": "Whether a Base address is a smart contract. $0.01 USDC per call.",
-      "endpoint": "/wallets/{address}/is-contract",
-      "id": "wallet-is-contract",
-      "name": "Wallet Is Contract",
-      "preview_endpoint": "/wallets/{address}/is-contract",
+      "description": "Raw account info for one Solana address: lamports, owner program, executable flag, data size. $0.01 USDC per call.",
+      "endpoint": "/wallets/{address}/account",
+      "id": "wallet-account",
+      "name": "wallet-account",
+      "preview_endpoint": "/wallets/{address}/account",
       "price_usdc": "0.01",
       "tags": [
         "wallet",
-        "contract",
-        "base"
+        "account",
+        "info"
       ],
       "type": "data"
     },
     {
       "category": "wallet",
-      "description": "Bytecode size and hash for a Base address. $0.01 USDC per call.",
-      "endpoint": "/wallets/{address}/code",
-      "id": "wallet-code",
-      "name": "Wallet Code",
-      "preview_endpoint": "/wallets/{address}/code",
-      "price_usdc": "0.01",
-      "tags": [
-        "wallet",
-        "code",
-        "base"
-      ],
-      "type": "data"
-    },
-    {
-      "category": "wallet",
-      "description": "Balances of the top Base tokens for a wallet. $0.02 USDC per call.",
+      "description": "All SPL token accounts of one wallet (both token programs): mint, balance, decimals, state \u2014 sorted by balance. $0.01 USDC per call.",
       "endpoint": "/wallets/{address}/tokens",
       "id": "wallet-tokens",
-      "name": "Wallet Tokens",
+      "name": "wallet-tokens",
       "preview_endpoint": "/wallets/{address}/tokens",
-      "price_usdc": "0.02",
+      "price_usdc": "0.01",
       "tags": [
         "wallet",
         "tokens",
-        "portfolio"
+        "spl"
       ],
       "type": "data"
     },
     {
       "category": "wallet",
-      "description": "USD portfolio value of a Base wallet (ETH + top tokens). $0.02 USDC per call.",
+      "description": "Token account counts for one wallet: total accounts, non-zero balances, split by token program. $0.01 USDC per call.",
+      "endpoint": "/wallets/{address}/tokens/count",
+      "id": "wallet-tokens-count",
+      "name": "wallet-tokens-count",
+      "preview_endpoint": "/wallets/{address}/tokens/count",
+      "price_usdc": "0.01",
+      "tags": [
+        "wallet",
+        "tokens",
+        "count"
+      ],
+      "type": "data"
+    },
+    {
+      "category": "wallet",
+      "description": "One wallet's balance of one SPL token, summed across all its token accounts for that mint. $0.01 USDC per call.",
+      "endpoint": "/wallets/{address}/token/{mint}",
+      "id": "wallet-token-balance",
+      "name": "wallet-token-balance",
+      "preview_endpoint": "/wallets/{address}/token/{mint}",
+      "price_usdc": "0.01",
+      "tags": [
+        "wallet",
+        "token",
+        "balance"
+      ],
+      "type": "data"
+    },
+    {
+      "category": "wallet",
+      "description": "Every token account one wallet holds for one mint (usually one \u2014 more means fragmented holdings). $0.01 USDC per call.",
+      "endpoint": "/wallets/{address}/token/{mint}/accounts",
+      "id": "wallet-token-accounts",
+      "name": "wallet-token-accounts",
+      "preview_endpoint": "/wallets/{address}/token/{mint}/accounts",
+      "price_usdc": "0.01",
+      "tags": [
+        "wallet",
+        "token",
+        "accounts"
+      ],
+      "type": "data"
+    },
+    {
+      "category": "wallet",
+      "description": "One wallet's balance of one token with its USD value at the Jupiter price. $0.01 USDC per call.",
+      "endpoint": "/wallets/{address}/token/{mint}/usd",
+      "id": "wallet-token-usd",
+      "name": "wallet-token-usd",
+      "preview_endpoint": "/wallets/{address}/token/{mint}/usd",
+      "price_usdc": "0.01",
+      "tags": [
+        "wallet",
+        "token",
+        "usd"
+      ],
+      "type": "data"
+    },
+    {
+      "category": "wallet",
+      "description": "Full wallet portfolio: SOL plus every SPL holding priced in USD via Jupiter, with total portfolio value. $0.02 USDC per call.",
       "endpoint": "/wallets/{address}/portfolio",
       "id": "wallet-portfolio",
-      "name": "Wallet Portfolio",
+      "name": "wallet-portfolio",
       "preview_endpoint": "/wallets/{address}/portfolio",
       "price_usdc": "0.02",
       "tags": [
@@ -450,144 +1188,530 @@
     },
     {
       "category": "wallet",
-      "description": "Reverse ENS name for a Base wallet address. $0.01 USDC per call.",
-      "endpoint": "/wallets/{address}/ens",
-      "id": "wallet-ens",
-      "name": "Wallet Ens",
-      "preview_endpoint": "/wallets/{address}/ens",
+      "description": "NFT-style holdings of one wallet: token accounts with 0 decimals and a balance of at least 1 (the on-chain NFT shape). $0.01 USDC per call.",
+      "endpoint": "/wallets/{address}/nfts",
+      "id": "wallet-nfts",
+      "name": "wallet-nfts",
+      "preview_endpoint": "/wallets/{address}/nfts",
       "price_usdc": "0.01",
       "tags": [
         "wallet",
-        "ens",
-        "name"
+        "nfts",
+        "spl"
       ],
       "type": "data"
     },
     {
       "category": "wallet",
-      "description": "USD value of a Base wallet's ETH balance. $0.01 USDC per call.",
-      "endpoint": "/wallets/{address}/eth-value",
-      "id": "wallet-eth-value",
-      "name": "Wallet Eth Value",
-      "preview_endpoint": "/wallets/{address}/eth-value",
+      "description": "Latest 25 transaction signatures for one address: slot, time, status, memo. $0.01 USDC per call.",
+      "endpoint": "/wallets/{address}/signatures",
+      "id": "wallet-signatures",
+      "name": "wallet-signatures",
+      "preview_endpoint": "/wallets/{address}/signatures",
       "price_usdc": "0.01",
       "tags": [
         "wallet",
-        "eth",
-        "usd"
+        "signatures",
+        "history"
       ],
       "type": "data"
     },
     {
       "category": "wallet",
-      "description": "How many of the top Base tokens a wallet holds. $0.01 USDC per call.",
-      "endpoint": "/wallets/{address}/token-count",
-      "id": "wallet-token-count",
-      "name": "Wallet Token Count",
-      "preview_endpoint": "/wallets/{address}/token-count",
+      "description": "Recent transaction signatures for one address with a custom limit (capped at 100). $0.01 USDC per call.",
+      "endpoint": "/wallets/{address}/signatures/{limit}",
+      "id": "wallet-signatures-limit",
+      "name": "wallet-signatures-limit",
+      "preview_endpoint": "/wallets/{address}/signatures/{limit}",
       "price_usdc": "0.01",
       "tags": [
         "wallet",
-        "tokens",
-        "count"
+        "signatures",
+        "history"
       ],
       "type": "data"
     },
     {
       "category": "wallet",
-      "description": "USDC balance of a Base wallet. $0.01 USDC per call.",
-      "endpoint": "/wallets/{address}/usdc-balance",
-      "id": "wallet-usdc-balance",
-      "name": "Wallet Usdc Balance",
-      "preview_endpoint": "/wallets/{address}/usdc-balance",
+      "description": "Failed transactions among an address's latest 100 signatures, with error summaries. $0.01 USDC per call.",
+      "endpoint": "/wallets/{address}/signatures/failed",
+      "id": "wallet-signatures-failed",
+      "name": "wallet-signatures-failed",
+      "preview_endpoint": "/wallets/{address}/signatures/failed",
       "price_usdc": "0.01",
       "tags": [
         "wallet",
-        "usdc",
-        "balance"
+        "signatures",
+        "failed"
       ],
       "type": "data"
     },
     {
       "category": "wallet",
-      "description": "WETH balance of a Base wallet. $0.01 USDC per call.",
-      "endpoint": "/wallets/{address}/weth-balance",
-      "id": "wallet-weth-balance",
-      "name": "Wallet Weth Balance",
-      "preview_endpoint": "/wallets/{address}/weth-balance",
+      "description": "Activity profile of one address from its latest 100 signatures: success rate, first/last activity in window, busiest day. $0.01 USDC per call.",
+      "endpoint": "/wallets/{address}/activity",
+      "id": "wallet-activity",
+      "name": "wallet-activity",
+      "preview_endpoint": "/wallets/{address}/activity",
       "price_usdc": "0.01",
       "tags": [
         "wallet",
-        "weth",
-        "balance"
+        "activity",
+        "analytics"
       ],
       "type": "data"
     },
     {
       "category": "wallet",
-      "description": "AERO balance of a Base wallet. $0.01 USDC per call.",
-      "endpoint": "/wallets/{address}/aero-balance",
-      "id": "wallet-aero-balance",
-      "name": "Wallet Aero Balance",
-      "preview_endpoint": "/wallets/{address}/aero-balance",
+      "description": "Stake accounts controlled by one wallet (as staker or withdrawer): delegation, voter, epochs, balances. $0.01 USDC per call.",
+      "endpoint": "/wallets/{address}/stake-accounts",
+      "id": "wallet-stake-accounts",
+      "name": "wallet-stake-accounts",
+      "preview_endpoint": "/wallets/{address}/stake-accounts",
       "price_usdc": "0.01",
       "tags": [
         "wallet",
-        "aero",
-        "balance"
+        "stake",
+        "validators"
+      ],
+      "type": "data"
+    },
+    {
+      "category": "wallet",
+      "description": "Total SOL one wallet has delegated across all its stake accounts. $0.01 USDC per call.",
+      "endpoint": "/wallets/{address}/stake/total",
+      "id": "wallet-stake-total",
+      "name": "wallet-stake-total",
+      "preview_endpoint": "/wallets/{address}/stake/total",
+      "price_usdc": "0.01",
+      "tags": [
+        "wallet",
+        "stake",
+        "total"
+      ],
+      "type": "data"
+    },
+    {
+      "category": "wallet",
+      "description": "Validator lookup for one address: matches it as a vote account or node identity in the live validator set. $0.01 USDC per call.",
+      "endpoint": "/wallets/{address}/validator",
+      "id": "wallet-validator",
+      "name": "wallet-validator",
+      "preview_endpoint": "/wallets/{address}/validator",
+      "price_usdc": "0.01",
+      "tags": [
+        "wallet",
+        "validator",
+        "stake"
+      ],
+      "type": "data"
+    },
+    {
+      "category": "wallet",
+      "description": "Inflation reward earned by one address in the most recent completed epoch (null reward means none). $0.01 USDC per call.",
+      "endpoint": "/wallets/{address}/inflation-rewards",
+      "id": "wallet-inflation-rewards",
+      "name": "wallet-inflation-rewards",
+      "preview_endpoint": "/wallets/{address}/inflation-rewards",
+      "price_usdc": "0.01",
+      "tags": [
+        "wallet",
+        "rewards",
+        "inflation"
+      ],
+      "type": "data"
+    },
+    {
+      "category": "wallet",
+      "description": "A wallet's largest token holding by USD value (Jupiter-priced), with its share of the portfolio. $0.01 USDC per call.",
+      "endpoint": "/wallets/{address}/largest-token",
+      "id": "wallet-largest-token",
+      "name": "wallet-largest-token",
+      "preview_endpoint": "/wallets/{address}/largest-token",
+      "price_usdc": "0.01",
+      "tags": [
+        "wallet",
+        "token",
+        "largest"
+      ],
+      "type": "data"
+    },
+    {
+      "category": "wallet",
+      "description": "SOL locked as rent inside a wallet's token accounts (sum of token-account lamports). $0.01 USDC per call.",
+      "endpoint": "/wallets/{address}/token-rent",
+      "id": "wallet-token-rent",
+      "name": "wallet-token-rent",
+      "preview_endpoint": "/wallets/{address}/token-rent",
+      "price_usdc": "0.01",
+      "tags": [
+        "wallet",
+        "rent",
+        "tokens"
+      ],
+      "type": "data"
+    },
+    {
+      "category": "wallet",
+      "description": "The associated token account (ATA) address for a wallet + mint: derived PDA, whether it exists, and its balance. $0.01 USDC per call.",
+      "endpoint": "/wallets/{address}/associated-token-account/{mint}",
+      "id": "wallet-ata",
+      "name": "wallet-ata",
+      "preview_endpoint": "/wallets/{address}/associated-token-account/{mint}",
+      "price_usdc": "0.01",
+      "tags": [
+        "wallet",
+        "ata",
+        "token"
+      ],
+      "type": "data"
+    },
+    {
+      "category": "wallet",
+      "description": "One-call wallet summary: SOL balance, token and NFT counts, delegated stake, last activity, validator flag. $0.01 USDC per call.",
+      "endpoint": "/wallets/{address}/summary",
+      "id": "wallet-summary",
+      "name": "wallet-summary",
+      "preview_endpoint": "/wallets/{address}/summary",
+      "price_usdc": "0.01",
+      "tags": [
+        "wallet",
+        "summary",
+        "profile"
+      ],
+      "type": "data"
+    },
+    {
+      "category": "transaction",
+      "description": "One Solana transaction: slot, time, fee, status, compute units, programs involved and SOL balance changes. $0.01 USDC per call.",
+      "endpoint": "/transactions/{signature}",
+      "id": "transaction-detail",
+      "name": "transaction-detail",
+      "preview_endpoint": "/transactions/{signature}",
+      "price_usdc": "0.01",
+      "tags": [
+        "transaction",
+        "detail"
+      ],
+      "type": "data"
+    },
+    {
+      "category": "transaction",
+      "description": "Confirmation status of one Solana transaction: finalized/confirmed status, slot, error. $0.01 USDC per call.",
+      "endpoint": "/transactions/{signature}/status",
+      "id": "transaction-status",
+      "name": "transaction-status",
+      "preview_endpoint": "/transactions/{signature}/status",
+      "price_usdc": "0.01",
+      "tags": [
+        "transaction",
+        "status"
+      ],
+      "type": "data"
+    },
+    {
+      "category": "transaction",
+      "description": "Pre/post balances for one transaction: SOL changes per account and SPL token balance changes. $0.01 USDC per call.",
+      "endpoint": "/transactions/{signature}/balances",
+      "id": "transaction-balances",
+      "name": "transaction-balances",
+      "preview_endpoint": "/transactions/{signature}/balances",
+      "price_usdc": "0.01",
+      "tags": [
+        "transaction",
+        "balances"
+      ],
+      "type": "data"
+    },
+    {
+      "category": "transaction",
+      "description": "Fee breakdown of one Solana transaction: fee in lamports/SOL/USD, compute units consumed and cost units. $0.01 USDC per call.",
+      "endpoint": "/transactions/{signature}/fee",
+      "id": "transaction-fee",
+      "name": "transaction-fee",
+      "preview_endpoint": "/transactions/{signature}/fee",
+      "price_usdc": "0.01",
+      "tags": [
+        "transaction",
+        "fee"
+      ],
+      "type": "data"
+    },
+    {
+      "category": "transaction",
+      "description": "Programs invoked by one Solana transaction: program ids, instruction counts and log size. $0.01 USDC per call.",
+      "endpoint": "/transactions/{signature}/programs",
+      "id": "transaction-programs",
+      "name": "transaction-programs",
+      "preview_endpoint": "/transactions/{signature}/programs",
+      "price_usdc": "0.01",
+      "tags": [
+        "transaction",
+        "programs"
+      ],
+      "type": "data"
+    },
+    {
+      "category": "transaction",
+      "description": "All transaction signatures in one Solana block (first 100 plus total count). $0.01 USDC per call.",
+      "endpoint": "/transactions/block/{slot}",
+      "id": "transactions-block",
+      "name": "transactions-block",
+      "preview_endpoint": "/transactions/block/{slot}",
+      "price_usdc": "0.01",
+      "tags": [
+        "transaction",
+        "block"
       ],
       "type": "data"
     },
     {
       "category": "dex",
-      "description": "Detail for one DEX pair by chain and pair address. $0.01 USDC per call.",
-      "endpoint": "/dex/pairs/{chain}/{pair}",
+      "description": "One Solana DEX pair by address (Dexscreener): tokens, price, liquidity, volume, market cap. $0.01 USDC per call.",
+      "endpoint": "/dex/pair/{pair_address}",
       "id": "dex-pair",
-      "name": "Dex Pair",
-      "preview_endpoint": "/dex/pairs/{chain}/{pair}",
+      "name": "dex-pair",
+      "preview_endpoint": "/dex/pair/{pair_address}",
       "price_usdc": "0.01",
       "tags": [
         "dex",
-        "pair"
+        "pair",
+        "dexscreener"
       ],
       "type": "data"
     },
     {
       "category": "dex",
-      "description": "Search DEX pairs by token name, symbol or address. $0.01 USDC per call.",
+      "description": "Profile info of one Solana pair: websites, socials and image from Dexscreener. $0.01 USDC per call.",
+      "endpoint": "/dex/pair/{pair_address}/info",
+      "id": "dex-pair-info",
+      "name": "dex-pair-info",
+      "preview_endpoint": "/dex/pair/{pair_address}/info",
+      "price_usdc": "0.01",
+      "tags": [
+        "dex",
+        "pair",
+        "info"
+      ],
+      "type": "data"
+    },
+    {
+      "category": "dex",
+      "description": "Age of one Solana DEX pair: creation timestamp and seconds since it opened. $0.01 USDC per call.",
+      "endpoint": "/dex/pair/{pair_address}/age",
+      "id": "dex-pair-age",
+      "name": "dex-pair-age",
+      "preview_endpoint": "/dex/pair/{pair_address}/age",
+      "price_usdc": "0.01",
+      "tags": [
+        "dex",
+        "pair",
+        "age"
+      ],
+      "type": "data"
+    },
+    {
+      "category": "dex",
+      "description": "Trending Solana pools on GeckoTerminal right now (top 10). $0.01 USDC per call.",
+      "endpoint": "/dex/trending",
+      "id": "dex-trending",
+      "name": "dex-trending",
+      "preview_endpoint": "/dex/trending",
+      "price_usdc": "0.01",
+      "tags": [
+        "dex",
+        "trending",
+        "geckoterminal"
+      ],
+      "type": "data"
+    },
+    {
+      "category": "dex",
+      "description": "Newest Solana pools on GeckoTerminal (top 10 by creation). $0.01 USDC per call.",
+      "endpoint": "/dex/new-pools",
+      "id": "dex-new-pools",
+      "name": "dex-new-pools",
+      "preview_endpoint": "/dex/new-pools",
+      "price_usdc": "0.01",
+      "tags": [
+        "dex",
+        "new",
+        "pools"
+      ],
+      "type": "data"
+    },
+    {
+      "category": "dex",
+      "description": "Top Solana pools on GeckoTerminal (top 10 by their ranking: reserves and activity). $0.01 USDC per call.",
+      "endpoint": "/dex/pools/top",
+      "id": "dex-pools-top",
+      "name": "dex-pools-top",
+      "preview_endpoint": "/dex/pools/top",
+      "price_usdc": "0.01",
+      "tags": [
+        "dex",
+        "pools",
+        "top"
+      ],
+      "type": "data"
+    },
+    {
+      "category": "dex",
+      "description": "One Solana pool on GeckoTerminal: prices, reserves, volume and transaction windows. $0.01 USDC per call.",
+      "endpoint": "/dex/pools/{pool_address}",
+      "id": "dex-pool",
+      "name": "dex-pool",
+      "preview_endpoint": "/dex/pools/{pool_address}",
+      "price_usdc": "0.01",
+      "tags": [
+        "dex",
+        "pool",
+        "geckoterminal"
+      ],
+      "type": "data"
+    },
+    {
+      "category": "dex",
+      "description": "Recent trades in one Solana pool (GeckoTerminal, latest 20): kind, size in USD, price, maker. $0.01 USDC per call.",
+      "endpoint": "/dex/pools/{pool_address}/trades",
+      "id": "dex-pool-trades",
+      "name": "dex-pool-trades",
+      "preview_endpoint": "/dex/pools/{pool_address}/trades",
+      "price_usdc": "0.01",
+      "tags": [
+        "dex",
+        "pool",
+        "trades"
+      ],
+      "type": "data"
+    },
+    {
+      "category": "dex",
+      "description": "OHLCV candles for one Solana pool (GeckoTerminal; timeframe: day, hour or minute; latest 48). $0.01 USDC per call.",
+      "endpoint": "/dex/pools/{pool_address}/ohlcv/{timeframe}",
+      "id": "dex-pool-ohlcv",
+      "name": "dex-pool-ohlcv",
+      "preview_endpoint": "/dex/pools/{pool_address}/ohlcv/{timeframe}",
+      "price_usdc": "0.01",
+      "tags": [
+        "dex",
+        "pool",
+        "ohlcv"
+      ],
+      "type": "data"
+    },
+    {
+      "category": "dex",
+      "description": "The two tokens of one Solana pool with their GeckoTerminal token data (price, FDV, supply). $0.01 USDC per call.",
+      "endpoint": "/dex/pools/{pool_address}/tokens",
+      "id": "dex-pool-tokens",
+      "name": "dex-pool-tokens",
+      "preview_endpoint": "/dex/pools/{pool_address}/tokens",
+      "price_usdc": "0.01",
+      "tags": [
+        "dex",
+        "pool",
+        "tokens"
+      ],
+      "type": "data"
+    },
+    {
+      "category": "dex",
+      "description": "Top pools of one Solana DEX on GeckoTerminal (dex id e.g. raydium, orca, meteora, pump-fun). $0.01 USDC per call.",
+      "endpoint": "/dex/{dex_id}/pools",
+      "id": "dex-pools-by-dex",
+      "name": "dex-pools-by-dex",
+      "preview_endpoint": "/dex/{dex_id}/pools",
+      "price_usdc": "0.01",
+      "tags": [
+        "dex",
+        "pools",
+        "geckoterminal"
+      ],
+      "type": "data"
+    },
+    {
+      "category": "dex",
+      "description": "Newest pools of one Solana DEX on GeckoTerminal. $0.01 USDC per call.",
+      "endpoint": "/dex/{dex_id}/new-pools",
+      "id": "dex-new-pools-by-dex",
+      "name": "dex-new-pools-by-dex",
+      "preview_endpoint": "/dex/{dex_id}/new-pools",
+      "price_usdc": "0.01",
+      "tags": [
+        "dex",
+        "new",
+        "pools"
+      ],
+      "type": "data"
+    },
+    {
+      "category": "dex",
+      "description": "All DEXes trading on Solana according to GeckoTerminal. $0.01 USDC per call.",
+      "endpoint": "/dex/list",
+      "id": "dex-list",
+      "name": "dex-list",
+      "preview_endpoint": "/dex/list",
+      "price_usdc": "0.01",
+      "tags": [
+        "dex",
+        "list",
+        "geckoterminal"
+      ],
+      "type": "data"
+    },
+    {
+      "category": "dex",
+      "description": "Search Solana DEX pairs by name or symbol (Dexscreener, Solana only, top 10). $0.01 USDC per call.",
       "endpoint": "/dex/search/{query}",
       "id": "dex-search",
-      "name": "Dex Search",
+      "name": "dex-search",
       "preview_endpoint": "/dex/search/{query}",
       "price_usdc": "0.01",
       "tags": [
         "dex",
         "search",
-        "pairs"
+        "dexscreener"
       ],
       "type": "data"
     },
     {
       "category": "dex",
-      "description": "Top boosted DEX pairs right now. $0.01 USDC per call.",
-      "endpoint": "/dex/trending",
-      "id": "dex-trending",
-      "name": "Dex Trending",
-      "preview_endpoint": "/dex/trending",
+      "description": "Top boosted tokens on Dexscreener right now, Solana only. $0.01 USDC per call.",
+      "endpoint": "/dex/boosts/top",
+      "id": "dex-boosts-top",
+      "name": "dex-boosts-top",
+      "preview_endpoint": "/dex/boosts/top",
       "price_usdc": "0.01",
       "tags": [
         "dex",
+        "boosts",
         "trending"
       ],
       "type": "data"
     },
     {
       "category": "dex",
-      "description": "Newest token profiles on Dexscreener. $0.01 USDC per call.",
-      "endpoint": "/dex/latest-profiles",
-      "id": "dex-latest-profiles",
-      "name": "Dex Latest Profiles",
-      "preview_endpoint": "/dex/latest-profiles",
+      "description": "Most recently boosted tokens on Dexscreener, Solana only. $0.01 USDC per call.",
+      "endpoint": "/dex/boosts/latest",
+      "id": "dex-boosts-latest",
+      "name": "dex-boosts-latest",
+      "preview_endpoint": "/dex/boosts/latest",
+      "price_usdc": "0.01",
+      "tags": [
+        "dex",
+        "boosts",
+        "latest"
+      ],
+      "type": "data"
+    },
+    {
+      "category": "dex",
+      "description": "Newest token profiles created on Dexscreener, Solana only. $0.01 USDC per call.",
+      "endpoint": "/dex/profiles/latest",
+      "id": "dex-profiles-latest",
+      "name": "dex-profiles-latest",
+      "preview_endpoint": "/dex/profiles/latest",
       "price_usdc": "0.01",
       "tags": [
         "dex",
@@ -598,497 +1722,85 @@
     },
     {
       "category": "dex",
-      "description": "Latest boosted tokens on Dexscreener. $0.01 USDC per call.",
-      "endpoint": "/dex/latest-boosts",
-      "id": "dex-latest-boosts",
-      "name": "Dex Latest Boosts",
-      "preview_endpoint": "/dex/latest-boosts",
-      "price_usdc": "0.01",
-      "tags": [
-        "dex",
-        "boosts"
-      ],
-      "type": "data"
-    },
-    {
-      "category": "dex",
-      "description": "Uniswap V3 pool state: tokens, fee, liquidity, tick. $0.01 USDC per call.",
-      "endpoint": "/dex/pool/{pool}/info",
-      "id": "dex-pool-info",
-      "name": "Dex Pool Info",
-      "preview_endpoint": "/dex/pool/{pool}/info",
-      "price_usdc": "0.01",
-      "tags": [
-        "dex",
-        "uniswap",
-        "pool"
-      ],
-      "type": "data"
-    },
-    {
-      "category": "dex",
-      "description": "Implied price from a Uniswap V3 pool, both directions. $0.01 USDC per call.",
-      "endpoint": "/dex/pool/{pool}/price",
-      "id": "dex-pool-price",
-      "name": "Dex Pool Price",
-      "preview_endpoint": "/dex/pool/{pool}/price",
-      "price_usdc": "0.01",
-      "tags": [
-        "dex",
-        "uniswap",
-        "price"
-      ],
-      "type": "data"
-    },
-    {
-      "category": "dex",
-      "description": "24h trading volume across tracked DEXs. $0.01 USDC per call.",
-      "endpoint": "/dex/volume",
-      "id": "dex-volume",
-      "name": "Dex Volume",
-      "preview_endpoint": "/dex/volume",
-      "price_usdc": "0.01",
-      "tags": [
-        "dex",
-        "volume"
-      ],
-      "type": "data"
-    },
-    {
-      "category": "dex",
-      "description": "24h DEX trading volume on Base. $0.01 USDC per call.",
-      "endpoint": "/dex/volume/base",
-      "id": "dex-volume-base",
-      "name": "Dex Volume Base",
-      "preview_endpoint": "/dex/volume/base",
+      "description": "Aggregate 24h volume and reserves across GeckoTerminal's top Solana pools. $0.01 USDC per call.",
+      "endpoint": "/dex/volume/top-pools",
+      "id": "dex-volume-top-pools",
+      "name": "dex-volume-top-pools",
+      "preview_endpoint": "/dex/volume/top-pools",
       "price_usdc": "0.01",
       "tags": [
         "dex",
         "volume",
-        "base"
-      ],
-      "type": "data"
-    },
-    {
-      "category": "dex",
-      "description": "Volume summary for one DEX protocol. $0.01 USDC per call.",
-      "endpoint": "/dex/volume/{protocol}",
-      "id": "dex-volume-protocol",
-      "name": "Dex Volume Protocol",
-      "preview_endpoint": "/dex/volume/{protocol}",
-      "price_usdc": "0.01",
-      "tags": [
-        "dex",
-        "volume",
-        "protocol"
-      ],
-      "type": "data"
-    },
-    {
-      "category": "dex",
-      "description": "Fee and revenue summary for one protocol. $0.01 USDC per call.",
-      "endpoint": "/dex/fees/{protocol}",
-      "id": "dex-fees-protocol",
-      "name": "Dex Fees Protocol",
-      "preview_endpoint": "/dex/fees/{protocol}",
-      "price_usdc": "0.01",
-      "tags": [
-        "dex",
-        "fees",
-        "protocol"
-      ],
-      "type": "data"
-    },
-    {
-      "category": "dex",
-      "description": "Top 10 DEXs by 24h volume. $0.01 USDC per call.",
-      "endpoint": "/dex/top",
-      "id": "dex-top",
-      "name": "Dex Top",
-      "preview_endpoint": "/dex/top",
-      "price_usdc": "0.01",
-      "tags": [
-        "dex",
-        "top",
-        "volume"
-      ],
-      "type": "data"
-    },
-    {
-      "category": "chain",
-      "description": "Latest Base block with gas and transaction count. $0.01 USDC per call.",
-      "endpoint": "/chain/block/latest",
-      "id": "chain-block-latest",
-      "name": "Chain Block Latest",
-      "preview_endpoint": "/chain/block/latest",
-      "price_usdc": "0.01",
-      "tags": [
-        "chain",
-        "block",
-        "latest"
-      ],
-      "type": "data"
-    },
-    {
-      "category": "chain",
-      "description": "Base block by number. $0.01 USDC per call.",
-      "endpoint": "/chain/block/{number}",
-      "id": "chain-block",
-      "name": "Chain Block",
-      "preview_endpoint": "/chain/block/{number}",
-      "price_usdc": "0.01",
-      "tags": [
-        "chain",
-        "block"
-      ],
-      "type": "data"
-    },
-    {
-      "category": "chain",
-      "description": "Transaction hashes in a Base block. $0.01 USDC per call.",
-      "endpoint": "/chain/block/{number}/transactions",
-      "id": "chain-block-txs",
-      "name": "Chain Block Txs",
-      "preview_endpoint": "/chain/block/{number}/transactions",
-      "price_usdc": "0.01",
-      "tags": [
-        "chain",
-        "block",
-        "transactions"
-      ],
-      "type": "data"
-    },
-    {
-      "category": "chain",
-      "description": "Detail for a Base transaction. $0.01 USDC per call.",
-      "endpoint": "/chain/transaction/{hash}",
-      "id": "chain-transaction",
-      "name": "Chain Transaction",
-      "preview_endpoint": "/chain/transaction/{hash}",
-      "price_usdc": "0.01",
-      "tags": [
-        "chain",
-        "transaction"
-      ],
-      "type": "data"
-    },
-    {
-      "category": "chain",
-      "description": "Receipt for a Base transaction: status, gas used, logs. $0.01 USDC per call.",
-      "endpoint": "/chain/transaction/{hash}/receipt",
-      "id": "chain-tx-receipt",
-      "name": "Chain Tx Receipt",
-      "preview_endpoint": "/chain/transaction/{hash}/receipt",
-      "price_usdc": "0.01",
-      "tags": [
-        "chain",
-        "transaction",
-        "receipt"
-      ],
-      "type": "data"
-    },
-    {
-      "category": "chain",
-      "description": "Event logs for a Base transaction (from its receipt). $0.01 USDC per call.",
-      "endpoint": "/chain/transaction/{hash}/logs",
-      "id": "chain-tx-logs",
-      "name": "Chain Tx Logs",
-      "preview_endpoint": "/chain/transaction/{hash}/logs",
-      "price_usdc": "0.01",
-      "tags": [
-        "chain",
-        "transaction",
-        "logs"
-      ],
-      "type": "data"
-    },
-    {
-      "category": "chain",
-      "description": "Decoded input data for a Base transaction. $0.01 USDC per call.",
-      "endpoint": "/chain/transaction/{hash}/input",
-      "id": "chain-tx-input",
-      "name": "Chain Tx Input",
-      "preview_endpoint": "/chain/transaction/{hash}/input",
-      "price_usdc": "0.01",
-      "tags": [
-        "chain",
-        "transaction",
-        "input"
-      ],
-      "type": "data"
-    },
-    {
-      "category": "chain",
-      "description": "Base fee history for the last 10 blocks. $0.01 USDC per call.",
-      "endpoint": "/chain/gas/fee-history",
-      "id": "chain-fee-history",
-      "name": "Chain Fee History",
-      "preview_endpoint": "/chain/gas/fee-history",
-      "price_usdc": "0.01",
-      "tags": [
-        "chain",
-        "gas",
-        "fees"
-      ],
-      "type": "data"
-    },
-    {
-      "category": "chain",
-      "description": "Current max priority fee on Base. $0.01 USDC per call.",
-      "endpoint": "/chain/gas/priority-fee",
-      "id": "chain-priority-fee",
-      "name": "Chain Priority Fee",
-      "preview_endpoint": "/chain/gas/priority-fee",
-      "price_usdc": "0.01",
-      "tags": [
-        "chain",
-        "gas",
-        "priority"
-      ],
-      "type": "data"
-    },
-    {
-      "category": "chain",
-      "description": "Estimated gas for a plain ETH transfer on Base. $0.01 USDC per call.",
-      "endpoint": "/chain/gas/estimate-transfer/{to}",
-      "id": "chain-estimate-transfer",
-      "name": "Chain Estimate Transfer",
-      "preview_endpoint": "/chain/gas/estimate-transfer/{to}",
-      "price_usdc": "0.01",
-      "tags": [
-        "chain",
-        "gas",
-        "estimate"
-      ],
-      "type": "data"
-    },
-    {
-      "category": "chain",
-      "description": "Combined gas oracle: gas price, priority fee, fee history. $0.01 USDC per call.",
-      "endpoint": "/chain/gas/oracle",
-      "id": "chain-gas-oracle",
-      "name": "Chain Gas Oracle",
-      "preview_endpoint": "/chain/gas/oracle",
-      "price_usdc": "0.01",
-      "tags": [
-        "chain",
-        "gas",
-        "oracle"
-      ],
-      "type": "data"
-    },
-    {
-      "category": "chain",
-      "description": "Live Base chain stats: block, gas, chain id, client. $0.01 USDC per call.",
-      "endpoint": "/chain/stats",
-      "id": "chain-stats",
-      "name": "Chain Stats",
-      "preview_endpoint": "/chain/stats",
-      "price_usdc": "0.01",
-      "tags": [
-        "chain",
-        "stats"
-      ],
-      "type": "data"
-    },
-    {
-      "category": "chain",
-      "description": "Whether the Base node is syncing (from latest block age). $0.01 USDC per call.",
-      "endpoint": "/chain/syncing",
-      "id": "chain-syncing",
-      "name": "Chain Syncing",
-      "preview_endpoint": "/chain/syncing",
-      "price_usdc": "0.01",
-      "tags": [
-        "chain",
-        "syncing"
-      ],
-      "type": "data"
-    },
-    {
-      "category": "chain",
-      "description": "Client version of the Base RPC node. $0.01 USDC per call.",
-      "endpoint": "/chain/client",
-      "id": "chain-client",
-      "name": "Chain Client",
-      "preview_endpoint": "/chain/client",
-      "price_usdc": "0.01",
-      "tags": [
-        "chain",
-        "client"
-      ],
-      "type": "data"
-    },
-    {
-      "category": "chain",
-      "description": "Chain id and latest block for Base. $0.01 USDC per call.",
-      "endpoint": "/chain/network",
-      "id": "chain-network",
-      "name": "Chain Network",
-      "preview_endpoint": "/chain/network",
-      "price_usdc": "0.01",
-      "tags": [
-        "chain",
-        "network"
-      ],
-      "type": "data"
-    },
-    {
-      "category": "chain",
-      "description": "Bytecode for a Base address, with size and hash. $0.01 USDC per call.",
-      "endpoint": "/chain/address/{address}/code",
-      "id": "chain-address-code",
-      "name": "Chain Address Code",
-      "preview_endpoint": "/chain/address/{address}/code",
-      "price_usdc": "0.01",
-      "tags": [
-        "chain",
-        "address",
-        "code"
-      ],
-      "type": "data"
-    },
-    {
-      "category": "nft",
-      "description": "ERC721 collection name and symbol. $0.01 USDC per call.",
-      "endpoint": "/nfts/{collection}/info",
-      "id": "nft-info",
-      "name": "Nft Info",
-      "preview_endpoint": "/nfts/{collection}/info",
-      "price_usdc": "0.01",
-      "tags": [
-        "nft",
-        "collection",
-        "erc721"
-      ],
-      "type": "data"
-    },
-    {
-      "category": "nft",
-      "description": "Owner of one NFT by token id. $0.01 USDC per call.",
-      "endpoint": "/nfts/{collection}/owner/{tokenId}",
-      "id": "nft-owner",
-      "name": "Nft Owner",
-      "preview_endpoint": "/nfts/{collection}/owner/{tokenId}",
-      "price_usdc": "0.01",
-      "tags": [
-        "nft",
-        "owner",
-        "erc721"
-      ],
-      "type": "data"
-    },
-    {
-      "category": "nft",
-      "description": "NFT tokenURI plus fetched metadata. $0.01 USDC per call.",
-      "endpoint": "/nfts/{collection}/token/{tokenId}",
-      "id": "nft-token",
-      "name": "Nft Token",
-      "preview_endpoint": "/nfts/{collection}/token/{tokenId}",
-      "price_usdc": "0.01",
-      "tags": [
-        "nft",
-        "metadata",
-        "tokenuri"
-      ],
-      "type": "data"
-    },
-    {
-      "category": "nft",
-      "description": "How many NFTs of a collection a wallet holds. $0.01 USDC per call.",
-      "endpoint": "/nfts/{collection}/balance/{wallet}",
-      "id": "nft-balance",
-      "name": "Nft Balance",
-      "preview_endpoint": "/nfts/{collection}/balance/{wallet}",
-      "price_usdc": "0.01",
-      "tags": [
-        "nft",
-        "balance",
-        "wallet"
-      ],
-      "type": "data"
-    },
-    {
-      "category": "nft",
-      "description": "Which token standards an NFT contract supports (ERC721/1155/Enumerable). $0.01 USDC per call.",
-      "endpoint": "/nfts/{collection}/interfaces",
-      "id": "nft-interfaces",
-      "name": "Nft Interfaces",
-      "preview_endpoint": "/nfts/{collection}/interfaces",
-      "price_usdc": "0.01",
-      "tags": [
-        "nft",
-        "erc165",
-        "standards"
-      ],
-      "type": "data"
-    },
-    {
-      "category": "nft",
-      "description": "Total supply of an enumerable NFT collection. $0.01 USDC per call.",
-      "endpoint": "/nfts/{collection}/supply",
-      "id": "nft-supply",
-      "name": "Nft Supply",
-      "preview_endpoint": "/nfts/{collection}/supply",
-      "price_usdc": "0.01",
-      "tags": [
-        "nft",
-        "supply",
-        "erc721"
-      ],
-      "type": "data"
-    },
-    {
-      "category": "nft",
-      "description": "Whether an NFT token id exists. $0.01 USDC per call.",
-      "endpoint": "/nfts/{collection}/exists/{tokenId}",
-      "id": "nft-exists",
-      "name": "Nft Exists",
-      "preview_endpoint": "/nfts/{collection}/exists/{tokenId}",
-      "price_usdc": "0.01",
-      "tags": [
-        "nft",
-        "exists",
-        "erc721"
+        "aggregate"
       ],
       "type": "data"
     },
     {
       "category": "defi",
-      "description": "Total value locked on Base. $0.01 USDC per call.",
+      "description": "Total value locked on Solana right now (DeFiLlama), with Solana's rank among all chains. $0.01 USDC per call.",
       "endpoint": "/defi/tvl",
       "id": "defi-tvl",
-      "name": "Defi Tvl",
+      "name": "defi-tvl",
       "preview_endpoint": "/defi/tvl",
       "price_usdc": "0.01",
       "tags": [
         "defi",
         "tvl",
-        "base"
+        "solana"
       ],
       "type": "data"
     },
     {
       "category": "defi",
-      "description": "Total value locked for one protocol. $0.01 USDC per call.",
-      "endpoint": "/defi/tvl/{protocol}",
-      "id": "defi-tvl-protocol",
-      "name": "Defi Tvl Protocol",
-      "preview_endpoint": "/defi/tvl/{protocol}",
+      "description": "Solana TVL history summary: latest value, 7d/30d-ago values, all-time high and its date. $0.01 USDC per call.",
+      "endpoint": "/defi/tvl/history",
+      "id": "defi-tvl-history",
+      "name": "defi-tvl-history",
+      "preview_endpoint": "/defi/tvl/history",
       "price_usdc": "0.01",
       "tags": [
         "defi",
         "tvl",
-        "protocol"
+        "history"
       ],
       "type": "data"
     },
     {
       "category": "defi",
-      "description": "Top protocols by TVL. $0.01 USDC per call.",
+      "description": "Solana TVL percent changes over 1, 7 and 30 days (DeFiLlama history). $0.01 USDC per call.",
+      "endpoint": "/defi/tvl/change",
+      "id": "defi-tvl-change",
+      "name": "defi-tvl-change",
+      "preview_endpoint": "/defi/tvl/change",
+      "price_usdc": "0.01",
+      "tags": [
+        "defi",
+        "tvl",
+        "change"
+      ],
+      "type": "data"
+    },
+    {
+      "category": "defi",
+      "description": "Solana's share of total cross-chain DeFi TVL and its rank (DeFiLlama). $0.01 USDC per call.",
+      "endpoint": "/defi/tvl/dominance",
+      "id": "defi-tvl-dominance",
+      "name": "defi-tvl-dominance",
+      "preview_endpoint": "/defi/tvl/dominance",
+      "price_usdc": "0.01",
+      "tags": [
+        "defi",
+        "tvl",
+        "dominance"
+      ],
+      "type": "data"
+    },
+    {
+      "category": "defi",
+      "description": "Top 25 protocols on Solana by TVL (DeFiLlama), with category and 1d/7d change. $0.01 USDC per call.",
       "endpoint": "/defi/protocols",
       "id": "defi-protocols",
-      "name": "Defi Protocols",
+      "name": "defi-protocols",
       "preview_endpoint": "/defi/protocols",
       "price_usdc": "0.01",
       "tags": [
@@ -1100,1004 +1812,25 @@
     },
     {
       "category": "defi",
-      "description": "Top protocols on Base by TVL. $0.01 USDC per call.",
-      "endpoint": "/defi/protocols/base",
-      "id": "defi-protocols-base",
-      "name": "Defi Protocols Base",
-      "preview_endpoint": "/defi/protocols/base",
+      "description": "How many DeFiLlama protocols hold TVL on Solana, and their combined Solana TVL. $0.01 USDC per call.",
+      "endpoint": "/defi/protocols/count",
+      "id": "defi-protocols-count",
+      "name": "defi-protocols-count",
+      "preview_endpoint": "/defi/protocols/count",
       "price_usdc": "0.01",
       "tags": [
         "defi",
         "protocols",
-        "base"
+        "count"
       ],
       "type": "data"
     },
     {
       "category": "defi",
-      "description": "Highest-APY yield pools across chains. $0.01 USDC per call.",
-      "endpoint": "/defi/yields/top",
-      "id": "defi-yields-top",
-      "name": "Defi Yields Top",
-      "preview_endpoint": "/defi/yields/top",
-      "price_usdc": "0.01",
-      "tags": [
-        "defi",
-        "yields",
-        "apy"
-      ],
-      "type": "data"
-    },
-    {
-      "category": "defi",
-      "description": "Highest-APY yield pools on Base. $0.01 USDC per call.",
-      "endpoint": "/defi/yields/base",
-      "id": "defi-yields-base",
-      "name": "Defi Yields Base",
-      "preview_endpoint": "/defi/yields/base",
-      "price_usdc": "0.01",
-      "tags": [
-        "defi",
-        "yields",
-        "base"
-      ],
-      "type": "data"
-    },
-    {
-      "category": "defi",
-      "description": "Highest-APY stablecoin yield pools. $0.01 USDC per call.",
-      "endpoint": "/defi/yields/stable",
-      "id": "defi-yields-stable",
-      "name": "Defi Yields Stable",
-      "preview_endpoint": "/defi/yields/stable",
-      "price_usdc": "0.01",
-      "tags": [
-        "defi",
-        "yields",
-        "stablecoin"
-      ],
-      "type": "data"
-    },
-    {
-      "category": "defi",
-      "description": "Yield details for one pool by id. $0.01 USDC per call.",
-      "endpoint": "/defi/yields/pool/{pool}",
-      "id": "defi-yields-pool",
-      "name": "Defi Yields Pool",
-      "preview_endpoint": "/defi/yields/pool/{pool}",
-      "price_usdc": "0.01",
-      "tags": [
-        "defi",
-        "yields",
-        "pool"
-      ],
-      "type": "data"
-    },
-    {
-      "category": "defi",
-      "description": "Largest stablecoins by circulating supply. $0.01 USDC per call.",
-      "endpoint": "/defi/stablecoins",
-      "id": "defi-stablecoins",
-      "name": "Defi Stablecoins",
-      "preview_endpoint": "/defi/stablecoins",
-      "price_usdc": "0.01",
-      "tags": [
-        "defi",
-        "stablecoins"
-      ],
-      "type": "data"
-    },
-    {
-      "category": "defi",
-      "description": "Aave V3 reserve assets on Base. $0.01 USDC per call.",
-      "endpoint": "/defi/aave/reserves",
-      "id": "defi-aave-reserves",
-      "name": "Defi Aave Reserves",
-      "preview_endpoint": "/defi/aave/reserves",
-      "price_usdc": "0.01",
-      "tags": [
-        "defi",
-        "aave",
-        "lending"
-      ],
-      "type": "data"
-    },
-    {
-      "category": "naming",
-      "description": "Resolve an ENS name to its address. $0.01 USDC per call.",
-      "endpoint": "/ens/resolve/{name}",
-      "id": "ens-resolve",
-      "name": "Ens Resolve",
-      "preview_endpoint": "/ens/resolve/{name}",
-      "price_usdc": "0.01",
-      "tags": [
-        "ens",
-        "resolve"
-      ],
-      "type": "data"
-    },
-    {
-      "category": "naming",
-      "description": "Reverse-resolve a wallet address to its ENS name. $0.01 USDC per call.",
-      "endpoint": "/ens/reverse/{address}",
-      "id": "ens-reverse",
-      "name": "Ens Reverse",
-      "preview_endpoint": "/ens/reverse/{address}",
-      "price_usdc": "0.01",
-      "tags": [
-        "ens",
-        "reverse"
-      ],
-      "type": "data"
-    },
-    {
-      "category": "naming",
-      "description": "Avatar URL for an ENS name. $0.01 USDC per call.",
-      "endpoint": "/ens/avatar/{name}",
-      "id": "ens-avatar",
-      "name": "Ens Avatar",
-      "preview_endpoint": "/ens/avatar/{name}",
-      "price_usdc": "0.01",
-      "tags": [
-        "ens",
-        "avatar"
-      ],
-      "type": "data"
-    },
-    {
-      "category": "naming",
-      "description": "Full public profile for an ENS name. $0.01 USDC per call.",
-      "endpoint": "/ens/profile/{name}",
-      "id": "ens-profile",
-      "name": "Ens Profile",
-      "preview_endpoint": "/ens/profile/{name}",
-      "price_usdc": "0.01",
-      "tags": [
-        "ens",
-        "profile"
-      ],
-      "type": "data"
-    },
-    {
-      "category": "utils",
-      "description": "Live ETH price in USD. $0.01 USDC per call.",
-      "endpoint": "/utils/eth-usd",
-      "id": "utils-eth-usd",
-      "name": "Utils Eth Usd",
-      "preview_endpoint": "/utils/eth-usd",
-      "price_usdc": "0.01",
-      "tags": [
-        "utils",
-        "eth",
-        "price"
-      ],
-      "type": "data"
-    },
-    {
-      "category": "utils",
-      "description": "Convert an ETH amount to USD at the live price. $0.01 USDC per call.",
-      "endpoint": "/utils/convert/eth-usd/{amount}",
-      "id": "utils-convert-eth-usd",
-      "name": "Utils Convert Eth Usd",
-      "preview_endpoint": "/utils/convert/eth-usd/{amount}",
-      "price_usdc": "0.01",
-      "tags": [
-        "utils",
-        "convert",
-        "eth"
-      ],
-      "type": "data"
-    },
-    {
-      "category": "utils",
-      "description": "Convert a USD amount to ETH at the live price. $0.01 USDC per call.",
-      "endpoint": "/utils/convert/usd-eth/{amount}",
-      "id": "utils-convert-usd-eth",
-      "name": "Utils Convert Usd Eth",
-      "preview_endpoint": "/utils/convert/usd-eth/{amount}",
-      "price_usdc": "0.01",
-      "tags": [
-        "utils",
-        "convert",
-        "usd"
-      ],
-      "type": "data"
-    },
-    {
-      "category": "utils",
-      "description": "Convert wei to ether and gwei. $0.01 USDC per call.",
-      "endpoint": "/utils/convert/wei/{amount}",
-      "id": "utils-convert-wei",
-      "name": "Utils Convert Wei",
-      "preview_endpoint": "/utils/convert/wei/{amount}",
-      "price_usdc": "0.01",
-      "tags": [
-        "utils",
-        "convert",
-        "wei"
-      ],
-      "type": "data"
-    },
-    {
-      "category": "utils",
-      "description": "Convert ether to wei. $0.01 USDC per call.",
-      "endpoint": "/utils/convert/ether-wei/{amount}",
-      "id": "utils-convert-ether-wei",
-      "name": "Utils Convert Ether Wei",
-      "preview_endpoint": "/utils/convert/ether-wei/{amount}",
-      "price_usdc": "0.01",
-      "tags": [
-        "utils",
-        "convert",
-        "ether"
-      ],
-      "type": "data"
-    },
-    {
-      "category": "utils",
-      "description": "Validate an Ethereum address and return its checksum form. $0.01 USDC per call.",
-      "endpoint": "/utils/address/validate/{address}",
-      "id": "utils-address-validate",
-      "name": "Utils Address Validate",
-      "preview_endpoint": "/utils/address/validate/{address}",
-      "price_usdc": "0.01",
-      "tags": [
-        "utils",
-        "address",
-        "validate"
-      ],
-      "type": "data"
-    },
-    {
-      "category": "utils",
-      "description": "Keccak-256 hash of text. $0.01 USDC per call.",
-      "endpoint": "/utils/address/keccak/{text}",
-      "id": "utils-keccak",
-      "name": "Utils Keccak",
-      "preview_endpoint": "/utils/address/keccak/{text}",
-      "price_usdc": "0.01",
-      "tags": [
-        "utils",
-        "hash",
-        "keccak"
-      ],
-      "type": "data"
-    },
-    {
-      "category": "utils",
-      "description": "Cost of a transaction in ETH and USD at the live ETH price. $0.01 USDC per call.",
-      "endpoint": "/utils/gas-cost/{gwei}/{gas}",
-      "id": "utils-gas-cost",
-      "name": "Utils Gas Cost",
-      "preview_endpoint": "/utils/gas-cost/{gwei}/{gas}",
-      "price_usdc": "0.01",
-      "tags": [
-        "utils",
-        "gas",
-        "cost"
-      ],
-      "type": "data"
-    },
-    {
-      "category": "utils",
-      "description": "Live USD price for a coin by CoinGecko id. $0.01 USDC per call.",
-      "endpoint": "/utils/coin-price/{coin}",
-      "id": "utils-coin-price",
-      "name": "Utils Coin Price",
-      "preview_endpoint": "/utils/coin-price/{coin}",
-      "price_usdc": "0.01",
-      "tags": [
-        "utils",
-        "coin",
-        "price"
-      ],
-      "type": "data"
-    },
-    {
-      "category": "utils",
-      "description": "Global crypto market stats from CoinGecko. $0.01 USDC per call.",
-      "endpoint": "/utils/market/global",
-      "id": "utils-market-global",
-      "name": "Utils Market Global",
-      "preview_endpoint": "/utils/market/global",
-      "price_usdc": "0.01",
-      "tags": [
-        "utils",
-        "market",
-        "global"
-      ],
-      "type": "data"
-    },
-    {
-      "category": "utils",
-      "description": "Trending coins on CoinGecko. $0.01 USDC per call.",
-      "endpoint": "/utils/market/trending",
-      "id": "utils-market-trending",
-      "name": "Utils Market Trending",
-      "preview_endpoint": "/utils/market/trending",
-      "price_usdc": "0.01",
-      "tags": [
-        "utils",
-        "market",
-        "trending"
-      ],
-      "type": "data"
-    },
-    {
-      "category": "utils",
-      "description": "Top 10 cryptocurrencies by market cap. $0.01 USDC per call.",
-      "endpoint": "/utils/market/top",
-      "id": "utils-market-top",
-      "name": "Utils Market Top",
-      "preview_endpoint": "/utils/market/top",
-      "price_usdc": "0.01",
-      "tags": [
-        "utils",
-        "market",
-        "top"
-      ],
-      "type": "data"
-    },
-    {
-      "category": "utils",
-      "description": "Crypto Fear & Greed Index. $0.01 USDC per call.",
-      "endpoint": "/utils/fear-greed",
-      "id": "utils-fear-greed",
-      "name": "Utils Fear Greed",
-      "preview_endpoint": "/utils/fear-greed",
-      "price_usdc": "0.01",
-      "tags": [
-        "utils",
-        "fear-greed",
-        "sentiment"
-      ],
-      "type": "data"
-    },
-    {
-      "category": "utils",
-      "description": "Detail for a coin by CoinGecko id. $0.01 USDC per call.",
-      "endpoint": "/utils/coin/{coin}",
-      "id": "utils-coin",
-      "name": "Utils Coin",
-      "preview_endpoint": "/utils/coin/{coin}",
-      "price_usdc": "0.01",
-      "tags": [
-        "utils",
-        "coin",
-        "detail"
-      ],
-      "type": "data"
-    },
-    {
-      "category": "lending",
-      "description": "All Aave V3 markets on Base with on-chain supply/borrow APY. $0.02 USDC per call.",
-      "endpoint": "/lending/aave/markets",
-      "id": "lending-aave-markets",
-      "name": "Lending Aave Markets",
-      "preview_endpoint": "/lending/aave/markets",
-      "price_usdc": "0.02",
-      "tags": [
-        "lending",
-        "aave",
-        "markets"
-      ],
-      "type": "data"
-    },
-    {
-      "category": "lending",
-      "description": "Aave V3 market for one asset: on-chain rates + aToken/debt tokens. $0.01 USDC per call.",
-      "endpoint": "/lending/aave/market/{asset}",
-      "id": "lending-aave-market",
-      "name": "Lending Aave Market",
-      "preview_endpoint": "/lending/aave/market/{asset}",
-      "price_usdc": "0.01",
-      "tags": [
-        "lending",
-        "aave",
-        "market"
-      ],
-      "type": "data"
-    },
-    {
-      "category": "lending",
-      "description": "Aave V3 account data for one wallet: collateral, debt, health factor. $0.01 USDC per call.",
-      "endpoint": "/lending/aave/user/{wallet}",
-      "id": "lending-aave-user",
-      "name": "Lending Aave User",
-      "preview_endpoint": "/lending/aave/user/{wallet}",
-      "price_usdc": "0.01",
-      "tags": [
-        "lending",
-        "aave",
-        "account"
-      ],
-      "type": "data"
-    },
-    {
-      "category": "lending",
-      "description": "Aave V3 TVL on Base. $0.01 USDC per call.",
-      "endpoint": "/lending/aave/tvl",
-      "id": "lending-aave-tvl",
-      "name": "Lending Aave Tvl",
-      "preview_endpoint": "/lending/aave/tvl",
-      "price_usdc": "0.01",
-      "tags": [
-        "lending",
-        "aave",
-        "tvl"
-      ],
-      "type": "data"
-    },
-    {
-      "category": "lending",
-      "description": "Compound V3 yield pools on Base, top 10 by TVL. $0.01 USDC per call.",
-      "endpoint": "/lending/compound/markets",
-      "id": "lending-compound-markets",
-      "name": "Lending Compound Markets",
-      "preview_endpoint": "/lending/compound/markets",
-      "price_usdc": "0.01",
-      "tags": [
-        "lending",
-        "compound",
-        "markets"
-      ],
-      "type": "data"
-    },
-    {
-      "category": "lending",
-      "description": "Compound V3 Comet USDC market on Base: utilization, totals, APY. $0.01 USDC per call.",
-      "endpoint": "/lending/compound/usdc",
-      "id": "lending-compound-usdc",
-      "name": "Lending Compound Usdc",
-      "preview_endpoint": "/lending/compound/usdc",
-      "price_usdc": "0.01",
-      "tags": [
-        "lending",
-        "compound",
-        "usdc"
-      ],
-      "type": "data"
-    },
-    {
-      "category": "lending",
-      "description": "Compound V3 Comet USDC position for one wallet: supplied/borrowed. $0.01 USDC per call.",
-      "endpoint": "/lending/compound/user/{wallet}",
-      "id": "lending-compound-user",
-      "name": "Lending Compound User",
-      "preview_endpoint": "/lending/compound/user/{wallet}",
-      "price_usdc": "0.01",
-      "tags": [
-        "lending",
-        "compound",
-        "account"
-      ],
-      "type": "data"
-    },
-    {
-      "category": "lending",
-      "description": "Morpho Blue yield pools on Base, top 10 by TVL. $0.01 USDC per call.",
-      "endpoint": "/lending/morpho/pools",
-      "id": "lending-morpho-pools",
-      "name": "Lending Morpho Pools",
-      "preview_endpoint": "/lending/morpho/pools",
-      "price_usdc": "0.01",
-      "tags": [
-        "lending",
-        "morpho",
-        "pools"
-      ],
-      "type": "data"
-    },
-    {
-      "category": "lending",
-      "description": "Highest-APY Morpho Blue stablecoin pools on Base. $0.01 USDC per call.",
-      "endpoint": "/lending/morpho/stable",
-      "id": "lending-morpho-stable",
-      "name": "Lending Morpho Stable",
-      "preview_endpoint": "/lending/morpho/stable",
-      "price_usdc": "0.01",
-      "tags": [
-        "lending",
-        "morpho",
-        "stablecoin"
-      ],
-      "type": "data"
-    },
-    {
-      "category": "lending",
-      "description": "Lending rates for one asset: Aave on-chain + yield pools. $0.01 USDC per call.",
-      "endpoint": "/lending/rates/{asset}",
-      "id": "lending-rates",
-      "name": "Lending Rates",
-      "preview_endpoint": "/lending/rates/{asset}",
-      "price_usdc": "0.01",
-      "tags": [
-        "lending",
-        "rates",
-        "aave"
-      ],
-      "type": "data"
-    },
-    {
-      "category": "lending",
-      "description": "Top 10 lending APY pools on Base. $0.01 USDC per call.",
-      "endpoint": "/lending/top-apy",
-      "id": "lending-top-apy",
-      "name": "Lending Top Apy",
-      "preview_endpoint": "/lending/top-apy",
-      "price_usdc": "0.01",
-      "tags": [
-        "lending",
-        "apy",
-        "top"
-      ],
-      "type": "data"
-    },
-    {
-      "category": "lending",
-      "description": "Aave V3 supply/borrow APY for USDC, DAI and USDbC on Base. $0.01 USDC per call.",
-      "endpoint": "/lending/stablecoin-rates",
-      "id": "lending-stablecoin-rates",
-      "name": "Lending Stablecoin Rates",
-      "preview_endpoint": "/lending/stablecoin-rates",
-      "price_usdc": "0.01",
-      "tags": [
-        "lending",
-        "stablecoin",
-        "rates"
-      ],
-      "type": "data"
-    },
-    {
-      "category": "lending",
-      "description": "Aave V3 USDC market rates on Base. $0.01 USDC per call.",
-      "endpoint": "/lending/usdc-rate",
-      "id": "lending-usdc-rate",
-      "name": "Lending Usdc Rate",
-      "preview_endpoint": "/lending/usdc-rate",
-      "price_usdc": "0.01",
-      "tags": [
-        "lending",
-        "aave",
-        "usdc"
-      ],
-      "type": "data"
-    },
-    {
-      "category": "lending",
-      "description": "Aave V3 WETH market rates on Base. $0.01 USDC per call.",
-      "endpoint": "/lending/weth-rate",
-      "id": "lending-weth-rate",
-      "name": "Lending Weth Rate",
-      "preview_endpoint": "/lending/weth-rate",
-      "price_usdc": "0.01",
-      "tags": [
-        "lending",
-        "aave",
-        "weth"
-      ],
-      "type": "data"
-    },
-    {
-      "category": "stablecoins",
-      "description": "Top 10 stablecoins by circulating supply. $0.01 USDC per call.",
-      "endpoint": "/stablecoins/top",
-      "id": "stablecoins-top",
-      "name": "Stablecoins Top",
-      "preview_endpoint": "/stablecoins/top",
-      "price_usdc": "0.01",
-      "tags": [
-        "stablecoins",
-        "top",
-        "supply"
-      ],
-      "type": "data"
-    },
-    {
-      "category": "stablecoins",
-      "description": "One stablecoin by id, symbol, or gecko_id, with per-chain supply. $0.01 USDC per call.",
-      "endpoint": "/stablecoins/{asset}",
-      "id": "stablecoins-asset",
-      "name": "Stablecoins Asset",
-      "preview_endpoint": "/stablecoins/{asset}",
-      "price_usdc": "0.01",
-      "tags": [
-        "stablecoins",
-        "asset"
-      ],
-      "type": "data"
-    },
-    {
-      "category": "stablecoins",
-      "description": "Stablecoin supply by chain, top 15. $0.01 USDC per call.",
-      "endpoint": "/stablecoins/chains",
-      "id": "stablecoins-chains",
-      "name": "Stablecoins Chains",
-      "preview_endpoint": "/stablecoins/chains",
-      "price_usdc": "0.01",
-      "tags": [
-        "stablecoins",
-        "chains"
-      ],
-      "type": "data"
-    },
-    {
-      "category": "stablecoins",
-      "description": "Stablecoins furthest from their $1 peg right now. $0.01 USDC per call.",
-      "endpoint": "/stablecoins/pegs",
-      "id": "stablecoins-pegs",
-      "name": "Stablecoins Pegs",
-      "preview_endpoint": "/stablecoins/pegs",
-      "price_usdc": "0.01",
-      "tags": [
-        "stablecoins",
-        "peg",
-        "depeg"
-      ],
-      "type": "data"
-    },
-    {
-      "category": "stablecoins",
-      "description": "Top 15 stablecoins by circulating supply on one chain. $0.01 USDC per call.",
-      "endpoint": "/stablecoins/chain/{chain}",
-      "id": "stablecoins-chain",
-      "name": "Stablecoins Chain",
-      "preview_endpoint": "/stablecoins/chain/{chain}",
-      "price_usdc": "0.01",
-      "tags": [
-        "stablecoins",
-        "chain"
-      ],
-      "type": "data"
-    },
-    {
-      "category": "stablecoins",
-      "description": "Total circulating supply of all stablecoins. $0.01 USDC per call.",
-      "endpoint": "/stablecoins/total",
-      "id": "stablecoins-total",
-      "name": "Stablecoins Total",
-      "preview_endpoint": "/stablecoins/total",
-      "price_usdc": "0.01",
-      "tags": [
-        "stablecoins",
-        "total"
-      ],
-      "type": "data"
-    },
-    {
-      "category": "oracles",
-      "description": "Chainlink price feeds on Base: ETH/USD, BTC/USD, USDC/USD. $0.01 USDC per call.",
-      "endpoint": "/oracles/feeds",
-      "id": "oracles-feeds",
-      "name": "Oracles Feeds",
-      "preview_endpoint": "/oracles/feeds",
-      "price_usdc": "0.01",
-      "tags": [
-        "oracles",
-        "chainlink",
-        "feeds"
-      ],
-      "type": "data"
-    },
-    {
-      "category": "oracles",
-      "description": "Chainlink price for one symbol (eth, btc, usdc). $0.01 USDC per call.",
-      "endpoint": "/oracles/price/{symbol}",
-      "id": "oracles-price",
-      "name": "Oracles Price",
-      "preview_endpoint": "/oracles/price/{symbol}",
-      "price_usdc": "0.01",
-      "tags": [
-        "oracles",
-        "chainlink",
-        "price"
-      ],
-      "type": "data"
-    },
-    {
-      "category": "oracles",
-      "description": "Chainlink ETH/USD on Base. $0.01 USDC per call.",
-      "endpoint": "/oracles/eth",
-      "id": "oracles-eth",
-      "name": "Oracles Eth",
-      "preview_endpoint": "/oracles/eth",
-      "price_usdc": "0.01",
-      "tags": [
-        "oracles",
-        "chainlink",
-        "eth"
-      ],
-      "type": "data"
-    },
-    {
-      "category": "oracles",
-      "description": "Chainlink BTC/USD on Base. $0.01 USDC per call.",
-      "endpoint": "/oracles/btc",
-      "id": "oracles-btc",
-      "name": "Oracles Btc",
-      "preview_endpoint": "/oracles/btc",
-      "price_usdc": "0.01",
-      "tags": [
-        "oracles",
-        "chainlink",
-        "btc"
-      ],
-      "type": "data"
-    },
-    {
-      "category": "oracles",
-      "description": "Chainlink USDC/USD on Base. $0.01 USDC per call.",
-      "endpoint": "/oracles/usdc",
-      "id": "oracles-usdc",
-      "name": "Oracles Usdc",
-      "preview_endpoint": "/oracles/usdc",
-      "price_usdc": "0.01",
-      "tags": [
-        "oracles",
-        "chainlink",
-        "usdc"
-      ],
-      "type": "data"
-    },
-    {
-      "category": "oracles",
-      "description": "Chainlink ETH/USD vs CoinGecko ETH price (oracle deviation check). $0.01 USDC per call.",
-      "endpoint": "/oracles/vs-coingecko",
-      "id": "oracles-vs-coingecko",
-      "name": "Oracles Vs Coingecko",
-      "preview_endpoint": "/oracles/vs-coingecko",
-      "price_usdc": "0.01",
-      "tags": [
-        "oracles",
-        "chainlink",
-        "coingecko"
-      ],
-      "type": "data"
-    },
-    {
-      "category": "governance",
-      "description": "Latest 10 Snapshot proposals across all DAOs. $0.01 USDC per call.",
-      "endpoint": "/gov/proposals",
-      "id": "gov-proposals",
-      "name": "Gov Proposals",
-      "preview_endpoint": "/gov/proposals",
-      "price_usdc": "0.01",
-      "tags": [
-        "governance",
-        "snapshot",
-        "proposals"
-      ],
-      "type": "data"
-    },
-    {
-      "category": "governance",
-      "description": "Latest 10 Snapshot proposals for one space. $0.01 USDC per call.",
-      "endpoint": "/gov/space/{space}/proposals",
-      "id": "gov-space-proposals",
-      "name": "Gov Space Proposals",
-      "preview_endpoint": "/gov/space/{space}/proposals",
-      "price_usdc": "0.01",
-      "tags": [
-        "governance",
-        "snapshot",
-        "space"
-      ],
-      "type": "data"
-    },
-    {
-      "category": "governance",
-      "description": "One Snapshot proposal by id, with scores. $0.01 USDC per call.",
-      "endpoint": "/gov/proposal/{proposal_id}",
-      "id": "gov-proposal",
-      "name": "Gov Proposal",
-      "preview_endpoint": "/gov/proposal/{proposal_id}",
-      "price_usdc": "0.01",
-      "tags": [
-        "governance",
-        "snapshot",
-        "proposal"
-      ],
-      "type": "data"
-    },
-    {
-      "category": "governance",
-      "description": "Top 20 votes on one Snapshot proposal, by voting power. $0.01 USDC per call.",
-      "endpoint": "/gov/proposal/{proposal_id}/votes",
-      "id": "gov-votes",
-      "name": "Gov Votes",
-      "preview_endpoint": "/gov/proposal/{proposal_id}/votes",
-      "price_usdc": "0.01",
-      "tags": [
-        "governance",
-        "snapshot",
-        "votes"
-      ],
-      "type": "data"
-    },
-    {
-      "category": "governance",
-      "description": "One Snapshot space: name, about, proposal/follower counts. $0.01 USDC per call.",
-      "endpoint": "/gov/space/{space}",
-      "id": "gov-space",
-      "name": "Gov Space",
-      "preview_endpoint": "/gov/space/{space}",
-      "price_usdc": "0.01",
-      "tags": [
-        "governance",
-        "snapshot",
-        "space"
-      ],
-      "type": "data"
-    },
-    {
-      "category": "gas",
-      "description": "Current base fee + predicted next-block base fee. $0.01 USDC per call.",
-      "endpoint": "/chain/gas/base-fee",
-      "id": "chain-gas-base-fee",
-      "name": "Chain Gas Base Fee",
-      "preview_endpoint": "/chain/gas/base-fee",
-      "price_usdc": "0.01",
-      "tags": [
-        "gas",
-        "base-fee",
-        "eip1559"
-      ],
-      "type": "data"
-    },
-    {
-      "category": "gas",
-      "description": "Fee history for the last N blocks (1-20). $0.01 USDC per call.",
-      "endpoint": "/chain/gas/fee-history/{blocks}",
-      "id": "chain-gas-fee-history",
-      "name": "Chain Gas Fee History",
-      "preview_endpoint": "/chain/gas/fee-history/{blocks}",
-      "price_usdc": "0.01",
-      "tags": [
-        "gas",
-        "fee-history"
-      ],
-      "type": "data"
-    },
-    {
-      "category": "gas",
-      "description": "Cost of a plain 21,000-gas ETH transfer on Base. $0.01 USDC per call.",
-      "endpoint": "/chain/gas/transfer-cost",
-      "id": "chain-gas-transfer-cost",
-      "name": "Chain Gas Transfer Cost",
-      "preview_endpoint": "/chain/gas/transfer-cost",
-      "price_usdc": "0.01",
-      "tags": [
-        "gas",
-        "transfer",
-        "cost"
-      ],
-      "type": "data"
-    },
-    {
-      "category": "gas",
-      "description": "Cost of a plain ETH transfer on Base in USD. $0.01 USDC per call.",
-      "endpoint": "/chain/gas/transfer-cost-usd",
-      "id": "chain-gas-transfer-cost-usd",
-      "name": "Chain Gas Transfer Cost Usd",
-      "preview_endpoint": "/chain/gas/transfer-cost-usd",
-      "price_usdc": "0.01",
-      "tags": [
-        "gas",
-        "transfer",
-        "usd"
-      ],
-      "type": "data"
-    },
-    {
-      "category": "gas",
-      "description": "Current base fee + max priority fee. $0.01 USDC per call.",
-      "endpoint": "/chain/gas/max-fee",
-      "id": "chain-gas-max-fee",
-      "name": "Chain Gas Max Fee",
-      "preview_endpoint": "/chain/gas/max-fee",
-      "price_usdc": "0.01",
-      "tags": [
-        "gas",
-        "max-fee",
-        "priority"
-      ],
-      "type": "data"
-    },
-    {
-      "category": "nft",
-      "description": "Raw tokenURI for one NFT token. $0.01 USDC per call.",
-      "endpoint": "/nfts/{collection}/token/{token_id}/uri",
-      "id": "nft-token-uri",
-      "name": "Nft Token Uri",
-      "preview_endpoint": "/nfts/{collection}/token/{token_id}/uri",
-      "price_usdc": "0.01",
-      "tags": [
-        "nft",
-        "tokenuri"
-      ],
-      "type": "data"
-    },
-    {
-      "category": "nft",
-      "description": "Image URL from one NFT token's metadata. $0.01 USDC per call.",
-      "endpoint": "/nfts/{collection}/token/{token_id}/image",
-      "id": "nft-token-image",
-      "name": "Nft Token Image",
-      "preview_endpoint": "/nfts/{collection}/token/{token_id}/image",
-      "price_usdc": "0.01",
-      "tags": [
-        "nft",
-        "image",
-        "metadata"
-      ],
-      "type": "data"
-    },
-    {
-      "category": "nft",
-      "description": "Traits/attributes from one NFT token's metadata. $0.01 USDC per call.",
-      "endpoint": "/nfts/{collection}/token/{token_id}/attributes",
-      "id": "nft-token-attributes",
-      "name": "Nft Token Attributes",
-      "preview_endpoint": "/nfts/{collection}/token/{token_id}/attributes",
-      "price_usdc": "0.01",
-      "tags": [
-        "nft",
-        "traits",
-        "metadata"
-      ],
-      "type": "data"
-    },
-    {
-      "category": "nft",
-      "description": "ERC1155 balance of one wallet for one token id. $0.01 USDC per call.",
-      "endpoint": "/nfts1155/{collection}/balance/{wallet}/{token_id}",
-      "id": "nft1155-balance",
-      "name": "Nft1155 Balance",
-      "preview_endpoint": "/nfts1155/{collection}/balance/{wallet}/{token_id}",
-      "price_usdc": "0.01",
-      "tags": [
-        "nft",
-        "erc1155",
-        "balance"
-      ],
-      "type": "data"
-    },
-    {
-      "category": "nft",
-      "description": "ERC1155 metadata URI for one token id. $0.01 USDC per call.",
-      "endpoint": "/nfts1155/{collection}/uri/{token_id}",
-      "id": "nft1155-uri",
-      "name": "Nft1155 Uri",
-      "preview_endpoint": "/nfts1155/{collection}/uri/{token_id}",
-      "price_usdc": "0.01",
-      "tags": [
-        "nft",
-        "erc1155",
-        "uri"
-      ],
-      "type": "data"
-    },
-    {
-      "category": "nft",
-      "description": "ERC1155 total supply for one token id (if the contract tracks it). $0.01 USDC per call.",
-      "endpoint": "/nfts1155/{collection}/supply/{token_id}",
-      "id": "nft1155-supply",
-      "name": "Nft1155 Supply",
-      "preview_endpoint": "/nfts1155/{collection}/supply/{token_id}",
-      "price_usdc": "0.01",
-      "tags": [
-        "nft",
-        "erc1155",
-        "supply"
-      ],
-      "type": "data"
-    },
-    {
-      "category": "defi",
-      "description": "One protocol's TVL detail by slug. $0.01 USDC per call.",
+      "description": "One DeFiLlama protocol (by slug): category, chains, and its Solana TVL position. $0.01 USDC per call.",
       "endpoint": "/defi/protocol/{slug}",
       "id": "defi-protocol",
-      "name": "Defi Protocol",
+      "name": "defi-protocol",
       "preview_endpoint": "/defi/protocol/{slug}",
       "price_usdc": "0.01",
       "tags": [
@@ -2109,100 +1842,220 @@
     },
     {
       "category": "defi",
-      "description": "TVL by chain, top 20. $0.01 USDC per call.",
-      "endpoint": "/defi/chains",
-      "id": "defi-chains",
-      "name": "Defi Chains",
-      "preview_endpoint": "/defi/chains",
+      "description": "One protocol's Solana TVL over time: current value plus 7d and 30d changes from its chain history. $0.01 USDC per call.",
+      "endpoint": "/defi/protocol/{slug}/tvl",
+      "id": "defi-protocol-tvl",
+      "name": "defi-protocol-tvl",
+      "preview_endpoint": "/defi/protocol/{slug}/tvl",
       "price_usdc": "0.01",
       "tags": [
         "defi",
-        "chains",
+        "protocol",
         "tvl"
       ],
       "type": "data"
     },
     {
       "category": "defi",
-      "description": "TVL for one chain. $0.01 USDC per call.",
-      "endpoint": "/defi/chains/{chain}",
-      "id": "defi-chain",
-      "name": "Defi Chain",
-      "preview_endpoint": "/defi/chains/{chain}",
+      "description": "Solana DeFi TVL by protocol category (lending, DEX, liquid staking, ...), top 15. $0.01 USDC per call.",
+      "endpoint": "/defi/categories",
+      "id": "defi-categories",
+      "name": "defi-categories",
+      "preview_endpoint": "/defi/categories",
       "price_usdc": "0.01",
       "tags": [
         "defi",
-        "chain",
+        "categories",
         "tvl"
       ],
       "type": "data"
     },
     {
       "category": "defi",
-      "description": "TVL history for one chain: first, latest, 30-day change. $0.01 USDC per call.",
-      "endpoint": "/defi/chains/{chain}/history",
-      "id": "defi-chain-history",
-      "name": "Defi Chain History",
-      "preview_endpoint": "/defi/chains/{chain}/history",
+      "description": "Liquid staking protocols on Solana by TVL (DeFiLlama category filter): Sanctum, Jito, Marinade and peers. $0.01 USDC per call.",
+      "endpoint": "/defi/liquid-staking",
+      "id": "defi-liquid-staking",
+      "name": "defi-liquid-staking",
+      "preview_endpoint": "/defi/liquid-staking",
       "price_usdc": "0.01",
       "tags": [
         "defi",
-        "chain",
+        "liquid-staking",
+        "lst"
+      ],
+      "type": "data"
+    },
+    {
+      "category": "defi",
+      "description": "Solana DEX volume totals (DeFiLlama): 24h, 7d, 30d volumes and day/week/month changes. $0.01 USDC per call.",
+      "endpoint": "/defi/dex/volume",
+      "id": "defi-dex-volume",
+      "name": "defi-dex-volume",
+      "preview_endpoint": "/defi/dex/volume",
+      "price_usdc": "0.01",
+      "tags": [
+        "defi",
+        "dex",
+        "volume"
+      ],
+      "type": "data"
+    },
+    {
+      "category": "defi",
+      "description": "Top Solana DEXes by 24h volume (DeFiLlama overview breakdown). $0.01 USDC per call.",
+      "endpoint": "/defi/dex/volume/top",
+      "id": "defi-dex-volume-top",
+      "name": "defi-dex-volume-top",
+      "preview_endpoint": "/defi/dex/volume/top",
+      "price_usdc": "0.01",
+      "tags": [
+        "defi",
+        "dex",
+        "volume"
+      ],
+      "type": "data"
+    },
+    {
+      "category": "defi",
+      "description": "Solana DEX volume for the last 14 days (DeFiLlama daily totals). $0.01 USDC per call.",
+      "endpoint": "/defi/dex/volume/history",
+      "id": "defi-dex-volume-history",
+      "name": "defi-dex-volume-history",
+      "preview_endpoint": "/defi/dex/volume/history",
+      "price_usdc": "0.01",
+      "tags": [
+        "defi",
+        "dex",
+        "volume"
+      ],
+      "type": "data"
+    },
+    {
+      "category": "defi",
+      "description": "Solana protocol fees totals (DeFiLlama): 24h, 7d, 30d fees and changes. $0.01 USDC per call.",
+      "endpoint": "/defi/fees",
+      "id": "defi-fees",
+      "name": "defi-fees",
+      "preview_endpoint": "/defi/fees",
+      "price_usdc": "0.01",
+      "tags": [
+        "defi",
+        "fees",
+        "solana"
+      ],
+      "type": "data"
+    },
+    {
+      "category": "defi",
+      "description": "Top fee-earning protocols on Solana in the last 24h (DeFiLlama overview breakdown). $0.01 USDC per call.",
+      "endpoint": "/defi/fees/top",
+      "id": "defi-fees-top",
+      "name": "defi-fees-top",
+      "preview_endpoint": "/defi/fees/top",
+      "price_usdc": "0.01",
+      "tags": [
+        "defi",
+        "fees",
+        "top"
+      ],
+      "type": "data"
+    },
+    {
+      "category": "defi",
+      "description": "Solana protocol fees for the last 14 days (DeFiLlama daily totals). $0.01 USDC per call.",
+      "endpoint": "/defi/fees/history",
+      "id": "defi-fees-history",
+      "name": "defi-fees-history",
+      "preview_endpoint": "/defi/fees/history",
+      "price_usdc": "0.01",
+      "tags": [
+        "defi",
+        "fees",
         "history"
       ],
       "type": "data"
     },
     {
       "category": "defi",
-      "description": "Top 10 protocols by 24h fees (all chains). $0.01 USDC per call.",
-      "endpoint": "/defi/fees/overview",
-      "id": "defi-fees-overview",
-      "name": "Defi Fees Overview",
-      "preview_endpoint": "/defi/fees/overview",
-      "price_usdc": "0.01",
-      "tags": [
-        "defi",
-        "fees",
-        "overview"
-      ],
-      "type": "data"
-    },
-    {
-      "category": "defi",
-      "description": "TVL/APY history for one yield pool (last 30 points). $0.01 USDC per call.",
-      "endpoint": "/defi/yields/chart/{pool}",
-      "id": "defi-yields-chart",
-      "name": "Defi Yields Chart",
-      "preview_endpoint": "/defi/yields/chart/{pool}",
+      "description": "Highest-APY yield pools on Solana right now (DeFiLlama yields, minimum $100k TVL, top 15). $0.01 USDC per call.",
+      "endpoint": "/defi/yields",
+      "id": "defi-yields",
+      "name": "defi-yields",
+      "preview_endpoint": "/defi/yields",
       "price_usdc": "0.01",
       "tags": [
         "defi",
         "yields",
-        "chart"
+        "apy"
       ],
       "type": "data"
     },
     {
       "category": "defi",
-      "description": "Impermanent-loss risk + APY for one yield pool. $0.01 USDC per call.",
-      "endpoint": "/defi/yields/il/{pool}",
-      "id": "defi-yields-il",
-      "name": "Defi Yields Il",
-      "preview_endpoint": "/defi/yields/il/{pool}",
+      "description": "Largest yield pools on Solana by TVL (DeFiLlama yields, top 15) with their APYs. $0.01 USDC per call.",
+      "endpoint": "/defi/yields/top-tvl",
+      "id": "defi-yields-top-tvl",
+      "name": "defi-yields-top-tvl",
+      "preview_endpoint": "/defi/yields/top-tvl",
       "price_usdc": "0.01",
       "tags": [
         "defi",
         "yields",
-        "il"
+        "tvl"
       ],
       "type": "data"
     },
     {
       "category": "defi",
-      "description": "Top 10 yield pools for one project, by APY. $0.01 USDC per call.",
+      "description": "Best stablecoin yields on Solana (DeFiLlama yields, stablecoin pools, minimum $100k TVL). $0.01 USDC per call.",
+      "endpoint": "/defi/yields/stablecoins",
+      "id": "defi-yields-stablecoins",
+      "name": "defi-yields-stablecoins",
+      "preview_endpoint": "/defi/yields/stablecoins",
+      "price_usdc": "0.01",
+      "tags": [
+        "defi",
+        "yields",
+        "stablecoins"
+      ],
+      "type": "data"
+    },
+    {
+      "category": "defi",
+      "description": "Best yields for SOL and liquid-staked SOL pools on Solana (symbol contains SOL). $0.01 USDC per call.",
+      "endpoint": "/defi/yields/sol",
+      "id": "defi-yields-sol",
+      "name": "defi-yields-sol",
+      "preview_endpoint": "/defi/yields/sol",
+      "price_usdc": "0.01",
+      "tags": [
+        "defi",
+        "yields",
+        "sol"
+      ],
+      "type": "data"
+    },
+    {
+      "category": "defi",
+      "description": "Best USDC yields on Solana (DeFiLlama yields, symbol contains USDC, minimum $50k TVL). $0.01 USDC per call.",
+      "endpoint": "/defi/yields/usdc",
+      "id": "defi-yields-usdc",
+      "name": "defi-yields-usdc",
+      "preview_endpoint": "/defi/yields/usdc",
+      "price_usdc": "0.01",
+      "tags": [
+        "defi",
+        "yields",
+        "usdc"
+      ],
+      "type": "data"
+    },
+    {
+      "category": "defi",
+      "description": "Yield pools of one project on Solana (DeFiLlama project id, e.g. kamino, jito-liquid-staking): pools, TVL, best APY. $0.01 USDC per call.",
       "endpoint": "/defi/yields/project/{project}",
       "id": "defi-yields-project",
-      "name": "Defi Yields Project",
+      "name": "defi-yields-project",
       "preview_endpoint": "/defi/yields/project/{project}",
       "price_usdc": "0.01",
       "tags": [
@@ -2214,746 +2067,906 @@
     },
     {
       "category": "defi",
-      "description": "Top 10 yield pools for one token symbol, by APY. $0.01 USDC per call.",
-      "endpoint": "/defi/yields/token/{symbol}",
-      "id": "defi-yields-token",
-      "name": "Defi Yields Token",
-      "preview_endpoint": "/defi/yields/token/{symbol}",
+      "description": "One DeFiLlama yield pool's recent history: latest APY/TVL and 30-day average APY. $0.01 USDC per call.",
+      "endpoint": "/defi/yields/pool/{pool_id}",
+      "id": "defi-yields-pool",
+      "name": "defi-yields-pool",
+      "preview_endpoint": "/defi/yields/pool/{pool_id}",
       "price_usdc": "0.01",
       "tags": [
         "defi",
         "yields",
-        "token"
+        "pool"
       ],
       "type": "data"
     },
     {
       "category": "defi",
-      "description": "Top 10 stablecoin yield pools on one chain, by APY. $0.01 USDC per call.",
-      "endpoint": "/defi/yields/stable/{chain}",
-      "id": "defi-yields-stable-chain",
-      "name": "Defi Yields Stable Chain",
-      "preview_endpoint": "/defi/yields/stable/{chain}",
-      "price_usdc": "0.01",
-      "tags": [
-        "defi",
-        "yields",
-        "stablecoin"
-      ],
-      "type": "data"
-    },
-    {
-      "category": "defi",
-      "description": "Total DEX volume, last 7 days (all chains). $0.01 USDC per call.",
-      "endpoint": "/defi/dex/volume/7d",
-      "id": "defi-dex-volume-7d",
-      "name": "Defi Dex Volume 7D",
-      "preview_endpoint": "/defi/dex/volume/7d",
-      "price_usdc": "0.01",
-      "tags": [
-        "defi",
-        "dex",
-        "volume"
-      ],
-      "type": "data"
-    },
-    {
-      "category": "defi",
-      "description": "Total DEX volume on Base, last 7 days. $0.01 USDC per call.",
-      "endpoint": "/defi/dex/volume/base/7d",
-      "id": "defi-dex-volume-base-7d",
-      "name": "Defi Dex Volume Base 7D",
-      "preview_endpoint": "/defi/dex/volume/base/7d",
-      "price_usdc": "0.01",
-      "tags": [
-        "defi",
-        "dex",
-        "volume",
-        "base"
-      ],
-      "type": "data"
-    },
-    {
-      "category": "dex",
-      "description": "Top N DEXs by 24h volume (1-25). $0.01 USDC per call.",
-      "endpoint": "/dex/top/volume/{n}",
-      "id": "dex-top-volume",
-      "name": "Dex Top Volume",
-      "preview_endpoint": "/dex/top/volume/{n}",
-      "price_usdc": "0.01",
-      "tags": [
-        "dex",
-        "top",
-        "volume"
-      ],
-      "type": "data"
-    },
-    {
-      "category": "dex",
-      "description": "Total DEX volume for one chain (24h + 7d). $0.01 USDC per call.",
-      "endpoint": "/dex/volume/{chain}",
-      "id": "dex-volume-chain",
-      "name": "Dex Volume Chain",
-      "preview_endpoint": "/dex/volume/{chain}",
-      "price_usdc": "0.01",
-      "tags": [
-        "dex",
-        "volume",
-        "chain"
-      ],
-      "type": "data"
-    },
-    {
-      "category": "dex",
-      "description": "DEX volume by chain for the major chains. $0.02 USDC per call.",
-      "endpoint": "/dex/chains",
-      "id": "dex-chains",
-      "name": "Dex Chains",
-      "preview_endpoint": "/dex/chains",
+      "description": "Solana DeFi in one call: TVL, DEX volume, protocol fees, stablecoin value on Solana, protocol count and median yield. $0.02 USDC per call.",
+      "endpoint": "/defi/solana/summary",
+      "id": "defi-solana-summary",
+      "name": "defi-solana-summary",
+      "preview_endpoint": "/defi/solana/summary",
       "price_usdc": "0.02",
       "tags": [
-        "dex",
-        "chains",
-        "volume"
+        "defi",
+        "summary",
+        "solana"
       ],
       "type": "data"
     },
     {
-      "category": "dex",
-      "description": "Top 10 DEXs by 24h fees. $0.01 USDC per call.",
-      "endpoint": "/dex/top/fees",
-      "id": "dex-top-fees",
-      "name": "Dex Top Fees",
-      "preview_endpoint": "/dex/top/fees",
+      "category": "oracle",
+      "description": "Pyth price-feed directory (crypto): total feed count and the first 50 feeds with ids and symbols. $0.01 USDC per call.",
+      "endpoint": "/oracles/pyth/feeds",
+      "id": "oracle-pyth-feeds",
+      "name": "oracle-pyth-feeds",
+      "preview_endpoint": "/oracles/pyth/feeds",
       "price_usdc": "0.01",
       "tags": [
-        "dex",
-        "top",
-        "fees"
+        "oracle",
+        "pyth",
+        "feeds"
       ],
       "type": "data"
     },
     {
-      "category": "dex",
-      "description": "Fee breakdown by chain for one protocol. $0.01 USDC per call.",
-      "endpoint": "/dex/fees/{protocol}/chains",
-      "id": "dex-fees-chains",
-      "name": "Dex Fees Chains",
-      "preview_endpoint": "/dex/fees/{protocol}/chains",
+      "category": "oracle",
+      "description": "Search the Pyth feed directory (e.g. SOL, BTC/USD, JUP): matching feeds with their feed ids. $0.01 USDC per call.",
+      "endpoint": "/oracles/pyth/feeds/search/{query}",
+      "id": "oracle-pyth-feeds-search",
+      "name": "oracle-pyth-feeds-search",
+      "preview_endpoint": "/oracles/pyth/feeds/search/{query}",
       "price_usdc": "0.01",
       "tags": [
-        "dex",
-        "fees",
-        "chains"
-      ],
-      "type": "data"
-    },
-    {
-      "category": "dex",
-      "description": "Transactions + volume for one DEX pair. $0.01 USDC per call.",
-      "endpoint": "/dex/pair/{chain}/{pair}/txns",
-      "id": "dex-pair-txns",
-      "name": "Dex Pair Txns",
-      "preview_endpoint": "/dex/pair/{chain}/{pair}/txns",
-      "price_usdc": "0.01",
-      "tags": [
-        "dex",
-        "pair",
-        "txns"
-      ],
-      "type": "data"
-    },
-    {
-      "category": "dex",
-      "description": "Top 10 DEX pairs for one token, by liquidity. $0.01 USDC per call.",
-      "endpoint": "/dex/pairs/{token}",
-      "id": "dex-pairs-token",
-      "name": "Dex Pairs Token",
-      "preview_endpoint": "/dex/pairs/{token}",
-      "price_usdc": "0.01",
-      "tags": [
-        "dex",
-        "pairs",
-        "token"
-      ],
-      "type": "data"
-    },
-    {
-      "category": "dex",
-      "description": "Best DEX pair for one token on one chain, by liquidity. $0.01 USDC per call.",
-      "endpoint": "/dex/pair/{token}/{chain}",
-      "id": "dex-pair-chain",
-      "name": "Dex Pair Chain",
-      "preview_endpoint": "/dex/pair/{token}/{chain}",
-      "price_usdc": "0.01",
-      "tags": [
-        "dex",
-        "pair",
-        "chain"
-      ],
-      "type": "data"
-    },
-    {
-      "category": "wallet",
-      "description": "Token allowances a wallet granted to Permit2, routers, Aave. $0.01 USDC per call.",
-      "endpoint": "/wallets/{address}/approvals",
-      "id": "wallet-approvals",
-      "name": "Wallet Approvals",
-      "preview_endpoint": "/wallets/{address}/approvals",
-      "price_usdc": "0.01",
-      "tags": [
-        "wallet",
-        "approvals",
-        "allowance"
-      ],
-      "type": "data"
-    },
-    {
-      "category": "wallet",
-      "description": "Allowances one wallet granted for one token. $0.01 USDC per call.",
-      "endpoint": "/wallets/{address}/approvals/{token}",
-      "id": "wallet-approvals-token",
-      "name": "Wallet Approvals Token",
-      "preview_endpoint": "/wallets/{address}/approvals/{token}",
-      "price_usdc": "0.01",
-      "tags": [
-        "wallet",
-        "approvals",
-        "token"
-      ],
-      "type": "data"
-    },
-    {
-      "category": "wallet",
-      "description": "One wallet's balance of one token + USD value. $0.01 USDC per call.",
-      "endpoint": "/wallets/{address}/token/{token}/value",
-      "id": "wallet-token-value",
-      "name": "Wallet Token Value",
-      "preview_endpoint": "/wallets/{address}/token/{token}/value",
-      "price_usdc": "0.01",
-      "tags": [
-        "wallet",
-        "token",
-        "value"
-      ],
-      "type": "data"
-    },
-    {
-      "category": "wallet",
-      "description": "Wallet cbETH balance. $0.01 USDC per call.",
-      "endpoint": "/wallets/{address}/cbeth-balance",
-      "id": "wallet-cbeth-balance",
-      "name": "Wallet Cbeth Balance",
-      "preview_endpoint": "/wallets/{address}/cbeth-balance",
-      "price_usdc": "0.01",
-      "tags": [
-        "wallet",
-        "cbeth",
-        "balance"
-      ],
-      "type": "data"
-    },
-    {
-      "category": "wallet",
-      "description": "Wallet DAI balance. $0.01 USDC per call.",
-      "endpoint": "/wallets/{address}/dai-balance",
-      "id": "wallet-dai-balance",
-      "name": "Wallet Dai Balance",
-      "preview_endpoint": "/wallets/{address}/dai-balance",
-      "price_usdc": "0.01",
-      "tags": [
-        "wallet",
-        "dai",
-        "balance"
-      ],
-      "type": "data"
-    },
-    {
-      "category": "wallet",
-      "description": "Wallet USDbC balance. $0.01 USDC per call.",
-      "endpoint": "/wallets/{address}/usdbc-balance",
-      "id": "wallet-usdbc-balance",
-      "name": "Wallet Usdbc Balance",
-      "preview_endpoint": "/wallets/{address}/usdbc-balance",
-      "price_usdc": "0.01",
-      "tags": [
-        "wallet",
-        "usdbc",
-        "balance"
-      ],
-      "type": "data"
-    },
-    {
-      "category": "wallet",
-      "description": "Wallet HIGHER balance. $0.01 USDC per call.",
-      "endpoint": "/wallets/{address}/higher-balance",
-      "id": "wallet-higher-balance",
-      "name": "Wallet Higher Balance",
-      "preview_endpoint": "/wallets/{address}/higher-balance",
-      "price_usdc": "0.01",
-      "tags": [
-        "wallet",
-        "higher",
-        "balance"
-      ],
-      "type": "data"
-    },
-    {
-      "category": "memes",
-      "description": "Newest Base token profiles on Dexscreener. $0.01 USDC per call.",
-      "endpoint": "/memes/new-pairs",
-      "id": "memes-new-pairs",
-      "name": "Memes New Pairs",
-      "preview_endpoint": "/memes/new-pairs",
-      "price_usdc": "0.01",
-      "tags": [
-        "memes",
-        "new",
-        "pairs"
-      ],
-      "type": "data"
-    },
-    {
-      "category": "memes",
-      "description": "Top 15 Base pairs by 24h volume across the main Base tokens. $0.02 USDC per call.",
-      "endpoint": "/memes/trending",
-      "id": "memes-trending",
-      "name": "Memes Trending",
-      "preview_endpoint": "/memes/trending",
-      "price_usdc": "0.02",
-      "tags": [
-        "memes",
-        "trending",
-        "volume"
-      ],
-      "type": "data"
-    },
-    {
-      "category": "memes",
-      "description": "Latest boosted Base tokens on Dexscreener. $0.01 USDC per call.",
-      "endpoint": "/memes/boosted",
-      "id": "memes-boosted",
-      "name": "Memes Boosted",
-      "preview_endpoint": "/memes/boosted",
-      "price_usdc": "0.01",
-      "tags": [
-        "memes",
-        "boosted"
-      ],
-      "type": "data"
-    },
-    {
-      "category": "memes",
-      "description": "Price changes (5m/1h/6h/24h) for one token's best pair. $0.01 USDC per call.",
-      "endpoint": "/memes/{token}/price-change",
-      "id": "memes-price-change",
-      "name": "Memes Price Change",
-      "preview_endpoint": "/memes/{token}/price-change",
-      "price_usdc": "0.01",
-      "tags": [
-        "memes",
-        "price-change"
-      ],
-      "type": "data"
-    },
-    {
-      "category": "memes",
-      "description": "Holder count + top holders for one token. $0.01 USDC per call.",
-      "endpoint": "/memes/{token}/holders",
-      "id": "memes-holders",
-      "name": "Memes Holders",
-      "preview_endpoint": "/memes/{token}/holders",
-      "price_usdc": "0.01",
-      "tags": [
-        "memes",
-        "holders"
-      ],
-      "type": "data"
-    },
-    {
-      "category": "prediction",
-      "description": "Top 15 active Polymarket markets by liquidity. $0.01 USDC per call.",
-      "endpoint": "/predict/markets",
-      "id": "predict-markets",
-      "name": "Predict Markets",
-      "preview_endpoint": "/predict/markets",
-      "price_usdc": "0.01",
-      "tags": [
-        "prediction",
-        "polymarket",
-        "markets"
-      ],
-      "type": "data"
-    },
-    {
-      "category": "prediction",
-      "description": "Top 15 active Polymarket markets by 24h volume. $0.01 USDC per call.",
-      "endpoint": "/predict/trending",
-      "id": "predict-trending",
-      "name": "Predict Trending",
-      "preview_endpoint": "/predict/trending",
-      "price_usdc": "0.01",
-      "tags": [
-        "prediction",
-        "polymarket",
-        "trending"
-      ],
-      "type": "data"
-    },
-    {
-      "category": "prediction",
-      "description": "Search active Polymarket markets by keyword. $0.01 USDC per call.",
-      "endpoint": "/predict/search/{query}",
-      "id": "predict-search",
-      "name": "Predict Search",
-      "preview_endpoint": "/predict/search/{query}",
-      "price_usdc": "0.01",
-      "tags": [
-        "prediction",
-        "polymarket",
+        "oracle",
+        "pyth",
         "search"
       ],
       "type": "data"
     },
     {
-      "category": "prediction",
-      "description": "Latest 20 active Polymarket events. $0.01 USDC per call.",
-      "endpoint": "/predict/events",
-      "id": "predict-events",
-      "name": "Predict Events",
-      "preview_endpoint": "/predict/events",
+      "category": "oracle",
+      "description": "One Pyth feed by symbol (e.g. SOL/USD): feed id, base, quote, display symbol, market hours. $0.01 USDC per call.",
+      "endpoint": "/oracles/pyth/feed/{symbol}",
+      "id": "oracle-pyth-feed",
+      "name": "oracle-pyth-feed",
+      "preview_endpoint": "/oracles/pyth/feed/{symbol}",
       "price_usdc": "0.01",
       "tags": [
-        "prediction",
-        "polymarket",
-        "events"
+        "oracle",
+        "pyth",
+        "feed"
       ],
       "type": "data"
     },
     {
-      "category": "prediction",
-      "description": "One Polymarket market by slug, with outcomes and prices. $0.01 USDC per call.",
-      "endpoint": "/predict/market/{slug}",
-      "id": "predict-market",
-      "name": "Predict Market",
-      "preview_endpoint": "/predict/market/{slug}",
+      "category": "oracle",
+      "description": "Cross-source USD price check for one Solana mint: Jupiter vs Dexscreener, median and max deviation. $0.01 USDC per call.",
+      "endpoint": "/oracles/price/{mint}",
+      "id": "oracle-price",
+      "name": "oracle-price",
+      "preview_endpoint": "/oracles/price/{mint}",
       "price_usdc": "0.01",
       "tags": [
-        "prediction",
-        "polymarket",
-        "market"
+        "oracle",
+        "price",
+        "cross-source"
       ],
       "type": "data"
     },
     {
-      "category": "prediction",
-      "description": "Active Polymarket markets ending soonest (next 15 by end date). $0.01 USDC per call.",
-      "endpoint": "/predict/markets/closing",
-      "id": "predict-closing",
-      "name": "Predict Closing",
-      "preview_endpoint": "/predict/markets/closing",
-      "price_usdc": "0.01",
+      "category": "oracle",
+      "description": "Cross-source SOL price check: Jupiter, Dexscreener and CoinGecko compared, with median and max deviation. $0.02 USDC per call.",
+      "endpoint": "/oracles/sol",
+      "id": "oracle-sol",
+      "name": "oracle-sol",
+      "preview_endpoint": "/oracles/sol",
+      "price_usdc": "0.02",
       "tags": [
-        "prediction",
-        "polymarket",
-        "closing"
-      ],
-      "type": "data"
-    },
-    {
-      "category": "token",
-      "description": "Price history for one Base token (1-365 days). $0.01 USDC per call.",
-      "endpoint": "/tokens/{address}/history/{days}",
-      "id": "token-history",
-      "name": "Token History",
-      "preview_endpoint": "/tokens/{address}/history/{days}",
-      "price_usdc": "0.01",
-      "tags": [
-        "token",
-        "history",
+        "oracle",
+        "sol",
         "price"
       ],
       "type": "data"
     },
     {
-      "category": "token",
-      "description": "Security audit flags for one Base token (GoPlus). $0.01 USDC per call.",
-      "endpoint": "/tokens/{address}/audit",
-      "id": "token-audit",
-      "name": "Token Audit",
-      "preview_endpoint": "/tokens/{address}/audit",
+      "category": "oracle",
+      "description": "Cross-source BTC price check on Solana (cbBTC mint): Jupiter vs Dexscreener vs CoinGecko bitcoin. $0.01 USDC per call.",
+      "endpoint": "/oracles/btc",
+      "id": "oracle-btc",
+      "name": "oracle-btc",
+      "preview_endpoint": "/oracles/btc",
       "price_usdc": "0.01",
       "tags": [
-        "token",
-        "audit",
-        "security"
+        "oracle",
+        "btc",
+        "price"
       ],
       "type": "data"
     },
     {
-      "category": "token",
-      "description": "Holder count + top 10 holders for one Base token (GoPlus). $0.01 USDC per call.",
-      "endpoint": "/tokens/{address}/holders",
-      "id": "token-holders",
-      "name": "Token Holders",
-      "preview_endpoint": "/tokens/{address}/holders",
+      "category": "oracle",
+      "description": "Cross-source ETH price check on Solana (bridged ETH mint): Jupiter vs Dexscreener vs CoinGecko ethereum. $0.01 USDC per call.",
+      "endpoint": "/oracles/eth",
+      "id": "oracle-eth",
+      "name": "oracle-eth",
+      "preview_endpoint": "/oracles/eth",
       "price_usdc": "0.01",
       "tags": [
-        "token",
+        "oracle",
+        "eth",
+        "price"
+      ],
+      "type": "data"
+    },
+    {
+      "category": "oracle",
+      "description": "USDC peg check on Solana: Jupiter, Dexscreener and CoinGecko prices compared against the $1 peg. $0.01 USDC per call.",
+      "endpoint": "/oracles/usdc",
+      "id": "oracle-usdc",
+      "name": "oracle-usdc",
+      "preview_endpoint": "/oracles/usdc",
+      "price_usdc": "0.01",
+      "tags": [
+        "oracle",
+        "usdc",
+        "peg"
+      ],
+      "type": "data"
+    },
+    {
+      "category": "oracle",
+      "description": "Price deviation between Jupiter and Dexscreener for one Solana mint (percent, with both prices). $0.01 USDC per call.",
+      "endpoint": "/oracles/deviation/{mint}",
+      "id": "oracle-deviation",
+      "name": "oracle-deviation",
+      "preview_endpoint": "/oracles/deviation/{mint}",
+      "price_usdc": "0.01",
+      "tags": [
+        "oracle",
+        "deviation",
+        "price"
+      ],
+      "type": "data"
+    },
+    {
+      "category": "oracle",
+      "description": "Jupiter's oracle-grade price detail for one mint: price, 24h change, liquidity, last-update block. $0.01 USDC per call.",
+      "endpoint": "/oracles/jupiter/{mint}",
+      "id": "oracle-jupiter",
+      "name": "oracle-jupiter",
+      "preview_endpoint": "/oracles/jupiter/{mint}",
+      "price_usdc": "0.01",
+      "tags": [
+        "oracle",
+        "jupiter",
+        "price"
+      ],
+      "type": "data"
+    },
+    {
+      "category": "oracle",
+      "description": "Dexscreener's price view of one Solana mint from its deepest base-asset pair. $0.01 USDC per call.",
+      "endpoint": "/oracles/dexscreener/{mint}",
+      "id": "oracle-dexscreener",
+      "name": "oracle-dexscreener",
+      "preview_endpoint": "/oracles/dexscreener/{mint}",
+      "price_usdc": "0.01",
+      "tags": [
+        "oracle",
+        "dexscreener",
+        "price"
+      ],
+      "type": "data"
+    },
+    {
+      "category": "oracle",
+      "description": "CoinGecko's price view of one Solana mint by contract address. $0.01 USDC per call.",
+      "endpoint": "/oracles/coingecko/{mint}",
+      "id": "oracle-coingecko",
+      "name": "oracle-coingecko",
+      "preview_endpoint": "/oracles/coingecko/{mint}",
+      "price_usdc": "0.01",
+      "tags": [
+        "oracle",
+        "coingecko",
+        "price"
+      ],
+      "type": "data"
+    },
+    {
+      "category": "memecoin",
+      "description": "Newest memecoins launched on pump.fun (latest 25): mint, name, market cap, creator, bonding state. $0.01 USDC per call.",
+      "endpoint": "/memecoins/new",
+      "id": "memecoins-new",
+      "name": "memecoins-new",
+      "preview_endpoint": "/memecoins/new",
+      "price_usdc": "0.01",
+      "tags": [
+        "memecoins",
+        "pumpfun",
+        "new"
+      ],
+      "type": "data"
+    },
+    {
+      "category": "memecoin",
+      "description": "Biggest memecoins on pump.fun by market cap (top 25): the trending board. $0.01 USDC per call.",
+      "endpoint": "/memecoins/trending",
+      "id": "memecoins-trending",
+      "name": "memecoins-trending",
+      "preview_endpoint": "/memecoins/trending",
+      "price_usdc": "0.01",
+      "tags": [
+        "memecoins",
+        "pumpfun",
+        "trending"
+      ],
+      "type": "data"
+    },
+    {
+      "category": "memecoin",
+      "description": "pump.fun coins closest to graduation: still on the bonding curve (not complete), ranked by market cap. $0.02 USDC per call.",
+      "endpoint": "/memecoins/graduating",
+      "id": "memecoins-graduating",
+      "name": "memecoins-graduating",
+      "preview_endpoint": "/memecoins/graduating",
+      "price_usdc": "0.02",
+      "tags": [
+        "memecoins",
+        "pumpfun",
+        "graduating"
+      ],
+      "type": "data"
+    },
+    {
+      "category": "memecoin",
+      "description": "Memecoin profile for one mint: deepest pair data, price, liquidity, links (Dexscreener). $0.01 USDC per call.",
+      "endpoint": "/memecoins/{mint}",
+      "id": "memecoin-profile",
+      "name": "memecoin-profile",
+      "preview_endpoint": "/memecoins/{mint}",
+      "price_usdc": "0.01",
+      "tags": [
+        "memecoins",
+        "profile",
+        "dex"
+      ],
+      "type": "data"
+    },
+    {
+      "category": "memecoin",
+      "description": "Price of one memecoin: Dexscreener best pair first, GeckoTerminal top pool as fallback. $0.01 USDC per call.",
+      "endpoint": "/memecoins/{mint}/price",
+      "id": "memecoin-price",
+      "name": "memecoin-price",
+      "preview_endpoint": "/memecoins/{mint}/price",
+      "price_usdc": "0.01",
+      "tags": [
+        "memecoins",
+        "price"
+      ],
+      "type": "data"
+    },
+    {
+      "category": "memecoin",
+      "description": "Largest holders of one memecoin mint (getTokenLargestAccounts, top 20 with supply shares). $0.01 USDC per call.",
+      "endpoint": "/memecoins/{mint}/holders",
+      "id": "memecoin-holders",
+      "name": "memecoin-holders",
+      "preview_endpoint": "/memecoins/{mint}/holders",
+      "price_usdc": "0.01",
+      "tags": [
+        "memecoins",
         "holders"
       ],
       "type": "data"
     },
     {
-      "category": "token",
-      "description": "Largest holder of one Base token (GoPlus). $0.01 USDC per call.",
-      "endpoint": "/tokens/{address}/top-holder",
-      "id": "token-top-holder",
-      "name": "Token Top Holder",
-      "preview_endpoint": "/tokens/{address}/top-holder",
+      "category": "memecoin",
+      "description": "Recent trades of one memecoin in its top GeckoTerminal pool (latest 20). $0.01 USDC per call.",
+      "endpoint": "/memecoins/{mint}/trades",
+      "id": "memecoin-trades",
+      "name": "memecoin-trades",
+      "preview_endpoint": "/memecoins/{mint}/trades",
       "price_usdc": "0.01",
       "tags": [
-        "token",
-        "top-holder"
+        "memecoins",
+        "trades"
       ],
       "type": "data"
     },
     {
-      "category": "token",
-      "description": "Age of a token's oldest DEX pair (first listing date). $0.01 USDC per call.",
-      "endpoint": "/tokens/{address}/age",
-      "id": "token-age",
-      "name": "Token Age",
-      "preview_endpoint": "/tokens/{address}/age",
+      "category": "memecoin",
+      "description": "Memecoin risk snapshot for one mint: mint/freeze authority status, top-10 holder share, deepest-pair liquidity. $0.01 USDC per call.",
+      "endpoint": "/memecoins/{mint}/risk",
+      "id": "memecoin-risk",
+      "name": "memecoin-risk",
+      "preview_endpoint": "/memecoins/{mint}/risk",
       "price_usdc": "0.01",
       "tags": [
-        "token",
-        "age"
+        "memecoins",
+        "risk",
+        "safety"
       ],
       "type": "data"
     },
     {
-      "category": "token",
-      "description": "Total DEX liquidity (USD) across all pairs for one token. $0.01 USDC per call.",
-      "endpoint": "/tokens/{address}/liquidity-usd",
-      "id": "token-liquidity-usd",
-      "name": "Token Liquidity Usd",
-      "preview_endpoint": "/tokens/{address}/liquidity-usd",
+      "category": "memecoin",
+      "description": "Search Solana memecoin pairs by name or symbol (Dexscreener, top 10 by liquidity). $0.01 USDC per call.",
+      "endpoint": "/memecoins/search/{query}",
+      "id": "memecoin-search",
+      "name": "memecoin-search",
+      "preview_endpoint": "/memecoins/search/{query}",
       "price_usdc": "0.01",
       "tags": [
-        "token",
-        "liquidity"
+        "memecoins",
+        "search"
       ],
       "type": "data"
     },
     {
-      "category": "token",
-      "description": "Fully diluted valuation + market cap for one Base token. $0.01 USDC per call.",
-      "endpoint": "/tokens/{address}/fdv",
-      "id": "token-fdv",
-      "name": "Token Fdv",
-      "preview_endpoint": "/tokens/{address}/fdv",
+      "category": "memecoin",
+      "description": "Top pump.fun AMM pools on GeckoTerminal (graduated memecoins trade here). $0.01 USDC per call.",
+      "endpoint": "/memecoins/pools",
+      "id": "memecoin-pools",
+      "name": "memecoin-pools",
+      "preview_endpoint": "/memecoins/pools",
       "price_usdc": "0.01",
       "tags": [
-        "token",
-        "fdv",
-        "market-cap"
+        "memecoins",
+        "pools",
+        "pumpfun"
       ],
       "type": "data"
     },
     {
-      "category": "chain",
-      "description": "Summaries of the last N blocks (1-10). $0.01 USDC per call.",
-      "endpoint": "/chain/blocks/{count}",
-      "id": "chain-blocks",
-      "name": "Chain Blocks",
-      "preview_endpoint": "/chain/blocks/{count}",
+      "category": "memecoin",
+      "description": "Trending Solana pools (GeckoTerminal) \u2014 the memecoin-heavy board, top 10 with 24h changes. $0.01 USDC per call.",
+      "endpoint": "/memecoins/trending/pools",
+      "id": "memecoin-trending-pools",
+      "name": "memecoin-trending-pools",
+      "preview_endpoint": "/memecoins/trending/pools",
       "price_usdc": "0.01",
       "tags": [
-        "chain",
-        "blocks"
+        "memecoins",
+        "trending",
+        "pools"
       ],
       "type": "data"
     },
     {
-      "category": "chain",
-      "description": "Pending-block transaction count (live mempool snapshot). $0.01 USDC per call.",
-      "endpoint": "/chain/pending/count",
-      "id": "chain-pending-count",
-      "name": "Chain Pending Count",
-      "preview_endpoint": "/chain/pending/count",
+      "category": "memecoin",
+      "description": "Biggest memecoin movers among trending Solana pools, ranked by absolute 24h price change. $0.01 USDC per call.",
+      "endpoint": "/memecoins/movers",
+      "id": "memecoin-movers",
+      "name": "memecoin-movers",
+      "preview_endpoint": "/memecoins/movers",
       "price_usdc": "0.01",
       "tags": [
-        "chain",
-        "pending",
-        "mempool"
+        "memecoins",
+        "movers",
+        "gainers"
       ],
       "type": "data"
     },
     {
-      "category": "chain",
-      "description": "Transaction receipt: status + confirmations. $0.01 USDC per call.",
-      "endpoint": "/chain/transaction/{tx_hash}/status",
-      "id": "chain-tx-status",
-      "name": "Chain Tx Status",
-      "preview_endpoint": "/chain/transaction/{tx_hash}/status",
+      "category": "memecoin",
+      "description": "pump.fun launchpad snapshot: launches in the newest 50, graduated share of the top 50, combined top-50 market cap. $0.01 USDC per call.",
+      "endpoint": "/memecoins/stats",
+      "id": "memecoin-stats",
+      "name": "memecoin-stats",
+      "preview_endpoint": "/memecoins/stats",
       "price_usdc": "0.01",
       "tags": [
-        "chain",
-        "transaction",
-        "status"
+        "memecoins",
+        "stats",
+        "pumpfun"
       ],
       "type": "data"
     },
     {
-      "category": "chain",
-      "description": "Transaction cost in ETH and USD. $0.01 USDC per call.",
-      "endpoint": "/chain/transaction/{tx_hash}/cost",
-      "id": "chain-tx-cost",
-      "name": "Chain Tx Cost",
-      "preview_endpoint": "/chain/transaction/{tx_hash}/cost",
+      "category": "stablecoin",
+      "description": "Top 12 stablecoins by market cap with prices and peg types (DeFiLlama). $0.01 USDC per call.",
+      "endpoint": "/stablecoins/top",
+      "id": "stablecoins-top",
+      "name": "stablecoins-top",
+      "preview_endpoint": "/stablecoins/top",
       "price_usdc": "0.01",
       "tags": [
-        "chain",
-        "transaction",
-        "cost"
+        "stablecoins",
+        "top"
       ],
       "type": "data"
     },
     {
-      "category": "chain",
-      "description": "Transaction count + gas for one block number. $0.01 USDC per call.",
-      "endpoint": "/chain/block/{number}/tx-count",
-      "id": "chain-block-tx-count",
-      "name": "Chain Block Tx Count",
-      "preview_endpoint": "/chain/block/{number}/tx-count",
+      "category": "stablecoin",
+      "description": "One stablecoin in detail (by symbol or DeFiLlama id): supply, price, peg mechanism, and its Solana-chain amount. $0.01 USDC per call.",
+      "endpoint": "/stablecoins/{asset}",
+      "id": "stablecoin-detail",
+      "name": "stablecoin-detail",
+      "preview_endpoint": "/stablecoins/{asset}",
       "price_usdc": "0.01",
       "tags": [
-        "chain",
-        "block",
-        "tx-count"
+        "stablecoins",
+        "detail"
       ],
       "type": "data"
     },
     {
-      "category": "utils",
-      "description": "Price history for one CoinGecko coin (1-365 days). $0.01 USDC per call.",
-      "endpoint": "/utils/coin/{coin}/history/{days}",
-      "id": "utils-coin-history",
-      "name": "Utils Coin History",
-      "preview_endpoint": "/utils/coin/{coin}/history/{days}",
+      "category": "stablecoin",
+      "description": "USDC in detail: global supply, price, and how much USDC circulates on Solana. $0.01 USDC per call.",
+      "endpoint": "/stablecoins/usdc",
+      "id": "stablecoin-usdc",
+      "name": "stablecoin-usdc",
+      "preview_endpoint": "/stablecoins/usdc",
       "price_usdc": "0.01",
       "tags": [
-        "utils",
-        "coin",
+        "stablecoins",
+        "usdc"
+      ],
+      "type": "data"
+    },
+    {
+      "category": "stablecoin",
+      "description": "USDT in detail: global supply, price, and how much USDT circulates on Solana. $0.01 USDC per call.",
+      "endpoint": "/stablecoins/usdt",
+      "id": "stablecoin-usdt",
+      "name": "stablecoin-usdt",
+      "preview_endpoint": "/stablecoins/usdt",
+      "price_usdc": "0.01",
+      "tags": [
+        "stablecoins",
+        "usdt"
+      ],
+      "type": "data"
+    },
+    {
+      "category": "stablecoin",
+      "description": "PYUSD (PayPal USD) in detail: global supply and its Solana-chain amount. $0.01 USDC per call.",
+      "endpoint": "/stablecoins/pyusd",
+      "id": "stablecoin-pyusd",
+      "name": "stablecoin-pyusd",
+      "preview_endpoint": "/stablecoins/pyusd",
+      "price_usdc": "0.01",
+      "tags": [
+        "stablecoins",
+        "pyusd"
+      ],
+      "type": "data"
+    },
+    {
+      "category": "stablecoin",
+      "description": "Stablecoin value circulating on Solana: chain total plus the top stablecoins' Solana amounts. $0.01 USDC per call.",
+      "endpoint": "/stablecoins/solana",
+      "id": "stablecoins-solana",
+      "name": "stablecoins-solana",
+      "preview_endpoint": "/stablecoins/solana",
+      "price_usdc": "0.01",
+      "tags": [
+        "stablecoins",
+        "solana",
+        "chain"
+      ],
+      "type": "data"
+    },
+    {
+      "category": "stablecoin",
+      "description": "Stablecoin value by chain (DeFiLlama stablecoinchains), top 15 \u2014 Solana highlighted by rank. $0.01 USDC per call.",
+      "endpoint": "/stablecoins/chains",
+      "id": "stablecoins-chains",
+      "name": "stablecoins-chains",
+      "preview_endpoint": "/stablecoins/chains",
+      "price_usdc": "0.01",
+      "tags": [
+        "stablecoins",
+        "chains"
+      ],
+      "type": "data"
+    },
+    {
+      "category": "stablecoin",
+      "description": "Stablecoins trading furthest from their peg right now (DeFiLlama prices, top 10 by absolute deviation). $0.01 USDC per call.",
+      "endpoint": "/stablecoins/pegs",
+      "id": "stablecoins-pegs",
+      "name": "stablecoins-pegs",
+      "preview_endpoint": "/stablecoins/pegs",
+      "price_usdc": "0.01",
+      "tags": [
+        "stablecoins",
+        "pegs",
+        "deviation"
+      ],
+      "type": "data"
+    },
+    {
+      "category": "market",
+      "description": "Global crypto market snapshot (CoinGecko): total market cap, volume, BTC/ETH dominance, active coins. $0.01 USDC per call.",
+      "endpoint": "/markets/global",
+      "id": "markets-global",
+      "name": "markets-global",
+      "preview_endpoint": "/markets/global",
+      "price_usdc": "0.01",
+      "tags": [
+        "markets",
+        "global",
+        "coingecko"
+      ],
+      "type": "data"
+    },
+    {
+      "category": "market",
+      "description": "SOL market data (CoinGecko): price, market cap and rank, volume, ATH, 24h/7d/30d changes. $0.01 USDC per call.",
+      "endpoint": "/markets/sol",
+      "id": "markets-sol",
+      "name": "markets-sol",
+      "preview_endpoint": "/markets/sol",
+      "price_usdc": "0.01",
+      "tags": [
+        "markets",
+        "sol",
+        "coingecko"
+      ],
+      "type": "data"
+    },
+    {
+      "category": "market",
+      "description": "SOL simple price (CoinGecko): USD price, market cap, 24h volume and 24h change in one light call. $0.01 USDC per call.",
+      "endpoint": "/markets/sol/price",
+      "id": "markets-sol-price",
+      "name": "markets-sol-price",
+      "preview_endpoint": "/markets/sol/price",
+      "price_usdc": "0.01",
+      "tags": [
+        "markets",
+        "sol",
+        "price"
+      ],
+      "type": "data"
+    },
+    {
+      "category": "market",
+      "description": "SOL price history summary for N days (CoinGecko market chart): start/end, high, low, change. $0.01 USDC per call.",
+      "endpoint": "/markets/sol/history/{days}",
+      "id": "markets-sol-history",
+      "name": "markets-sol-history",
+      "preview_endpoint": "/markets/sol/history/{days}",
+      "price_usdc": "0.01",
+      "tags": [
+        "markets",
+        "sol",
         "history"
       ],
       "type": "data"
     },
     {
-      "category": "utils",
-      "description": "Convert a USDC amount to ETH at the current price. $0.01 USDC per call.",
-      "endpoint": "/utils/convert/usdc-eth/{amount}",
-      "id": "utils-convert-usdc-eth",
-      "name": "Utils Convert Usdc Eth",
-      "preview_endpoint": "/utils/convert/usdc-eth/{amount}",
+      "category": "market",
+      "description": "SOL OHLC candles from CoinGecko (days: 1, 7, 14, 30, 90, 180 or 365; latest 40 candles). $0.01 USDC per call.",
+      "endpoint": "/markets/sol/ohlc/{days}",
+      "id": "markets-sol-ohlc",
+      "name": "markets-sol-ohlc",
+      "preview_endpoint": "/markets/sol/ohlc/{days}",
       "price_usdc": "0.01",
       "tags": [
-        "utils",
-        "convert",
-        "usdc",
-        "eth"
+        "markets",
+        "sol",
+        "ohlc"
       ],
       "type": "data"
     },
     {
-      "category": "utils",
-      "description": "Fear & Greed index, last 7 days. $0.01 USDC per call.",
-      "endpoint": "/utils/market/fear-greed/history",
-      "id": "utils-fear-greed-history",
-      "name": "Utils Fear Greed History",
-      "preview_endpoint": "/utils/market/fear-greed/history",
+      "category": "market",
+      "description": "Top Solana-ecosystem tokens by market cap (CoinGecko category): price, volume, 24h change. $0.01 USDC per call.",
+      "endpoint": "/markets/ecosystem",
+      "id": "markets-ecosystem",
+      "name": "markets-ecosystem",
+      "preview_endpoint": "/markets/ecosystem",
       "price_usdc": "0.01",
       "tags": [
-        "utils",
+        "markets",
+        "ecosystem",
+        "solana"
+      ],
+      "type": "data"
+    },
+    {
+      "category": "market",
+      "description": "Biggest 24h gainers in the Solana ecosystem category (CoinGecko, top 10). $0.01 USDC per call.",
+      "endpoint": "/markets/ecosystem/gainers",
+      "id": "markets-ecosystem-gainers",
+      "name": "markets-ecosystem-gainers",
+      "preview_endpoint": "/markets/ecosystem/gainers",
+      "price_usdc": "0.01",
+      "tags": [
+        "markets",
+        "ecosystem",
+        "gainers"
+      ],
+      "type": "data"
+    },
+    {
+      "category": "market",
+      "description": "Biggest 24h losers in the Solana ecosystem category (CoinGecko, top 10). $0.01 USDC per call.",
+      "endpoint": "/markets/ecosystem/losers",
+      "id": "markets-ecosystem-losers",
+      "name": "markets-ecosystem-losers",
+      "preview_endpoint": "/markets/ecosystem/losers",
+      "price_usdc": "0.01",
+      "tags": [
+        "markets",
+        "ecosystem",
+        "losers"
+      ],
+      "type": "data"
+    },
+    {
+      "category": "market",
+      "description": "Trending coins on CoinGecko search right now (global list, Solana names included when trending). $0.01 USDC per call.",
+      "endpoint": "/markets/trending",
+      "id": "markets-trending",
+      "name": "markets-trending",
+      "preview_endpoint": "/markets/trending",
+      "price_usdc": "0.01",
+      "tags": [
+        "markets",
+        "trending",
+        "coingecko"
+      ],
+      "type": "data"
+    },
+    {
+      "category": "market",
+      "description": "Crypto Fear & Greed index: current value, classification and timestamp (Alternative.me). $0.01 USDC per call.",
+      "endpoint": "/markets/fear-greed",
+      "id": "markets-fear-greed",
+      "name": "markets-fear-greed",
+      "preview_endpoint": "/markets/fear-greed",
+      "price_usdc": "0.01",
+      "tags": [
+        "markets",
+        "fear-greed",
+        "sentiment"
+      ],
+      "type": "data"
+    },
+    {
+      "category": "market",
+      "description": "Fear & Greed index for the last 7 days with the weekly average (Alternative.me). $0.01 USDC per call.",
+      "endpoint": "/markets/fear-greed/history",
+      "id": "markets-fear-greed-history",
+      "name": "markets-fear-greed-history",
+      "preview_endpoint": "/markets/fear-greed/history",
+      "price_usdc": "0.01",
+      "tags": [
+        "markets",
         "fear-greed",
         "history"
       ],
       "type": "data"
     },
     {
-      "category": "utils",
-      "description": "All-time high/low for one CoinGecko coin (USD). $0.01 USDC per call.",
-      "endpoint": "/utils/coin/{coin}/ath",
-      "id": "utils-coin-ath",
-      "name": "Utils Coin Ath",
-      "preview_endpoint": "/utils/coin/{coin}/ath",
+      "category": "nft",
+      "description": "Solana NFT collections on Magic Eden (first page of 20): symbol, name, image, description. $0.01 USDC per call.",
+      "endpoint": "/nfts/collections",
+      "id": "nft-collections",
+      "name": "nft-collections",
+      "preview_endpoint": "/nfts/collections",
       "price_usdc": "0.01",
       "tags": [
-        "utils",
-        "coin",
-        "ath"
+        "nfts",
+        "collections",
+        "magiceden"
+      ],
+      "type": "data"
+    },
+    {
+      "category": "nft",
+      "description": "Magic Eden stats for one Solana NFT collection: floor price, listed count, average sale prices, volumes. $0.01 USDC per call.",
+      "endpoint": "/nfts/collections/{symbol}/stats",
+      "id": "nft-collection-stats",
+      "name": "nft-collection-stats",
+      "preview_endpoint": "/nfts/collections/{symbol}/stats",
+      "price_usdc": "0.01",
+      "tags": [
+        "nfts",
+        "collections",
+        "stats"
+      ],
+      "type": "data"
+    },
+    {
+      "category": "nft",
+      "description": "One Solana NFT collection's Magic Eden profile: name, description, image and social links. $0.01 USDC per call.",
+      "endpoint": "/nfts/collections/{symbol}",
+      "id": "nft-collection",
+      "name": "nft-collection",
+      "preview_endpoint": "/nfts/collections/{symbol}",
+      "price_usdc": "0.01",
+      "tags": [
+        "nfts",
+        "collections",
+        "magiceden"
+      ],
+      "type": "data"
+    },
+    {
+      "category": "nft",
+      "description": "Current holder of one NFT mint: the largest token account and its owner (an NFT has exactly one holder of 1 unit). $0.01 USDC per call.",
+      "endpoint": "/nfts/{mint}/owner",
+      "id": "nft-owner",
+      "name": "nft-owner",
+      "preview_endpoint": "/nfts/{mint}/owner",
+      "price_usdc": "0.01",
+      "tags": [
+        "nfts",
+        "owner",
+        "rpc"
+      ],
+      "type": "data"
+    },
+    {
+      "category": "nft",
+      "description": "All token accounts holding a balance of one mint (for an NFT this is the single holder account). $0.01 USDC per call.",
+      "endpoint": "/nfts/{mint}/accounts",
+      "id": "nft-accounts",
+      "name": "nft-accounts",
+      "preview_endpoint": "/nfts/{mint}/accounts",
+      "price_usdc": "0.01",
+      "tags": [
+        "nfts",
+        "accounts",
+        "rpc"
       ],
       "type": "data"
     },
     {
       "category": "utils",
-      "description": "Convert gwei to ETH. $0.01 USDC per call.",
-      "endpoint": "/utils/convert/gwei-eth/{amount}",
-      "id": "utils-convert-gwei-eth",
-      "name": "Utils Convert Gwei Eth",
-      "preview_endpoint": "/utils/convert/gwei-eth/{amount}",
+      "description": "Convert lamports to SOL (and USD at the live price). $0.01 USDC per call.",
+      "endpoint": "/utils/convert/lamports/{amount}",
+      "id": "utils-convert-lamports",
+      "name": "utils-convert-lamports",
+      "preview_endpoint": "/utils/convert/lamports/{amount}",
       "price_usdc": "0.01",
       "tags": [
         "utils",
         "convert",
-        "gwei",
-        "eth"
+        "lamports"
       ],
       "type": "data"
     },
     {
       "category": "utils",
-      "description": "Price change (24h/7d/30d/1y) for one CoinGecko coin. $0.01 USDC per call.",
-      "endpoint": "/utils/coin/{coin}/change",
-      "id": "utils-coin-change",
-      "name": "Utils Coin Change",
-      "preview_endpoint": "/utils/coin/{coin}/change",
+      "description": "Convert a SOL amount to lamports and USD at the live price. $0.01 USDC per call.",
+      "endpoint": "/utils/convert/sol/{amount}",
+      "id": "utils-convert-sol",
+      "name": "utils-convert-sol",
+      "preview_endpoint": "/utils/convert/sol/{amount}",
       "price_usdc": "0.01",
       "tags": [
         "utils",
-        "coin",
-        "change"
+        "convert",
+        "sol"
       ],
       "type": "data"
     },
     {
-      "category": "naming",
-      "description": "ENS text records / socials for one name. $0.01 USDC per call.",
-      "endpoint": "/ens/{name}/records",
-      "id": "ens-records",
-      "name": "Ens Records",
-      "preview_endpoint": "/ens/{name}/records",
+      "category": "utils",
+      "description": "Convert a USD amount to SOL at the live Jupiter price. $0.01 USDC per call.",
+      "endpoint": "/utils/convert/usd-sol/{amount}",
+      "id": "utils-convert-usd-sol",
+      "name": "utils-convert-usd-sol",
+      "preview_endpoint": "/utils/convert/usd-sol/{amount}",
       "price_usdc": "0.01",
       "tags": [
-        "ens",
-        "records",
-        "socials"
+        "utils",
+        "convert",
+        "usd"
       ],
       "type": "data"
     },
     {
-      "category": "naming",
-      "description": "ENS content hash + avatar for one name. $0.01 USDC per call.",
-      "endpoint": "/ens/{name}/content",
-      "id": "ens-content",
-      "name": "Ens Content",
-      "preview_endpoint": "/ens/{name}/content",
+      "category": "utils",
+      "description": "Convert a SOL amount to USD at the live Jupiter price. $0.01 USDC per call.",
+      "endpoint": "/utils/convert/sol-usd/{amount}",
+      "id": "utils-convert-sol-usd",
+      "name": "utils-convert-sol-usd",
+      "preview_endpoint": "/utils/convert/sol-usd/{amount}",
       "price_usdc": "0.01",
       "tags": [
-        "ens",
-        "content",
-        "avatar"
+        "utils",
+        "convert",
+        "usd"
+      ],
+      "type": "data"
+    },
+    {
+      "category": "utils",
+      "description": "Validate a Solana address: base58 format, 32-byte length, and whether it is on the ed25519 curve (off-curve means a PDA). $0.01 USDC per call.",
+      "endpoint": "/utils/address/{address}/validate",
+      "id": "utils-address-validate",
+      "name": "utils-address-validate",
+      "preview_endpoint": "/utils/address/{address}/validate",
+      "price_usdc": "0.01",
+      "tags": [
+        "utils",
+        "address",
+        "validate"
+      ],
+      "type": "data"
+    },
+    {
+      "category": "utils",
+      "description": "Classify one Solana address by its owner program: wallet, mint, token account, stake account, vote account, program or unknown. $0.01 USDC per call.",
+      "endpoint": "/utils/address/{address}/type",
+      "id": "utils-address-type",
+      "name": "utils-address-type",
+      "preview_endpoint": "/utils/address/{address}/type",
+      "price_usdc": "0.01",
+      "tags": [
+        "utils",
+        "address",
+        "type"
+      ],
+      "type": "data"
+    },
+    {
+      "category": "utils",
+      "description": "Estimated wall-clock time of one slot: exact getBlockTime when the node has it, otherwise an estimate from average slot duration. $0.01 USDC per call.",
+      "endpoint": "/utils/slot/time/{slot}",
+      "id": "utils-slot-time",
+      "name": "utils-slot-time",
+      "preview_endpoint": "/utils/slot/time/{slot}",
+      "price_usdc": "0.01",
+      "tags": [
+        "utils",
+        "slot",
+        "time"
+      ],
+      "type": "data"
+    },
+    {
+      "category": "utils",
+      "description": "Estimated slot at a given Unix timestamp, extrapolated from the current slot and average slot duration. $0.01 USDC per call.",
+      "endpoint": "/utils/time/slot/{timestamp}",
+      "id": "utils-time-slot",
+      "name": "utils-time-slot",
+      "preview_endpoint": "/utils/time/slot/{timestamp}",
+      "price_usdc": "0.01",
+      "tags": [
+        "utils",
+        "time",
+        "slot"
+      ],
+      "type": "data"
+    },
+    {
+      "category": "utils",
+      "description": "Slot range of one Solana epoch from the epoch schedule: first slot, last slot, and estimated start/end times. $0.01 USDC per call.",
+      "endpoint": "/utils/epoch/{epoch}/slots",
+      "id": "utils-epoch-slots",
+      "name": "utils-epoch-slots",
+      "preview_endpoint": "/utils/epoch/{epoch}/slots",
+      "price_usdc": "0.01",
+      "tags": [
+        "utils",
+        "epoch",
+        "slots"
+      ],
+      "type": "data"
+    },
+    {
+      "category": "utils",
+      "description": "Current priority-fee estimate for a simple Solana transfer: median network prioritization fee plus the 5,000-lamport base fee. $0.01 USDC per call.",
+      "endpoint": "/utils/fees/priority",
+      "id": "utils-fees-priority",
+      "name": "utils-fees-priority",
+      "preview_endpoint": "/utils/fees/priority",
+      "price_usdc": "0.01",
+      "tags": [
+        "utils",
+        "fees",
+        "estimate"
       ],
       "type": "data"
     }
@@ -2962,7 +2975,7 @@
   "contact": {
     "github": "https://github.com/manteclaw"
   },
-  "description": "x402 pay-per-call API serving Base/EVM data, settled in USDC on Solana. 199 paid endpoints: live gas prices, token prices and security, wallet analytics, DEX pairs and Uniswap V3 pools, blocks and transactions, NFTs, DeFi yields and TVL, lending markets, stablecoins, Chainlink oracles, governance, memecoins, prediction markets, ENS, and utilities \u2014 all priced in USDC per call.",
+  "description": "199 pay-per-call Solana data APIs: chain state, SPL tokens, wallets, transactions, DEX pairs, DeFi, Pyth oracle feeds, pump.fun memecoins, stablecoins, markets, NFTs and utilities. Paid in USDC on Solana via x402.",
   "network": "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp",
   "protocols_supported": [
     "x402"

@@ -1,22 +1,18 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<meta name="color-scheme" content="light dark" />
-<meta name="description" content="Manteclaw x402 API Catalog — 200 pay-per-call endpoints for token prices, wallet analytics, DEX data, DeFi yields, lending, stablecoins, oracles, governance, NFTs, memecoins, prediction markets, ENS and more. Priced in USDC from $0.01 to $0.02 per call, settled on Solana. No API key, no subscription." />
-<meta property="og:title" content="Manteclaw x402 API Catalog — 200 pay-per-call APIs, USDC on Solana" />
-<meta property="og:description" content="A live x402 API service — token prices, wallet analytics, DEX data, DeFi yields, NFTs, ENS and on-chain utilities — paid in USDC on Solana. No API key, no subscription — every call is $0.01–$0.02, payable per request, right from this page." />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Manteclaw x402 — Solana Data APIs, Pay Per Call</title>
+<meta name="description" content="Manteclaw x402 API Catalog — 200 pay-per-call endpoints for Solana chain data, SPL token prices, wallet analytics, DEX pairs, DeFi yields, Pyth oracle feeds, pump.fun memecoins, stablecoins, NFTs and utilities. Priced in USDC from $0.01 to $0.02 per call, settled on Solana. No API key, no subscription." />
 <meta property="og:type" content="website" />
 <meta property="og:site_name" content="Manteclaw" />
+<meta property="og:title" content="Manteclaw x402 — Solana data, pay per call." />
+<meta property="og:description" content="200 live Solana endpoints, priced in USDC from $0.01 to $0.02 per call via x402, settled on Solana. Chain data, tokens, wallets, DEX, DeFi, oracles, memecoins and more." />
+<meta property="og:url" content="https://manteclaw-x402-solana.fly.dev/catalog" />
 <meta name="twitter:card" content="summary" />
-<meta name="twitter:title" content="Manteclaw x402 API Catalog — 200 pay-per-call APIs, USDC on Solana" />
-<meta name="twitter:description" content="200 live endpoints, priced in USDC from $0.01 to $0.02 per call via x402, settled on Solana. Connect a Solana wallet and pay per call from the page." />
-<link rel="icon" href="data:," />
-<title>Manteclaw x402 API Catalog</title>
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+<meta name="twitter:title" content="Manteclaw x402 — Solana data, pay per call." />
+<meta name="twitter:description" content="200 live Solana endpoints, priced in USDC from $0.01 to $0.02 per call via x402, settled on Solana." />
 <style>
   :root{
     --bg:#F5F6F8;
@@ -280,13 +276,13 @@
   <div class="wrap hero-inner">
     <div class="hero-top">
       <span class="brand">Manteclaw<span class="dot">.</span></span>
-      <span class="live"><i aria-hidden="true"></i> Live on Solana · v4.0</span>
+      <span class="live"><i aria-hidden="true"></i> Live on Solana</span>
       <span class="spacer"></span>
       <a href="https://github.com/manteclaw" target="_blank" rel="noopener">GitHub</a>
       <a href="https://manteclaw-x402-solana.fly.dev/.well-known/agent-catalog.json" target="_blank" rel="noopener">Live catalog JSON</a>
     </div>
-    <h1>Pay per call, settled on Solana.</h1>
-    <p class="lede">Manteclaw is a live <strong>x402 API service</strong>, paid in USDC on Solana — 200 endpoints for token prices, wallet analytics, DEX data, DeFi yields, lending, stablecoins, oracles, governance, NFTs, memecoins, prediction markets, ENS and on-chain utilities. <strong>No account, no API key, no subscription.</strong> Each call is priced in USDC, from <strong>$0.01 to $0.02</strong>, and paid per request by your app or AI agent.</p>
+    <h1>Solana data, pay per call.</h1>
+    <p class="lede">Manteclaw is a live <strong>x402 API service</strong> for <strong>Solana data</strong>, paid in USDC on Solana — 200 endpoints for chain state, SPL token prices, wallet analytics, DEX pairs, DeFi yields, Pyth oracle feeds, pump.fun memecoins, stablecoins, NFTs and on-chain utilities. <strong>No account, no API key, no subscription.</strong> Each call is priced in USDC, from <strong>$0.01 to $0.02</strong>, and paid per request by your app or AI agent.</p>
     <div class="baseurl">
       <code class="mono">https://manteclaw-x402-solana.fly.dev</code>
       <a class="btn btn-ghost" href="https://manteclaw-x402-solana.fly.dev/health" target="_blank" rel="noopener">Check it’s live ↗</a>
@@ -295,16 +291,14 @@
     <div class="walletbar" id="walletBar">
       <div class="winfo">
         <strong id="walletTitle">Pay for calls right from this page</strong>
-        <span id="walletStatus">This variant of the service settles in <b>USDC on Solana</b>. Call any endpoint from an x402 client with a Solana wallet — or click an endpoint's <b>Pay &amp; Call</b> button to see its live 402 payment terms (network, asset, amount, payTo). The facilitator covers the Solana network fee.</span>
+        <span id="walletStatus">This service settles in <b>USDC on Solana</b>. Call any endpoint from an x402 client with a Solana wallet — or click an endpoint's <b>Pay &amp; Call</b> button to see its live 402 payment terms (network, asset, amount, payTo). The facilitator covers the Solana network fee.</span>
       </div>
-      <button class="btn btn-primary" id="connectBtn" type="button">Connect Wallet</button>
-      <button class="btn btn-ghost" id="disconnectBtn" type="button" hidden>Disconnect</button>
     </div>
     <div class="stats" role="list" aria-label="Service at a glance">
       <div class="stat" role="listitem"><b>200</b><span>endpoints, all live</span></div>
-      <div class="stat" role="listitem"><b>9</b><span>categories of data</span></div>
+      <div class="stat" role="listitem"><b>13</b><span>categories of data</span></div>
       <div class="stat" role="listitem"><b>$0.01</b><span>cheapest paid call</span></div>
-      <div class="stat" role="listitem"><b>USDC</b><span>on Base · x402 v2</span></div>
+      <div class="stat" role="listitem"><b>USDC</b><span>on Solana · x402 v2</span></div>
     </div>
   </div>
 </header>
@@ -313,7 +307,7 @@
 
   <section aria-labelledby="how-h">
     <h2 id="how-h">How paying per call works</h2>
-    <p class="sec-sub">x402 revives the HTTP 402 “Payment Required” status code. There is nothing to sign up for — the payment <em>is</em> the API key, and it settles on Base for each individual call.</p>
+    <p class="sec-sub">x402 revives the HTTP 402 “Payment Required” status code. There is nothing to sign up for — the payment <em>is</em> the API key, and it settles on Solana for each individual call.</p>
     <div class="steps">
       <div class="step"><div class="n" aria-hidden="true">1</div><p><strong>Request.</strong> Call any endpoint with a normal GET request, like any REST API.</p></div>
       <div class="step"><div class="n" aria-hidden="true">2</div><p><strong>402 reply.</strong> The service answers HTTP 402 with the exact price for that call — never more than $0.02.</p></div>
@@ -322,64 +316,68 @@
     </div>
     <div class="codebox">
       <div class="tabs" role="tablist" aria-label="Code examples">
-        <button class="tab" role="tab" aria-selected="true" data-tab="ts" type="button">TypeScript</button>
+        <button class="tab" role="tab" aria-selected="true" data-tab="ts" type="button">JavaScript</button>
         <button class="tab" role="tab" aria-selected="false" data-tab="curl" type="button">cURL — see the 402</button>
         <button class="tab" role="tab" aria-selected="false" data-tab="health" type="button">Free health check</button>
       </div>
-      <pre id="panel-ts" role="tabpanel"><code><span class="cm">// npm i x402-fetch viem — then this is the whole integration</span>
-import { createWalletClient, http } from "viem";
-import { privateKeyToAccount } from "viem/accounts";
-import { base } from "viem/chains";
-import { wrapFetchWithPayment } from "x402-fetch";
-
-const account = privateKeyToAccount("0xYOUR_PRIVATE_KEY");
-const wallet = createWalletClient({ account, chain: base, transport: http() });
-const fetchWithPayment = wrapFetchWithPayment(fetch, wallet);
-
-<span class="cm">// The 402 handshake, signing and retry all happen inside this call</span>
+      <pre id="panel-ts" role="tabpanel"><code><span class="cm">// Any x402 client with a Solana (SVM) signer does this automatically:</span>
+<span class="cm">// it sees the 402, signs the USDC payment, retries, returns the data.</span>
 const res = await fetchWithPayment(
-  "https://manteclaw-x402-solana.fly.dev/defi/gas-tracker"
+  <span class="str">"https://manteclaw-x402-solana.fly.dev/chain/slot"</span>
 );
-console.log(await res.json());</code></pre>
-      <pre id="panel-curl" role="tabpanel" hidden><code><span class="cm"># Without a payment, every paid endpoint answers 402 with its price</span>
-curl -i https://manteclaw-x402-solana.fly.dev/mcp/status
+const data = await res.json();
+<span class="cm">// { "slot": 391204455, "block_height": …, "network": "solana" }</span></code></pre>
+      <pre id="panel-curl" role="tabpanel" hidden><code>curl -i https://manteclaw-x402-solana.fly.dev/chain/slot
 
-<span class="cm"># HTTP/1.1 402 Payment Required
-# payment-required: &lt;base64 JSON&gt; — decoded, it reads:
-# { "x402Version": 2,
-#   "accepts": [{ "scheme": "exact", "network": "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp",
-#     "asset": "EPjFWd…Dt1v (USDC)", "amount": "10000",
-#     "payTo": "Bkd6W9…Xwz2", "maxTimeoutSeconds": 300 }] }
-# "amount": "10000" is $0.01 — USDC has 6 decimals.</span></code></pre>
-      <pre id="panel-health" role="tabpanel" hidden><code><span class="cm"># /health is free — no wallet needed, try it in any browser</span>
-curl https://manteclaw-x402-solana.fly.dev/health
+<span class="cm"># HTTP/1.1 402 Payment Required</span>
+<span class="cm"># payment-required: &lt;base64 JSON&gt; — decoded, it reads:</span>
+{
+  "x402Version": 2,
+  "error": "Payment Required",
+  "resource": { "url": "https://manteclaw-x402-solana.fly.dev/chain/slot",
+                "description": "Current Solana slot (finalized). …",
+                "mimeType": "application/json" },
+  "accepts": [{
+    "scheme": "exact",
+    "network": "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp",
+    "asset": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+    "amount": "10000",
+    "payTo": "Bkd6W9THp8qKgCYcamEkYx4Rk6TTHkUnRsegMaDZXwz2",
+    "maxTimeoutSeconds": 300,
+    "extra": { "feePayer": "CjNFTjvBhbJJd2B5ePPMHRLx1ELZpa8dwQgGL727eKww" }
+  }]
+}</code></pre>
+      <pre id="panel-health" role="tabpanel" hidden><code>curl https://manteclaw-x402-solana.fly.dev/health
 
-<span class="cm"># { "status": "ok", "service": "x402-service", "version": "4.0",
-#   "network": "solana", "rpc_connected": true, "endpoints": 200 }</span></code></pre>
+<span class="cm"># { "status": "ok", "service": "manteclaw-x402-solana",</span>
+<span class="cm">#   "version": "2.0.0", "chain": "solana",</span>
+<span class="cm">#   "network": "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp",</span>
+<span class="cm">#   "payee": "Bkd6W9THp8qKgCYcamEkYx4Rk6TTHkUnRsegMaDZXwz2",</span>
+<span class="cm">#   "endpoints": 200, "paid_endpoints": 199 }</span></code></pre>
     </div>
-    <p class="code-note">Cheapest way to test a wallet setup end-to-end: <span class="mono">GET /mcp/status</span> at $0.01. Or skip the code entirely — connect a wallet at the top of this page and use any endpoint’s <strong>Pay &amp; Call</strong> button below; the result comes back right on the card. Full developer docs are in the <a href="https://github.com/manteclaw/manteclaw-x402/blob/main/README.md" target="_blank" rel="noopener">service README on GitHub</a>.</p>
+    <p class="code-note">The asset is Solana USDC (mint EPjFWdd5…Dt1v, 6 decimals — amount 10000 = $0.01). The <span class="mono">feePayer</span> in the payment terms is the facilitator's Solana account: it pays the network fee, so callers need USDC only.</p>
   </section>
 
-  <section aria-labelledby="cat-h">
-    <h2 id="cat-h">What’s inside</h2>
-    <p class="sec-sub">Fifteen groups covering the questions apps and agents ask about Base all day — what’s a token worth, is it safe, what’s in this wallet, where’s the yield. Tap a group to jump to its endpoints.</p>
+  <section aria-labelledby="groups-h">
+    <h2 id="groups-h">What’s inside</h2>
+    <p class="sec-sub">Thirteen groups covering the questions apps and agents ask about Solana all day — what’s a token worth, what’s in this wallet, where’s the yield, which memecoins are about to graduate. Tap a group to jump to its endpoints.</p>
     <div class="cat-grid" id="catGrid"></div>
   </section>
 
   <section aria-labelledby="pick-h">
     <h2 id="pick-h">Good first calls</h2>
-    <p class="sec-sub">The endpoints people usually start with — one free, the rest for a cent or less.</p>
+    <p class="sec-sub">The endpoints people usually start with — one free, the rest a cent or two.</p>
     <div class="picks" id="picks"></div>
   </section>
 
   <section class="explorer" id="catalog" aria-labelledby="exp-h">
     <h2 id="exp-h">Full catalog</h2>
-    <p class="sec-sub">Every endpoint, exactly as published in the live machine-readable catalog. Endpoints marked “takes parameters” need a value in the path — an address, a transaction hash, a block number — where the <span class="mono">{placeholder}</span> sits.</p>
+    <p class="sec-sub">Every endpoint, exactly as published in the live machine-readable catalog. Endpoints marked “takes parameters” need a value in the path — an address, a mint, a signature, a slot — where the <span class="mono">{placeholder}</span> sits.</p>
     <div class="controls">
       <div class="line1">
         <label class="search">
           <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.8-3.8"/></svg>
-          <input id="q" type="search" placeholder="Search endpoints — try “yield”, “gas”, “ENS”, “portfolio”…" aria-label="Search endpoints" />
+          <input id="q" type="search" placeholder="Search endpoints — try “yield”, “slot”, “memecoin”, “wallet”…" aria-label="Search endpoints" />
         </label>
         <select id="priceFilter" aria-label="Filter by price">
           <option value="all">All prices</option>
@@ -400,7 +398,7 @@ curl https://manteclaw-x402-solana.fly.dev/health
     <div class="grid" id="grid"></div>
     <div class="empty" id="empty">
       <strong>No endpoints match that search</strong>
-      Try a shorter term — “token”, “wallet”, “block” — or clear the category and price filters.
+      Try a shorter term — “token”, “wallet”, “slot” — or clear the category and price filters.
     </div>
   </section>
 
@@ -415,16 +413,15 @@ curl https://manteclaw-x402-solana.fly.dev/health
             <li><a href="https://manteclaw-x402-solana.fly.dev/.well-known/agent-catalog.json" target="_blank" rel="noopener">Agent catalog <span>/.well-known/agent-catalog.json</span></a></li>
             <li><a href="https://manteclaw-x402-solana.fly.dev/.well-known/x402.json" target="_blank" rel="noopener">x402 discovery file <span>/.well-known/x402.json</span></a></li>
             <li><a href="https://manteclaw-x402-solana.fly.dev/health" target="_blank" rel="noopener">Health check <span>/health — free</span></a></li>
-            <li><a href="https://hive402.scriptmasterlabs.com/api/public/catalog" target="_blank" rel="noopener">HIVE402 listing <span>all 199 paid endpoints</span></a></li>
-            <li><a href="https://github.com/manteclaw/manteclaw-x402/blob/main/README.md" target="_blank" rel="noopener">Developer README <span>github.com/manteclaw</span></a></li>
+            <li><a href="https://github.com/manteclaw" target="_blank" rel="noopener">Developer home <span>github.com/manteclaw</span></a></li>
           </ul>
         </div>
         <dl class="facts panel" style="margin-top:14px">
-          <div><dt>Network</dt><dd>Base (chain 8453)</dd></div>
-          <div><dt>Protocol</dt><dd>x402 v2 · exact scheme</dd></div>
+          <div><dt>Network</dt><dd>Solana mainnet</dd></div>
+          <div><dt>Protocol</dt><dd>x402 v2 · exact scheme (SVM)</dd></div>
           <div><dt>Currency</dt><dd>USDC on Solana</dd></div>
           <div><dt>Price range</dt><dd>Free – $0.02 per call</dd></div>
-          <div><dt>Data sources</dt><dd>Base RPC · Dexscreener · DeFiLlama · CoinGecko · ENS</dd></div>
+          <div><dt>Data sources</dt><dd>Solana RPC · Jupiter · Dexscreener · GeckoTerminal · DeFiLlama · Pyth · pump.fun · CoinGecko · Magic Eden</dd></div>
           <div><dt>Payments to</dt><dd>Bkd6W9…Xwz2</dd></div>
         </dl>
       </div>
@@ -435,8 +432,8 @@ curl https://manteclaw-x402-solana.fly.dev/health
 
 <footer>
   <div class="wrap">
-    <span><strong>Manteclaw</strong> · ManteClaw Base L2 Services · Service v4.0</span>
-    <span>Endpoint data taken from the live catalog on Nov 20, 2026 — the <a href="https://manteclaw-x402-solana.fly.dev/.well-known/agent-catalog.json" target="_blank" rel="noopener">JSON catalog</a> is always the source of truth.</span>
+    <span><strong>Manteclaw</strong> · ManteClaw Solana Data Services · Service v2.0</span>
+    <span>Endpoint data generated from the service registry — the <a href="https://manteclaw-x402-solana.fly.dev/.well-known/agent-catalog.json" target="_blank" rel="noopener">JSON catalog</a> is always the source of truth.</span>
   </div>
 </footer>
 
@@ -446,190 +443,39 @@ curl https://manteclaw-x402-solana.fly.dev/health
 var BASE = "https://manteclaw-x402-solana.fly.dev";
 var ENDPOINTS = [
  {
-  "name": "Token Allowance",
-  "path": "/tokens/{address}/allowance/{owner}/{spender}",
+  "name": "Token Ath",
+  "path": "/tokens/{mint}/ath",
   "price": "0.01",
   "priceNum": 0.01,
-  "desc": "ERC20 allowance a wallet granted to a spender.",
+  "desc": "All-time high and low for one Solana token from CoinGecko (by contract address).",
   "group": "Tokens",
   "tags": [
    "token",
-   "allowance",
-   "erc20"
-  ],
-  "params": true
- },
- {
-  "name": "Token Balance",
-  "path": "/tokens/{address}/balance/{wallet}",
-  "price": "0.01",
-  "priceNum": 0.01,
-  "desc": "ERC20 balance of a wallet for a Base token.",
-  "group": "Tokens",
-  "tags": [
-   "token",
-   "balance",
-   "wallet"
-  ],
-  "params": true
- },
- {
-  "name": "Token Decimals",
-  "path": "/tokens/{address}/decimals",
-  "price": "0.01",
-  "priceNum": 0.01,
-  "desc": "ERC20 decimals for a Base token.",
-  "group": "Tokens",
-  "tags": [
-   "token",
-   "erc20"
-  ],
-  "params": true
- },
- {
-  "name": "Token Name",
-  "path": "/tokens/{address}/name",
-  "price": "0.01",
-  "priceNum": 0.01,
-  "desc": "ERC20 name for a Base token.",
-  "group": "Tokens",
-  "tags": [
-   "token",
-   "erc20"
-  ],
-  "params": true
- },
- {
-  "name": "Token Supply",
-  "path": "/tokens/{address}/supply",
-  "price": "0.01",
-  "priceNum": 0.01,
-  "desc": "ERC20 total supply for a Base token.",
-  "group": "Tokens",
-  "tags": [
-   "token",
-   "supply",
-   "erc20"
-  ],
-  "params": true
- },
- {
-  "name": "Token Symbol",
-  "path": "/tokens/{address}/symbol",
-  "price": "0.01",
-  "priceNum": 0.01,
-  "desc": "ERC20 symbol for a Base token.",
-  "group": "Tokens",
-  "tags": [
-   "token",
-   "erc20"
-  ],
-  "params": true
- },
- {
-  "name": "Token Boosts",
-  "path": "/tokens/boosts",
-  "price": "0.01",
-  "priceNum": 0.01,
-  "desc": "Latest boosted tokens on Dexscreener.",
-  "group": "Tokens",
-  "tags": [
-   "token",
-   "boosts",
-   "dex"
-  ],
-  "params": false
- },
- {
-  "name": "Token CoinGecko",
-  "path": "/tokens/{address}/coingecko",
-  "price": "0.01",
-  "priceNum": 0.01,
-  "desc": "CoinGecko USD price for a Base token contract.",
-  "group": "Tokens",
-  "tags": [
-   "token",
-   "price",
+   "ath",
    "coingecko"
   ],
   "params": true
  },
  {
-  "name": "Token Info",
-  "path": "/tokens/{address}/info",
+  "name": "Token Authorities",
+  "path": "/tokens/{mint}/authorities",
   "price": "0.01",
   "priceNum": 0.01,
-  "desc": "On-chain ERC20 metadata: name, symbol, decimals, total supply.",
+  "desc": "Mint and freeze authorities of one SPL token (null means the authority is revoked).",
   "group": "Tokens",
   "tags": [
    "token",
-   "erc20",
-   "metadata"
+   "authority",
+   "spl"
   ],
   "params": true
  },
  {
-  "name": "Token Liquidity",
-  "path": "/tokens/{address}/liquidity",
+  "name": "Token Best Pair",
+  "path": "/tokens/{mint}/best-pair",
   "price": "0.01",
   "priceNum": 0.01,
-  "desc": "Liquidity per DEX pair for a Base token.",
-  "group": "Tokens",
-  "tags": [
-   "token",
-   "liquidity",
-   "dex"
-  ],
-  "params": true
- },
- {
-  "name": "Token Live Price",
-  "path": "/tokens/{address}/price",
-  "price": "0.01",
-  "priceNum": 0.01,
-  "desc": "Live USD price of a Base token from DEX pairs.",
-  "group": "Tokens",
-  "tags": [
-   "token",
-   "price",
-   "base"
-  ],
-  "params": true
- },
- {
-  "name": "Token Market",
-  "path": "/tokens/{address}/market",
-  "price": "0.01",
-  "priceNum": 0.01,
-  "desc": "Market cap, FDV, 24h volume and liquidity for a Base token.",
-  "group": "Tokens",
-  "tags": [
-   "token",
-   "market",
-   "mcap"
-  ],
-  "params": true
- },
- {
-  "name": "Token New",
-  "path": "/tokens/new",
-  "price": "0.01",
-  "priceNum": 0.01,
-  "desc": "Newest token profiles on Dexscreener.",
-  "group": "Tokens",
-  "tags": [
-   "token",
-   "new",
-   "dex"
-  ],
-  "params": false
- },
- {
-  "name": "Token Pairs",
-  "path": "/tokens/{address}/pairs",
-  "price": "0.01",
-  "priceNum": 0.01,
-  "desc": "All DEX pairs for a Base token, with liquidity and volume.",
+  "desc": "Deepest Solana DEX pair for one token (as base asset): price, liquidity, volume, market cap.",
   "group": "Tokens",
   "tags": [
    "token",
@@ -639,147 +485,39 @@ var ENDPOINTS = [
   "params": true
  },
  {
-  "name": "Token Price Change",
-  "path": "/tokens/{address}/price-change",
+  "name": "Token Coingecko",
+  "path": "/tokens/{mint}/coingecko",
   "price": "0.01",
   "priceNum": 0.01,
-  "desc": "Price change for a Base token over 5m, 1h, 6h and 24h.",
+  "desc": "CoinGecko market data for one Solana token by contract: price, market cap rank, volume, 24h range.",
   "group": "Tokens",
   "tags": [
    "token",
-   "price",
-   "change"
+   "coingecko",
+   "market"
   ],
   "params": true
  },
  {
-  "name": "Token Search",
-  "path": "/tokens/search/{query}",
+  "name": "Token Decimals",
+  "path": "/tokens/{mint}/decimals",
   "price": "0.01",
   "priceNum": 0.01,
-  "desc": "Search DEX pairs by token name, symbol or address.",
+  "desc": "Decimals and initialization state of one SPL mint.",
   "group": "Tokens",
   "tags": [
    "token",
-   "search",
-   "dex"
+   "decimals",
+   "spl"
   ],
   "params": true
  },
  {
-  "name": "Token Trending",
-  "path": "/tokens/trending",
+  "name": "Token Fdv",
+  "path": "/tokens/{mint}/fdv",
   "price": "0.01",
   "priceNum": 0.01,
-  "desc": "Top boosted tokens on Dexscreener right now.",
-  "group": "Tokens",
-  "tags": [
-   "token",
-   "trending",
-   "dex"
-  ],
-  "params": false
- },
- {
-  "name": "Token Txns",
-  "path": "/tokens/{address}/txns",
-  "price": "0.01",
-  "priceNum": 0.01,
-  "desc": "Buy/sell counts for a Base token across 5m, 1h, 6h and 24h.",
-  "group": "Tokens",
-  "tags": [
-   "token",
-   "transactions",
-   "dex"
-  ],
-  "params": true
- },
- {
-  "name": "Token History",
-  "path": "/tokens/{address}/history/{days}",
-  "price": "$0.01",
-  "priceNum": 0.01,
-  "desc": "Price history for one Base token (1-365 days).",
-  "group": "Tokens",
-  "tags": [
-   "token",
-   "history",
-   "price"
-  ],
-  "params": true
- },
- {
-  "name": "Token Audit",
-  "path": "/tokens/{address}/audit",
-  "price": "$0.01",
-  "priceNum": 0.01,
-  "desc": "Security audit flags for one Base token (GoPlus).",
-  "group": "Tokens",
-  "tags": [
-   "token",
-   "audit",
-   "security"
-  ],
-  "params": true
- },
- {
-  "name": "Token Holders",
-  "path": "/tokens/{address}/holders",
-  "price": "$0.01",
-  "priceNum": 0.01,
-  "desc": "Holder count + top 10 holders for one Base token (GoPlus).",
-  "group": "Tokens",
-  "tags": [
-   "token",
-   "holders"
-  ],
-  "params": true
- },
- {
-  "name": "Token Top Holder",
-  "path": "/tokens/{address}/top-holder",
-  "price": "$0.01",
-  "priceNum": 0.01,
-  "desc": "Largest holder of one Base token (GoPlus).",
-  "group": "Tokens",
-  "tags": [
-   "token",
-   "top-holder"
-  ],
-  "params": true
- },
- {
-  "name": "Token Age",
-  "path": "/tokens/{address}/age",
-  "price": "$0.01",
-  "priceNum": 0.01,
-  "desc": "Age of a token's oldest DEX pair (first listing date).",
-  "group": "Tokens",
-  "tags": [
-   "token",
-   "age"
-  ],
-  "params": true
- },
- {
-  "name": "Token Liquidity USD",
-  "path": "/tokens/{address}/liquidity-usd",
-  "price": "$0.01",
-  "priceNum": 0.01,
-  "desc": "Total DEX liquidity (USD) across all pairs for one token.",
-  "group": "Tokens",
-  "tags": [
-   "token",
-   "liquidity"
-  ],
-  "params": true
- },
- {
-  "name": "Token FDV",
-  "path": "/tokens/{address}/fdv",
-  "price": "$0.01",
-  "priceNum": 0.01,
-  "desc": "Fully diluted valuation + market cap for one Base token.",
+  "desc": "Fully diluted valuation and market cap of one Solana token from its deepest pair.",
   "group": "Tokens",
   "tags": [
    "token",
@@ -789,325 +527,1060 @@ var ENDPOINTS = [
   "params": true
  },
  {
-  "name": "Chain Client",
-  "path": "/chain/client",
+  "name": "Token First Pair",
+  "path": "/tokens/{mint}/first-pair",
   "price": "0.01",
   "priceNum": 0.01,
-  "desc": "Client version of the Base RPC node.",
-  "group": "Chain",
+  "desc": "Earliest known DEX pair for one Solana token: when it first traded, on which DEX.",
+  "group": "Tokens",
   "tags": [
-   "chain",
-   "client"
+   "token",
+   "dex",
+   "age"
+  ],
+  "params": true
+ },
+ {
+  "name": "Token Info",
+  "path": "/tokens/{mint}/info",
+  "price": "0.01",
+  "priceNum": 0.01,
+  "desc": "SPL mint account info: decimals, supply, mint authority, freeze authority, token program.",
+  "group": "Tokens",
+  "tags": [
+   "token",
+   "mint",
+   "spl"
+  ],
+  "params": true
+ },
+ {
+  "name": "Token Info Gt",
+  "path": "/tokens/{mint}/info/geckoterminal",
+  "price": "0.01",
+  "priceNum": 0.01,
+  "desc": "GeckoTerminal token info for one Solana mint: name, symbol, decimals, supply, price, FDV, volume.",
+  "group": "Tokens",
+  "tags": [
+   "token",
+   "info",
+   "geckoterminal"
+  ],
+  "params": true
+ },
+ {
+  "name": "Token Info Jupiter",
+  "path": "/tokens/{mint}/info/jupiter",
+  "price": "0.01",
+  "priceNum": 0.01,
+  "desc": "Jupiter token metadata for one Solana mint: name, tags, holder count, organic score, liquidity, FDV.",
+  "group": "Tokens",
+  "tags": [
+   "token",
+   "info",
+   "jupiter"
+  ],
+  "params": true
+ },
+ {
+  "name": "Token Largest Accounts",
+  "path": "/tokens/{mint}/largest-accounts",
+  "price": "0.01",
+  "priceNum": 0.01,
+  "desc": "Largest accounts holding one SPL token (getTokenLargestAccounts): top 20 token accounts with balances and share of supply.",
+  "group": "Tokens",
+  "tags": [
+   "token",
+   "holders",
+   "spl"
+  ],
+  "params": true
+ },
+ {
+  "name": "Token Links",
+  "path": "/tokens/{mint}/links",
+  "price": "0.01",
+  "priceNum": 0.01,
+  "desc": "Websites and social links for one Solana token from its deepest pair's Dexscreener profile.",
+  "group": "Tokens",
+  "tags": [
+   "token",
+   "links",
+   "socials"
+  ],
+  "params": true
+ },
+ {
+  "name": "Token Liquidity",
+  "path": "/tokens/{mint}/liquidity",
+  "price": "0.01",
+  "priceNum": 0.01,
+  "desc": "Total liquidity across a token's Solana pairs (as base asset), pair count, and the deepest pair.",
+  "group": "Tokens",
+  "tags": [
+   "token",
+   "liquidity",
+   "dex"
+  ],
+  "params": true
+ },
+ {
+  "name": "Token Majors Prices",
+  "path": "/tokens/majors/prices",
+  "price": "0.01",
+  "priceNum": 0.01,
+  "desc": "USD prices and 24h changes for the Solana majors: SOL, USDC, USDT, JUP, JTO, PYTH, WIF, BONK, RAY (Jupiter).",
+  "group": "Tokens",
+  "tags": [
+   "token",
+   "price",
+   "majors"
   ],
   "params": false
  },
  {
-  "name": "Chain Network",
-  "path": "/chain/network",
+  "name": "Token Ohlcv",
+  "path": "/tokens/{mint}/ohlcv/{timeframe}",
   "price": "0.01",
   "priceNum": 0.01,
-  "desc": "Chain id and latest block for Base.",
-  "group": "Chain",
+  "desc": "OHLCV candles for a Solana token's top GeckoTerminal pool (timeframe: day, hour or minute).",
+  "group": "Tokens",
   "tags": [
-   "chain",
-   "network"
+   "token",
+   "ohlcv",
+   "geckoterminal"
+  ],
+  "params": true
+ },
+ {
+  "name": "Token Pairs",
+  "path": "/tokens/{mint}/pairs",
+  "price": "0.01",
+  "priceNum": 0.01,
+  "desc": "All Solana DEX pairs where the token is the BASE asset, deepest first (Dexscreener, quote-side pairs excluded).",
+  "group": "Tokens",
+  "tags": [
+   "token",
+   "dex",
+   "pairs"
+  ],
+  "params": true
+ },
+ {
+  "name": "Token Pools Gt",
+  "path": "/tokens/{mint}/pools",
+  "price": "0.01",
+  "priceNum": 0.01,
+  "desc": "GeckoTerminal pools for one Solana token, top 10 by reserve.",
+  "group": "Tokens",
+  "tags": [
+   "token",
+   "pools",
+   "geckoterminal"
+  ],
+  "params": true
+ },
+ {
+  "name": "Token Price",
+  "path": "/tokens/{mint}/price",
+  "price": "0.01",
+  "priceNum": 0.01,
+  "desc": "Live USD price of one Solana token from Jupiter price v3, with 24h change and Jupiter-side liquidity.",
+  "group": "Tokens",
+  "tags": [
+   "token",
+   "price",
+   "jupiter"
+  ],
+  "params": true
+ },
+ {
+  "name": "Token Price Change",
+  "path": "/tokens/{mint}/price-change",
+  "price": "0.01",
+  "priceNum": 0.01,
+  "desc": "Price changes (5m, 1h, 6h, 24h) of one Solana token on its deepest pair.",
+  "group": "Tokens",
+  "tags": [
+   "token",
+   "price",
+   "change"
+  ],
+  "params": true
+ },
+ {
+  "name": "Token Price Dexscreener",
+  "path": "/tokens/{mint}/price/dexscreener",
+  "price": "0.01",
+  "priceNum": 0.01,
+  "desc": "USD price of one Solana token from its deepest Dexscreener pair (token as base asset).",
+  "group": "Tokens",
+  "tags": [
+   "token",
+   "price",
+   "dexscreener"
+  ],
+  "params": true
+ },
+ {
+  "name": "Token Prices Batch",
+  "path": "/tokens/prices/{mints}",
+  "price": "0.01",
+  "priceNum": 0.01,
+  "desc": "Batch USD prices for up to 30 Solana mints in one Jupiter call (comma-separated mint list).",
+  "group": "Tokens",
+  "tags": [
+   "token",
+   "price",
+   "batch"
+  ],
+  "params": true
+ },
+ {
+  "name": "Token Reserves",
+  "path": "/tokens/{mint}/reserves",
+  "price": "0.01",
+  "priceNum": 0.01,
+  "desc": "Pool reserves of a token's deepest Solana pair: base and quote amounts held in the pool.",
+  "group": "Tokens",
+  "tags": [
+   "token",
+   "liquidity",
+   "reserves"
+  ],
+  "params": true
+ },
+ {
+  "name": "Token Search",
+  "path": "/tokens/search/{query}",
+  "price": "0.01",
+  "priceNum": 0.01,
+  "desc": "Search Solana DEX pairs by token name or symbol (Dexscreener, Solana only, top 10 by liquidity).",
+  "group": "Tokens",
+  "tags": [
+   "token",
+   "search",
+   "dex"
+  ],
+  "params": true
+ },
+ {
+  "name": "Token Search Jupiter",
+  "path": "/tokens/search/jupiter/{query}",
+  "price": "0.01",
+  "priceNum": 0.01,
+  "desc": "Search Jupiter's Solana token index by name, symbol or mint: metadata, tags, holder counts, scores.",
+  "group": "Tokens",
+  "tags": [
+   "token",
+   "search",
+   "jupiter"
+  ],
+  "params": true
+ },
+ {
+  "name": "Token Sentiment",
+  "path": "/tokens/{mint}/sentiment",
+  "price": "0.01",
+  "priceNum": 0.01,
+  "desc": "CoinGecko community sentiment for one Solana token: watchlist count and up/down vote split.",
+  "group": "Tokens",
+  "tags": [
+   "token",
+   "sentiment",
+   "coingecko"
+  ],
+  "params": true
+ },
+ {
+  "name": "Token Supply",
+  "path": "/tokens/{mint}/supply",
+  "price": "0.01",
+  "priceNum": 0.01,
+  "desc": "Live SPL token supply for one Solana mint (getTokenSupply): raw amount, decimals, formatted supply.",
+  "group": "Tokens",
+  "tags": [
+   "token",
+   "supply",
+   "spl"
+  ],
+  "params": true
+ },
+ {
+  "name": "Token Top Pool Trades",
+  "path": "/tokens/{mint}/top-pool/trades",
+  "price": "0.01",
+  "priceNum": 0.01,
+  "desc": "Recent trades in a Solana token's top GeckoTerminal pool (latest 20).",
+  "group": "Tokens",
+  "tags": [
+   "token",
+   "trades",
+   "geckoterminal"
+  ],
+  "params": true
+ },
+ {
+  "name": "Token Top Volume",
+  "path": "/tokens/top/volume",
+  "price": "0.01",
+  "priceNum": 0.01,
+  "desc": "Solana tokens with the highest 24h volume right now, from GeckoTerminal's top pools.",
+  "group": "Tokens",
+  "tags": [
+   "token",
+   "volume",
+   "top"
   ],
   "params": false
  },
  {
-  "name": "Chain Syncing",
-  "path": "/chain/syncing",
+  "name": "Token Txns",
+  "path": "/tokens/{mint}/txns",
   "price": "0.01",
   "priceNum": 0.01,
-  "desc": "Whether the Base node is syncing (from latest block age).",
-  "group": "Chain",
+  "desc": "Buy/sell transaction counts (5m, 1h, 6h, 24h) for one Solana token on its deepest pair.",
+  "group": "Tokens",
   "tags": [
-   "chain",
-   "syncing"
+   "token",
+   "transactions",
+   "dex"
   ],
-  "params": false
+  "params": true
  },
  {
-  "name": "Chain Address Code",
-  "path": "/chain/address/{address}/code",
+  "name": "Token Volume",
+  "path": "/tokens/{mint}/volume",
   "price": "0.01",
   "priceNum": 0.01,
-  "desc": "Bytecode for a Base address, with size and hash.",
-  "group": "Chain",
+  "desc": "Trading volume of one Solana token: total 24h volume across its base-asset pairs plus the best pair's volume windows.",
+  "group": "Tokens",
   "tags": [
-   "chain",
-   "address",
-   "code"
+   "token",
+   "volume",
+   "dex"
+  ],
+  "params": true
+ },
+ {
+  "name": "Token Volume Cross Dex",
+  "path": "/tokens/{mint}/volume/cross-dex",
+  "price": "0.01",
+  "priceNum": 0.01,
+  "desc": "24h volume of one Solana token broken down by DEX across its base-asset pairs.",
+  "group": "Tokens",
+  "tags": [
+   "token",
+   "volume",
+   "dex"
+  ],
+  "params": true
+ },
+ {
+  "name": "Token Holder Concentration",
+  "path": "/tokens/{mint}/holders/concentration",
+  "price": "0.02",
+  "priceNum": 0.02,
+  "desc": "Holder concentration of one SPL token: share of supply held by the top 1, 5, 10 and 20 accounts.",
+  "group": "Tokens",
+  "tags": [
+   "token",
+   "holders",
+   "concentration"
+  ],
+  "params": true
+ },
+ {
+  "name": "Token Market",
+  "path": "/tokens/{mint}/market",
+  "price": "0.02",
+  "priceNum": 0.02,
+  "desc": "Combined market snapshot for one Solana token: Jupiter price, on-chain supply, computed market cap, DEX liquidity, volume and FDV.",
+  "group": "Tokens",
+  "tags": [
+   "token",
+   "market",
+   "snapshot"
   ],
   "params": true
  },
  {
   "name": "Chain Block",
-  "path": "/chain/block/{number}",
+  "path": "/chain/block/{slot}",
   "price": "0.01",
   "priceNum": 0.01,
-  "desc": "Base block by number.",
+  "desc": "One Solana block by slot: hash, height, time, parent, transaction count and sample signatures.",
   "group": "Chain",
   "tags": [
    "chain",
-   "block"
+   "block",
+   "solana"
   ],
   "params": true
  },
  {
-  "name": "Latest Block",
+  "name": "Chain Block Commitment",
+  "path": "/chain/block-commitment/{slot}",
+  "price": "0.01",
+  "priceNum": 0.01,
+  "desc": "Block commitment for one Solana slot: per-cluster stake commitment levels and total active stake.",
+  "group": "Chain",
+  "tags": [
+   "chain",
+   "block",
+   "commitment"
+  ],
+  "params": true
+ },
+ {
+  "name": "Chain Block Latest",
   "path": "/chain/block/latest",
   "price": "0.01",
   "priceNum": 0.01,
-  "desc": "Latest Base block with gas and transaction count.",
+  "desc": "Latest finalized Solana block summary: hash, height, time, transaction count.",
   "group": "Chain",
   "tags": [
    "chain",
    "block",
-   "latest"
+   "solana"
   ],
   "params": false
  },
  {
-  "name": "Chain Estimate Transfer",
-  "path": "/chain/gas/estimate-transfer/{to}",
+  "name": "Chain Block Production",
+  "path": "/chain/block-production",
   "price": "0.01",
   "priceNum": 0.01,
-  "desc": "Estimated gas for a plain ETH transfer on Base.",
+  "desc": "Solana block production for the current epoch: validator count, blocks produced, leader slots, top producers.",
   "group": "Chain",
   "tags": [
    "chain",
-   "gas",
-   "estimate"
-  ],
-  "params": true
- },
- {
-  "name": "Chain Fee History",
-  "path": "/chain/gas/fee-history",
-  "price": "0.01",
-  "priceNum": 0.01,
-  "desc": "Base fee history for the last 10 blocks.",
-  "group": "Chain",
-  "tags": [
-   "chain",
-   "gas",
-   "fees"
+   "validators",
+   "blocks"
   ],
   "params": false
  },
  {
-  "name": "Chain Gas Oracle",
-  "path": "/chain/gas/oracle",
+  "name": "Chain Block Production Validator",
+  "path": "/chain/block-production/{identity}",
   "price": "0.01",
   "priceNum": 0.01,
-  "desc": "Combined gas oracle: gas price, priority fee, fee history.",
+  "desc": "Block production of one Solana validator identity in the current epoch.",
   "group": "Chain",
   "tags": [
    "chain",
-   "gas",
-   "oracle"
-  ],
-  "params": false
- },
- {
-  "name": "Chain Priority Fee",
-  "path": "/chain/gas/priority-fee",
-  "price": "0.01",
-  "priceNum": 0.01,
-  "desc": "Current max priority fee on Base.",
-  "group": "Chain",
-  "tags": [
-   "chain",
-   "gas",
-   "priority"
-  ],
-  "params": false
- },
- {
-  "name": "Chain Stats",
-  "path": "/chain/stats",
-  "price": "0.01",
-  "priceNum": 0.01,
-  "desc": "Live Base chain stats: block, gas, chain id, client.",
-  "group": "Chain",
-  "tags": [
-   "chain",
-   "stats"
-  ],
-  "params": false
- },
- {
-  "name": "Chain Tx Input",
-  "path": "/chain/transaction/{hash}/input",
-  "price": "0.01",
-  "priceNum": 0.01,
-  "desc": "Decoded input data for a Base transaction.",
-  "group": "Chain",
-  "tags": [
-   "chain",
-   "transaction",
-   "input"
-  ],
-  "params": true
- },
- {
-  "name": "Chain Block Txs",
-  "path": "/chain/block/{number}/transactions",
-  "price": "0.01",
-  "priceNum": 0.01,
-  "desc": "Transaction hashes in a Base block.",
-  "group": "Chain",
-  "tags": [
-   "chain",
-   "block",
-   "transactions"
-  ],
-  "params": true
- },
- {
-  "name": "Chain Transaction",
-  "path": "/chain/transaction/{hash}",
-  "price": "0.01",
-  "priceNum": 0.01,
-  "desc": "Detail for a Base transaction.",
-  "group": "Chain",
-  "tags": [
-   "chain",
-   "transaction"
-  ],
-  "params": true
- },
- {
-  "name": "Chain Tx Logs",
-  "path": "/chain/transaction/{hash}/logs",
-  "price": "0.01",
-  "priceNum": 0.01,
-  "desc": "Event logs for a Base transaction (from its receipt).",
-  "group": "Chain",
-  "tags": [
-   "chain",
-   "transaction",
-   "logs"
-  ],
-  "params": true
- },
- {
-  "name": "Chain Tx Receipt",
-  "path": "/chain/transaction/{hash}/receipt",
-  "price": "0.01",
-  "priceNum": 0.01,
-  "desc": "Receipt for a Base transaction: status, gas used, logs.",
-  "group": "Chain",
-  "tags": [
-   "chain",
-   "transaction",
-   "receipt"
-  ],
-  "params": true
- },
- {
-  "name": "Chain Blocks",
-  "path": "/chain/blocks/{count}",
-  "price": "$0.01",
-  "priceNum": 0.01,
-  "desc": "Summaries of the last N blocks (1-10).",
-  "group": "Chain",
-  "tags": [
-   "chain",
+   "validators",
    "blocks"
   ],
   "params": true
  },
  {
-  "name": "Chain Pending Count",
-  "path": "/chain/pending/count",
-  "price": "$0.01",
+  "name": "Chain Block Signatures",
+  "path": "/chain/block/{slot}/signatures",
+  "price": "0.01",
   "priceNum": 0.01,
-  "desc": "Pending-block transaction count (live mempool snapshot).",
-  "group": "Chain",
-  "tags": [
-   "chain",
-   "pending",
-   "mempool"
-  ],
-  "params": false
- },
- {
-  "name": "Chain Transaction Status",
-  "path": "/chain/transaction/{tx_hash}/status",
-  "price": "$0.01",
-  "priceNum": 0.01,
-  "desc": "Transaction receipt: status + confirmations.",
-  "group": "Chain",
-  "tags": [
-   "chain",
-   "transaction",
-   "status"
-  ],
-  "params": true
- },
- {
-  "name": "Chain Transaction Cost",
-  "path": "/chain/transaction/{tx_hash}/cost",
-  "price": "$0.01",
-  "priceNum": 0.01,
-  "desc": "Transaction cost in ETH and USD.",
-  "group": "Chain",
-  "tags": [
-   "chain",
-   "transaction",
-   "cost"
-  ],
-  "params": true
- },
- {
-  "name": "Chain Block Transaction Count",
-  "path": "/chain/block/{number}/tx-count",
-  "price": "$0.01",
-  "priceNum": 0.01,
-  "desc": "Transaction count + gas for one block number.",
+  "desc": "Transaction signatures included in one Solana block (first 50 plus total count).",
   "group": "Chain",
   "tags": [
    "chain",
    "block",
-   "tx-count"
+   "signatures"
   ],
   "params": true
  },
  {
-  "name": "DEX Fees Protocol",
-  "path": "/dex/fees/{protocol}",
+  "name": "Chain Block Time",
+  "path": "/chain/block-time/{slot}",
   "price": "0.01",
   "priceNum": 0.01,
-  "desc": "Fee and revenue summary for one protocol.",
-  "group": "DEX",
+  "desc": "Estimated Unix timestamp of one Solana slot (getBlockTime).",
+  "group": "Chain",
   "tags": [
-   "dex",
-   "fees",
-   "protocol"
+   "chain",
+   "block",
+   "time"
   ],
   "params": true
  },
  {
-  "name": "DEX Latest Boosts",
-  "path": "/dex/latest-boosts",
+  "name": "Chain Blocks Recent",
+  "path": "/chain/blocks/recent",
   "price": "0.01",
   "priceNum": 0.01,
-  "desc": "Latest boosted tokens on Dexscreener.",
-  "group": "DEX",
+  "desc": "The most recent slots that produced blocks on Solana (getBlocksWithLimit).",
+  "group": "Chain",
   "tags": [
-   "dex",
-   "boosts"
+   "chain",
+   "blocks",
+   "recent"
   ],
   "params": false
  },
  {
-  "name": "DEX Latest Profiles",
-  "path": "/dex/latest-profiles",
+  "name": "Chain Cluster Nodes",
+  "path": "/chain/cluster-nodes",
   "price": "0.01",
   "priceNum": 0.01,
-  "desc": "Newest token profiles on Dexscreener.",
+  "desc": "Solana cluster nodes summary: node count, nodes with RPC, version histogram, sample nodes.",
+  "group": "Chain",
+  "tags": [
+   "chain",
+   "nodes",
+   "cluster"
+  ],
+  "params": false
+ },
+ {
+  "name": "Chain Epoch Info",
+  "path": "/chain/epoch/info",
+  "price": "0.01",
+  "priceNum": 0.01,
+  "desc": "Current Solana epoch info: epoch, absolute slot, slot index, slots in epoch, block height, transaction count.",
+  "group": "Chain",
+  "tags": [
+   "chain",
+   "epoch",
+   "solana"
+  ],
+  "params": false
+ },
+ {
+  "name": "Chain Epoch Progress",
+  "path": "/chain/epoch/progress",
+  "price": "0.01",
+  "priceNum": 0.01,
+  "desc": "Progress through the current Solana epoch: percent complete, slots remaining, estimated time to epoch end.",
+  "group": "Chain",
+  "tags": [
+   "chain",
+   "epoch",
+   "progress"
+  ],
+  "params": false
+ },
+ {
+  "name": "Chain Epoch Schedule",
+  "path": "/chain/epoch/schedule",
+  "price": "0.01",
+  "priceNum": 0.01,
+  "desc": "Solana epoch schedule: slots per epoch, leader schedule offset, warmup, first normal epoch/slot.",
+  "group": "Chain",
+  "tags": [
+   "chain",
+   "epoch",
+   "schedule"
+  ],
+  "params": false
+ },
+ {
+  "name": "Chain Genesis Hash",
+  "path": "/chain/genesis-hash",
+  "price": "0.01",
+  "priceNum": 0.01,
+  "desc": "Solana mainnet genesis hash.",
+  "group": "Chain",
+  "tags": [
+   "chain",
+   "genesis"
+  ],
+  "params": false
+ },
+ {
+  "name": "Chain Health",
+  "path": "/chain/health",
+  "price": "0.01",
+  "priceNum": 0.01,
+  "desc": "Solana cluster health as reported by the RPC node (getHealth).",
+  "group": "Chain",
+  "tags": [
+   "chain",
+   "health",
+   "node"
+  ],
+  "params": false
+ },
+ {
+  "name": "Chain Identity",
+  "path": "/chain/identity",
+  "price": "0.01",
+  "priceNum": 0.01,
+  "desc": "Identity public key of the Solana RPC node answering.",
+  "group": "Chain",
+  "tags": [
+   "chain",
+   "node",
+   "identity"
+  ],
+  "params": false
+ },
+ {
+  "name": "Chain Inflation",
+  "path": "/chain/inflation",
+  "price": "0.01",
+  "priceNum": 0.01,
+  "desc": "Current Solana inflation rate: total, validator and foundation percentages for the current epoch.",
+  "group": "Chain",
+  "tags": [
+   "chain",
+   "inflation",
+   "sol"
+  ],
+  "params": false
+ },
+ {
+  "name": "Chain Inflation Governor",
+  "path": "/chain/inflation/governor",
+  "price": "0.01",
+  "priceNum": 0.01,
+  "desc": "Solana inflation governor parameters: initial, terminal, taper, foundation percent and term.",
+  "group": "Chain",
+  "tags": [
+   "chain",
+   "inflation",
+   "governor"
+  ],
+  "params": false
+ },
+ {
+  "name": "Chain Leader Schedule",
+  "path": "/chain/leader-schedule/{epoch}",
+  "price": "0.01",
+  "priceNum": 0.01,
+  "desc": "Leader schedule summary for one Solana epoch: validator count, total leader slots, top leaders.",
+  "group": "Chain",
+  "tags": [
+   "chain",
+   "epoch",
+   "leaders"
+  ],
+  "params": true
+ },
+ {
+  "name": "Chain Minimum Ledger Slot",
+  "path": "/chain/minimum-ledger-slot",
+  "price": "0.01",
+  "priceNum": 0.01,
+  "desc": "Minimum ledger slot still available on the Solana RPC node.",
+  "group": "Chain",
+  "tags": [
+   "chain",
+   "ledger",
+   "slot"
+  ],
+  "params": false
+ },
+ {
+  "name": "Chain Performance",
+  "path": "/chain/performance",
+  "price": "0.01",
+  "priceNum": 0.01,
+  "desc": "Latest Solana performance sample: transactions per second over the most recent sample window.",
+  "group": "Chain",
+  "tags": [
+   "chain",
+   "performance",
+   "tps"
+  ],
+  "params": false
+ },
+ {
+  "name": "Chain Performance History",
+  "path": "/chain/performance/{limit}",
+  "price": "0.01",
+  "priceNum": 0.01,
+  "desc": "Recent Solana performance samples with average TPS (limit capped at 60).",
+  "group": "Chain",
+  "tags": [
+   "chain",
+   "performance",
+   "tps"
+  ],
+  "params": true
+ },
+ {
+  "name": "Chain Prioritization Fees",
+  "path": "/chain/prioritization-fees",
+  "price": "0.01",
+  "priceNum": 0.01,
+  "desc": "Recent Solana prioritization fees (micro-lamports per compute unit): min, median, p75, p90, max across recent slots.",
+  "group": "Chain",
+  "tags": [
+   "chain",
+   "fees",
+   "priority"
+  ],
+  "params": false
+ },
+ {
+  "name": "Chain Prioritization Fees Account",
+  "path": "/chain/prioritization-fees/{address}",
+  "price": "0.01",
+  "priceNum": 0.01,
+  "desc": "Recent prioritization fees for transactions writing to one Solana account: median, p90 and max.",
+  "group": "Chain",
+  "tags": [
+   "chain",
+   "fees",
+   "priority"
+  ],
+  "params": true
+ },
+ {
+  "name": "Chain Rent",
+  "path": "/chain/rent/{size}",
+  "price": "0.01",
+  "priceNum": 0.01,
+  "desc": "Minimum balance for rent exemption for a Solana account of the given data size in bytes.",
+  "group": "Chain",
+  "tags": [
+   "chain",
+   "rent",
+   "lamports"
+  ],
+  "params": true
+ },
+ {
+  "name": "Chain Slot",
+  "path": "/chain/slot",
+  "price": "0.01",
+  "priceNum": 0.01,
+  "desc": "Current Solana slot (finalized).",
+  "group": "Chain",
+  "tags": [
+   "chain",
+   "slot",
+   "solana"
+  ],
+  "params": false
+ },
+ {
+  "name": "Chain Slot Leaders",
+  "path": "/chain/slot-leaders/{start}/{limit}",
+  "price": "0.01",
+  "priceNum": 0.01,
+  "desc": "Solana slot leaders starting at a slot (limit capped at 100).",
+  "group": "Chain",
+  "tags": [
+   "chain",
+   "leaders",
+   "slots"
+  ],
+  "params": true
+ },
+ {
+  "name": "Chain Snapshot Slot",
+  "path": "/chain/snapshot-slot",
+  "price": "0.01",
+  "priceNum": 0.01,
+  "desc": "Highest full and incremental snapshot slots on the Solana RPC node.",
+  "group": "Chain",
+  "tags": [
+   "chain",
+   "snapshot",
+   "node"
+  ],
+  "params": false
+ },
+ {
+  "name": "Chain Stake Activation",
+  "path": "/chain/stake-activation/{address}",
+  "price": "0.01",
+  "priceNum": 0.01,
+  "desc": "Activation state of one Solana stake account, computed from its on-chain delegation epochs (the legacy getStakeActivation RPC was removed).",
+  "group": "Chain",
+  "tags": [
+   "chain",
+   "stake",
+   "activation"
+  ],
+  "params": true
+ },
+ {
+  "name": "Chain Supply",
+  "path": "/chain/supply",
+  "price": "0.01",
+  "priceNum": 0.01,
+  "desc": "Solana supply: total, circulating and non-circulating SOL (non-circulating account list replaced by its count).",
+  "group": "Chain",
+  "tags": [
+   "chain",
+   "supply",
+   "sol"
+  ],
+  "params": false
+ },
+ {
+  "name": "Chain Supply Circulating",
+  "path": "/chain/supply/circulating",
+  "price": "0.01",
+  "priceNum": 0.01,
+  "desc": "Circulating SOL supply with its USD value at the live SOL price.",
+  "group": "Chain",
+  "tags": [
+   "chain",
+   "supply",
+   "circulating"
+  ],
+  "params": false
+ },
+ {
+  "name": "Chain Transaction Count",
+  "path": "/chain/transaction-count",
+  "price": "0.01",
+  "priceNum": 0.01,
+  "desc": "Total transaction count processed by the Solana cluster.",
+  "group": "Chain",
+  "tags": [
+   "chain",
+   "transactions",
+   "count"
+  ],
+  "params": false
+ },
+ {
+  "name": "Chain Version",
+  "path": "/chain/version",
+  "price": "0.01",
+  "priceNum": 0.01,
+  "desc": "Solana cluster software version and feature set of the RPC node.",
+  "group": "Chain",
+  "tags": [
+   "chain",
+   "version",
+   "node"
+  ],
+  "params": false
+ },
+ {
+  "name": "Chain Vote Accounts",
+  "path": "/chain/vote-accounts",
+  "price": "0.01",
+  "priceNum": 0.01,
+  "desc": "Solana validator vote accounts summary: current and delinquent counts, total activated stake, largest validator share.",
+  "group": "Chain",
+  "tags": [
+   "chain",
+   "validators",
+   "stake"
+  ],
+  "params": false
+ },
+ {
+  "name": "Chain Vote Accounts Current",
+  "path": "/chain/vote-accounts/current",
+  "price": "0.01",
+  "priceNum": 0.01,
+  "desc": "Top 20 current Solana validators by activated stake: vote account, node identity, stake, commission, last vote.",
+  "group": "Chain",
+  "tags": [
+   "chain",
+   "validators",
+   "stake"
+  ],
+  "params": false
+ },
+ {
+  "name": "Chain Vote Accounts Delinquent",
+  "path": "/chain/vote-accounts/delinquent",
+  "price": "0.01",
+  "priceNum": 0.01,
+  "desc": "Delinquent Solana validators: count and the 20 with the most stake at risk.",
+  "group": "Chain",
+  "tags": [
+   "chain",
+   "validators",
+   "delinquent"
+  ],
+  "params": false
+ },
+ {
+  "name": "Dex Boosts Latest",
+  "path": "/dex/boosts/latest",
+  "price": "0.01",
+  "priceNum": 0.01,
+  "desc": "Most recently boosted tokens on Dexscreener, Solana only.",
+  "group": "DEX",
+  "tags": [
+   "dex",
+   "boosts",
+   "latest"
+  ],
+  "params": false
+ },
+ {
+  "name": "Dex Boosts Top",
+  "path": "/dex/boosts/top",
+  "price": "0.01",
+  "priceNum": 0.01,
+  "desc": "Top boosted tokens on Dexscreener right now, Solana only.",
+  "group": "DEX",
+  "tags": [
+   "dex",
+   "boosts",
+   "trending"
+  ],
+  "params": false
+ },
+ {
+  "name": "Dex List",
+  "path": "/dex/list",
+  "price": "0.01",
+  "priceNum": 0.01,
+  "desc": "All DEXes trading on Solana according to GeckoTerminal.",
+  "group": "DEX",
+  "tags": [
+   "dex",
+   "list",
+   "geckoterminal"
+  ],
+  "params": false
+ },
+ {
+  "name": "Dex New Pools",
+  "path": "/dex/new-pools",
+  "price": "0.01",
+  "priceNum": 0.01,
+  "desc": "Newest Solana pools on GeckoTerminal (top 10 by creation).",
+  "group": "DEX",
+  "tags": [
+   "dex",
+   "new",
+   "pools"
+  ],
+  "params": false
+ },
+ {
+  "name": "Dex New Pools By Dex",
+  "path": "/dex/{dex_id}/new-pools",
+  "price": "0.01",
+  "priceNum": 0.01,
+  "desc": "Newest pools of one Solana DEX on GeckoTerminal.",
+  "group": "DEX",
+  "tags": [
+   "dex",
+   "new",
+   "pools"
+  ],
+  "params": true
+ },
+ {
+  "name": "Dex Pair Age",
+  "path": "/dex/pair/{pair_address}/age",
+  "price": "0.01",
+  "priceNum": 0.01,
+  "desc": "Age of one Solana DEX pair: creation timestamp and seconds since it opened.",
+  "group": "DEX",
+  "tags": [
+   "dex",
+   "pair",
+   "age"
+  ],
+  "params": true
+ },
+ {
+  "name": "Dex Pair Info",
+  "path": "/dex/pair/{pair_address}/info",
+  "price": "0.01",
+  "priceNum": 0.01,
+  "desc": "Profile info of one Solana pair: websites, socials and image from Dexscreener.",
+  "group": "DEX",
+  "tags": [
+   "dex",
+   "pair",
+   "info"
+  ],
+  "params": true
+ },
+ {
+  "name": "Dex Pool",
+  "path": "/dex/pools/{pool_address}",
+  "price": "0.01",
+  "priceNum": 0.01,
+  "desc": "One Solana pool on GeckoTerminal: prices, reserves, volume and transaction windows.",
+  "group": "DEX",
+  "tags": [
+   "dex",
+   "pool",
+   "geckoterminal"
+  ],
+  "params": true
+ },
+ {
+  "name": "Dex Pool Ohlcv",
+  "path": "/dex/pools/{pool_address}/ohlcv/{timeframe}",
+  "price": "0.01",
+  "priceNum": 0.01,
+  "desc": "OHLCV candles for one Solana pool (GeckoTerminal; timeframe: day, hour or minute; latest 48).",
+  "group": "DEX",
+  "tags": [
+   "dex",
+   "pool",
+   "ohlcv"
+  ],
+  "params": true
+ },
+ {
+  "name": "Dex Pool Tokens",
+  "path": "/dex/pools/{pool_address}/tokens",
+  "price": "0.01",
+  "priceNum": 0.01,
+  "desc": "The two tokens of one Solana pool with their GeckoTerminal token data (price, FDV, supply).",
+  "group": "DEX",
+  "tags": [
+   "dex",
+   "pool",
+   "tokens"
+  ],
+  "params": true
+ },
+ {
+  "name": "Dex Pool Trades",
+  "path": "/dex/pools/{pool_address}/trades",
+  "price": "0.01",
+  "priceNum": 0.01,
+  "desc": "Recent trades in one Solana pool (GeckoTerminal, latest 20): kind, size in USD, price, maker.",
+  "group": "DEX",
+  "tags": [
+   "dex",
+   "pool",
+   "trades"
+  ],
+  "params": true
+ },
+ {
+  "name": "Dex Pools By Dex",
+  "path": "/dex/{dex_id}/pools",
+  "price": "0.01",
+  "priceNum": 0.01,
+  "desc": "Top pools of one Solana DEX on GeckoTerminal (dex id e.g. raydium, orca, meteora, pump-fun).",
+  "group": "DEX",
+  "tags": [
+   "dex",
+   "pools",
+   "geckoterminal"
+  ],
+  "params": true
+ },
+ {
+  "name": "Dex Pools Top",
+  "path": "/dex/pools/top",
+  "price": "0.01",
+  "priceNum": 0.01,
+  "desc": "Top Solana pools on GeckoTerminal (top 10 by their ranking: reserves and activity).",
+  "group": "DEX",
+  "tags": [
+   "dex",
+   "pools",
+   "top"
+  ],
+  "params": false
+ },
+ {
+  "name": "Dex Profiles Latest",
+  "path": "/dex/profiles/latest",
+  "price": "0.01",
+  "priceNum": 0.01,
+  "desc": "Newest token profiles created on Dexscreener, Solana only.",
   "group": "DEX",
   "tags": [
    "dex",
@@ -1117,251 +1590,100 @@ var ENDPOINTS = [
   "params": false
  },
  {
-  "name": "DEX Pair",
-  "path": "/dex/pairs/{chain}/{pair}",
-  "price": "0.01",
-  "priceNum": 0.01,
-  "desc": "Detail for one DEX pair by chain and pair address.",
-  "group": "DEX",
-  "tags": [
-   "dex",
-   "pair"
-  ],
-  "params": true
- },
- {
-  "name": "DEX Pool Info",
-  "path": "/dex/pool/{pool}/info",
-  "price": "0.01",
-  "priceNum": 0.01,
-  "desc": "Uniswap V3 pool state: tokens, fee, liquidity, tick.",
-  "group": "DEX",
-  "tags": [
-   "dex",
-   "uniswap",
-   "pool"
-  ],
-  "params": true
- },
- {
-  "name": "DEX Pool Price",
-  "path": "/dex/pool/{pool}/price",
-  "price": "0.01",
-  "priceNum": 0.01,
-  "desc": "Implied price from a Uniswap V3 pool, both directions.",
-  "group": "DEX",
-  "tags": [
-   "dex",
-   "uniswap",
-   "price"
-  ],
-  "params": true
- },
- {
-  "name": "DEX Search",
+  "name": "Dex Search",
   "path": "/dex/search/{query}",
   "price": "0.01",
   "priceNum": 0.01,
-  "desc": "Search DEX pairs by token name, symbol or address.",
+  "desc": "Search Solana DEX pairs by name or symbol (Dexscreener, Solana only, top 10).",
   "group": "DEX",
   "tags": [
    "dex",
    "search",
-   "pairs"
+   "dexscreener"
   ],
   "params": true
  },
  {
-  "name": "DEX Top",
-  "path": "/dex/top",
-  "price": "0.01",
-  "priceNum": 0.01,
-  "desc": "Top 10 DEXs by 24h volume.",
-  "group": "DEX",
-  "tags": [
-   "dex",
-   "top",
-   "volume"
-  ],
-  "params": false
- },
- {
-  "name": "DEX Trending",
+  "name": "Dex Trending",
   "path": "/dex/trending",
   "price": "0.01",
   "priceNum": 0.01,
-  "desc": "Top boosted DEX pairs right now.",
+  "desc": "Trending Solana pools on GeckoTerminal right now (top 10).",
   "group": "DEX",
   "tags": [
    "dex",
-   "trending"
+   "trending",
+   "geckoterminal"
   ],
   "params": false
  },
  {
-  "name": "DEX Volume",
-  "path": "/dex/volume",
+  "name": "Dex Volume Top Pools",
+  "path": "/dex/volume/top-pools",
   "price": "0.01",
   "priceNum": 0.01,
-  "desc": "24h trading volume across tracked DEXs.",
-  "group": "DEX",
-  "tags": [
-   "dex",
-   "volume"
-  ],
-  "params": false
- },
- {
-  "name": "DEX Volume Base",
-  "path": "/dex/volume/base",
-  "price": "0.01",
-  "priceNum": 0.01,
-  "desc": "24h DEX trading volume on Base.",
+  "desc": "Aggregate 24h volume and reserves across GeckoTerminal's top Solana pools.",
   "group": "DEX",
   "tags": [
    "dex",
    "volume",
-   "base"
+   "aggregate"
   ],
   "params": false
  },
  {
-  "name": "DEX Volume Protocol",
-  "path": "/dex/volume/{protocol}",
+  "name": "Pair Detail (Premium)",
+  "path": "/dex/pair/{pair_address}",
   "price": "0.01",
   "priceNum": 0.01,
-  "desc": "Volume summary for one DEX protocol.",
-  "group": "DEX",
-  "tags": [
-   "dex",
-   "volume",
-   "protocol"
-  ],
-  "params": true
- },
- {
-  "name": "DEX Top Volume",
-  "path": "/dex/top/volume/{n}",
-  "price": "$0.01",
-  "priceNum": 0.01,
-  "desc": "Top N DEXs by 24h volume (1-25).",
-  "group": "DEX",
-  "tags": [
-   "dex",
-   "top",
-   "volume"
-  ],
-  "params": true
- },
- {
-  "name": "DEX Volume Chain",
-  "path": "/dex/volume/{chain}",
-  "price": "$0.01",
-  "priceNum": 0.01,
-  "desc": "Total DEX volume for one chain (24h + 7d).",
-  "group": "DEX",
-  "tags": [
-   "dex",
-   "volume",
-   "chain"
-  ],
-  "params": true
- },
- {
-  "name": "DEX Chains",
-  "path": "/dex/chains",
-  "price": "$0.02",
-  "priceNum": 0.02,
-  "desc": "DEX volume by chain for the major chains.",
-  "group": "DEX",
-  "tags": [
-   "dex",
-   "chains",
-   "volume"
-  ],
-  "params": false
- },
- {
-  "name": "DEX Top Fees",
-  "path": "/dex/top/fees",
-  "price": "$0.01",
-  "priceNum": 0.01,
-  "desc": "Top 10 DEXs by 24h fees.",
-  "group": "DEX",
-  "tags": [
-   "dex",
-   "top",
-   "fees"
-  ],
-  "params": false
- },
- {
-  "name": "DEX Fees Chains",
-  "path": "/dex/fees/{protocol}/chains",
-  "price": "$0.01",
-  "priceNum": 0.01,
-  "desc": "Fee breakdown by chain for one protocol.",
-  "group": "DEX",
-  "tags": [
-   "dex",
-   "fees",
-   "chains"
-  ],
-  "params": true
- },
- {
-  "name": "DEX Pair Transactions",
-  "path": "/dex/pair/{chain}/{pair}/txns",
-  "price": "$0.01",
-  "priceNum": 0.01,
-  "desc": "Transactions + volume for one DEX pair.",
+  "desc": "One Solana DEX pair by address (Dexscreener): tokens, price, liquidity, volume, market cap.",
   "group": "DEX",
   "tags": [
    "dex",
    "pair",
-   "txns"
+   "dexscreener"
   ],
   "params": true
  },
  {
-  "name": "DEX Pairs Token",
-  "path": "/dex/pairs/{token}",
-  "price": "$0.01",
-  "priceNum": 0.01,
-  "desc": "Top 10 DEX pairs for one token, by liquidity.",
-  "group": "DEX",
-  "tags": [
-   "dex",
-   "pairs",
-   "token"
-  ],
-  "params": true
- },
- {
-  "name": "DEX Pair Chain",
-  "path": "/dex/pair/{token}/{chain}",
-  "price": "$0.01",
-  "priceNum": 0.01,
-  "desc": "Best DEX pair for one token on one chain, by liquidity.",
-  "group": "DEX",
-  "tags": [
-   "dex",
-   "pair",
-   "chain"
-  ],
-  "params": true
- },
- {
-  "name": "Wallet AERO Balance",
-  "path": "/wallets/{address}/aero-balance",
+  "name": "Wallet Account",
+  "path": "/wallets/{address}/account",
   "price": "0.01",
   "priceNum": 0.01,
-  "desc": "AERO balance of a Base wallet.",
+  "desc": "Raw account info for one Solana address: lamports, owner program, executable flag, data size.",
   "group": "Wallets",
   "tags": [
    "wallet",
-   "aero",
-   "balance"
+   "account",
+   "info"
+  ],
+  "params": true
+ },
+ {
+  "name": "Wallet Activity",
+  "path": "/wallets/{address}/activity",
+  "price": "0.01",
+  "priceNum": 0.01,
+  "desc": "Activity profile of one address from its latest 100 signatures: success rate, first/last activity in window, busiest day.",
+  "group": "Wallets",
+  "tags": [
+   "wallet",
+   "activity",
+   "analytics"
+  ],
+  "params": true
+ },
+ {
+  "name": "Wallet Ata",
+  "path": "/wallets/{address}/associated-token-account/{mint}",
+  "price": "0.01",
+  "priceNum": 0.01,
+  "desc": "The associated token account (ATA) address for a wallet + mint: derived PDA, whether it exists, and its balance.",
+  "group": "Wallets",
+  "tags": [
+   "wallet",
+   "ata",
+   "token"
   ],
   "params": true
  },
@@ -1370,133 +1692,231 @@ var ENDPOINTS = [
   "path": "/wallets/{address}/balance",
   "price": "0.01",
   "priceNum": 0.01,
-  "desc": "ETH balance of a Base wallet.",
+  "desc": "SOL balance of one Solana wallet (lamports and SOL).",
   "group": "Wallets",
   "tags": [
    "wallet",
    "balance",
-   "base"
+   "sol"
   ],
   "params": true
  },
  {
-  "name": "Wallet Code",
-  "path": "/wallets/{address}/code",
+  "name": "Wallet Balance Usd",
+  "path": "/wallets/{address}/balance/usd",
   "price": "0.01",
   "priceNum": 0.01,
-  "desc": "Bytecode size and hash for a Base address.",
+  "desc": "SOL balance of one wallet with its current USD value.",
   "group": "Wallets",
   "tags": [
    "wallet",
-   "code",
-   "base"
-  ],
-  "params": true
- },
- {
-  "name": "Wallet ENS",
-  "path": "/wallets/{address}/ens",
-  "price": "0.01",
-  "priceNum": 0.01,
-  "desc": "Reverse ENS name for a Base wallet address.",
-  "group": "Wallets",
-  "tags": [
-   "wallet",
-   "ens",
-   "name"
-  ],
-  "params": true
- },
- {
-  "name": "Wallet ETH Value",
-  "path": "/wallets/{address}/eth-value",
-  "price": "0.01",
-  "priceNum": 0.01,
-  "desc": "USD value of a Base wallet's ETH balance.",
-  "group": "Wallets",
-  "tags": [
-   "wallet",
-   "eth",
+   "balance",
    "usd"
   ],
   "params": true
  },
  {
-  "name": "Wallet Is Contract",
-  "path": "/wallets/{address}/is-contract",
+  "name": "Wallet Inflation Rewards",
+  "path": "/wallets/{address}/inflation-rewards",
   "price": "0.01",
   "priceNum": 0.01,
-  "desc": "Whether a Base address is a smart contract.",
+  "desc": "Inflation reward earned by one address in the most recent completed epoch (null reward means none).",
   "group": "Wallets",
   "tags": [
    "wallet",
-   "contract",
-   "base"
+   "rewards",
+   "inflation"
   ],
   "params": true
  },
  {
-  "name": "Wallet Nonce",
-  "path": "/wallets/{address}/nonce",
+  "name": "Wallet Largest Token",
+  "path": "/wallets/{address}/largest-token",
   "price": "0.01",
   "priceNum": 0.01,
-  "desc": "Transaction count (nonce) of a Base wallet.",
+  "desc": "A wallet's largest token holding by USD value (Jupiter-priced), with its share of the portfolio.",
   "group": "Wallets",
   "tags": [
    "wallet",
-   "nonce",
-   "base"
+   "token",
+   "largest"
   ],
   "params": true
  },
  {
-  "name": "Wallet USDC Balance",
-  "path": "/wallets/{address}/usdc-balance",
+  "name": "Wallet Nfts",
+  "path": "/wallets/{address}/nfts",
   "price": "0.01",
   "priceNum": 0.01,
-  "desc": "USDC balance of a Base wallet.",
+  "desc": "NFT-style holdings of one wallet: token accounts with 0 decimals and a balance of at least 1 (the on-chain NFT shape).",
   "group": "Wallets",
   "tags": [
    "wallet",
-   "usdc",
+   "nfts",
+   "spl"
+  ],
+  "params": true
+ },
+ {
+  "name": "Wallet Signatures",
+  "path": "/wallets/{address}/signatures",
+  "price": "0.01",
+  "priceNum": 0.01,
+  "desc": "Latest 25 transaction signatures for one address: slot, time, status, memo.",
+  "group": "Wallets",
+  "tags": [
+   "wallet",
+   "signatures",
+   "history"
+  ],
+  "params": true
+ },
+ {
+  "name": "Wallet Signatures Failed",
+  "path": "/wallets/{address}/signatures/failed",
+  "price": "0.01",
+  "priceNum": 0.01,
+  "desc": "Failed transactions among an address's latest 100 signatures, with error summaries.",
+  "group": "Wallets",
+  "tags": [
+   "wallet",
+   "signatures",
+   "failed"
+  ],
+  "params": true
+ },
+ {
+  "name": "Wallet Signatures Limit",
+  "path": "/wallets/{address}/signatures/{limit}",
+  "price": "0.01",
+  "priceNum": 0.01,
+  "desc": "Recent transaction signatures for one address with a custom limit (capped at 100).",
+  "group": "Wallets",
+  "tags": [
+   "wallet",
+   "signatures",
+   "history"
+  ],
+  "params": true
+ },
+ {
+  "name": "Wallet Stake Accounts",
+  "path": "/wallets/{address}/stake-accounts",
+  "price": "0.01",
+  "priceNum": 0.01,
+  "desc": "Stake accounts controlled by one wallet (as staker or withdrawer): delegation, voter, epochs, balances.",
+  "group": "Wallets",
+  "tags": [
+   "wallet",
+   "stake",
+   "validators"
+  ],
+  "params": true
+ },
+ {
+  "name": "Wallet Stake Total",
+  "path": "/wallets/{address}/stake/total",
+  "price": "0.01",
+  "priceNum": 0.01,
+  "desc": "Total SOL one wallet has delegated across all its stake accounts.",
+  "group": "Wallets",
+  "tags": [
+   "wallet",
+   "stake",
+   "total"
+  ],
+  "params": true
+ },
+ {
+  "name": "Wallet Summary",
+  "path": "/wallets/{address}/summary",
+  "price": "0.01",
+  "priceNum": 0.01,
+  "desc": "One-call wallet summary: SOL balance, token and NFT counts, delegated stake, last activity, validator flag.",
+  "group": "Wallets",
+  "tags": [
+   "wallet",
+   "summary",
+   "profile"
+  ],
+  "params": true
+ },
+ {
+  "name": "Wallet Token Accounts",
+  "path": "/wallets/{address}/token/{mint}/accounts",
+  "price": "0.01",
+  "priceNum": 0.01,
+  "desc": "Every token account one wallet holds for one mint (usually one \u2014 more means fragmented holdings).",
+  "group": "Wallets",
+  "tags": [
+   "wallet",
+   "token",
+   "accounts"
+  ],
+  "params": true
+ },
+ {
+  "name": "Wallet Token Balance",
+  "path": "/wallets/{address}/token/{mint}",
+  "price": "0.01",
+  "priceNum": 0.01,
+  "desc": "One wallet's balance of one SPL token, summed across all its token accounts for that mint.",
+  "group": "Wallets",
+  "tags": [
+   "wallet",
+   "token",
    "balance"
   ],
   "params": true
  },
  {
-  "name": "Wallet WETH Balance",
-  "path": "/wallets/{address}/weth-balance",
+  "name": "Wallet Token Rent",
+  "path": "/wallets/{address}/token-rent",
   "price": "0.01",
   "priceNum": 0.01,
-  "desc": "WETH balance of a Base wallet.",
+  "desc": "SOL locked as rent inside a wallet's token accounts (sum of token-account lamports).",
   "group": "Wallets",
   "tags": [
    "wallet",
-   "weth",
-   "balance"
+   "rent",
+   "tokens"
   ],
   "params": true
  },
  {
-  "name": "Wallet Analyzer",
-  "path": "/defi/wallet-analyzer/{address}",
+  "name": "Wallet Token Usd",
+  "path": "/wallets/{address}/token/{mint}/usd",
   "price": "0.01",
   "priceNum": 0.01,
-  "desc": "Analyze wallet activity on Base.",
+  "desc": "One wallet's balance of one token with its USD value at the Jupiter price.",
   "group": "Wallets",
   "tags": [
    "wallet",
-   "base",
-   "analytics"
+   "token",
+   "usd"
   ],
   "params": true
  },
  {
-  "name": "Wallet Token Count",
-  "path": "/wallets/{address}/token-count",
+  "name": "Wallet Tokens",
+  "path": "/wallets/{address}/tokens",
   "price": "0.01",
   "priceNum": 0.01,
-  "desc": "How many of the top Base tokens a wallet holds.",
+  "desc": "All SPL token accounts of one wallet (both token programs): mint, balance, decimals, state \u2014 sorted by balance.",
+  "group": "Wallets",
+  "tags": [
+   "wallet",
+   "tokens",
+   "spl"
+  ],
+  "params": true
+ },
+ {
+  "name": "Wallet Tokens Count",
+  "path": "/wallets/{address}/tokens/count",
+  "price": "0.01",
+  "priceNum": 0.01,
+  "desc": "Token account counts for one wallet: total accounts, non-zero balances, split by token program.",
   "group": "Wallets",
   "tags": [
    "wallet",
@@ -1506,11 +1926,25 @@ var ENDPOINTS = [
   "params": true
  },
  {
+  "name": "Wallet Validator",
+  "path": "/wallets/{address}/validator",
+  "price": "0.01",
+  "priceNum": 0.01,
+  "desc": "Validator lookup for one address: matches it as a vote account or node identity in the live validator set.",
+  "group": "Wallets",
+  "tags": [
+   "wallet",
+   "validator",
+   "stake"
+  ],
+  "params": true
+ },
+ {
   "name": "Wallet Portfolio",
   "path": "/wallets/{address}/portfolio",
   "price": "0.02",
   "priceNum": 0.02,
-  "desc": "USD portfolio value of a Base wallet (ETH + top tokens).",
+  "desc": "Full wallet portfolio: SOL plus every SPL holding priced in USD via Jupiter, with total portfolio value.",
   "group": "Wallets",
   "tags": [
    "wallet",
@@ -1520,514 +1954,25 @@ var ENDPOINTS = [
   "params": true
  },
  {
-  "name": "Wallet Tokens",
-  "path": "/wallets/{address}/tokens",
-  "price": "0.02",
-  "priceNum": 0.02,
-  "desc": "Balances of the top Base tokens for a wallet.",
-  "group": "Wallets",
-  "tags": [
-   "wallet",
-   "tokens",
-   "portfolio"
-  ],
-  "params": true
- },
- {
-  "name": "Wallet Approvals",
-  "path": "/wallets/{address}/approvals",
-  "price": "$0.01",
-  "priceNum": 0.01,
-  "desc": "Token allowances a wallet granted to Permit2, routers, Aave.",
-  "group": "Wallets",
-  "tags": [
-   "wallet",
-   "approvals",
-   "allowance"
-  ],
-  "params": true
- },
- {
-  "name": "Wallet Approvals Token",
-  "path": "/wallets/{address}/approvals/{token}",
-  "price": "$0.01",
-  "priceNum": 0.01,
-  "desc": "Allowances one wallet granted for one token.",
-  "group": "Wallets",
-  "tags": [
-   "wallet",
-   "approvals",
-   "token"
-  ],
-  "params": true
- },
- {
-  "name": "Wallet Token Value",
-  "path": "/wallets/{address}/token/{token}/value",
-  "price": "$0.01",
-  "priceNum": 0.01,
-  "desc": "One wallet's balance of one token + USD value.",
-  "group": "Wallets",
-  "tags": [
-   "wallet",
-   "token",
-   "value"
-  ],
-  "params": true
- },
- {
-  "name": "Wallet cbETH Balance",
-  "path": "/wallets/{address}/cbeth-balance",
-  "price": "$0.01",
-  "priceNum": 0.01,
-  "desc": "Wallet cbETH balance.",
-  "group": "Wallets",
-  "tags": [
-   "wallet",
-   "cbeth",
-   "balance"
-  ],
-  "params": true
- },
- {
-  "name": "Wallet DAI Balance",
-  "path": "/wallets/{address}/dai-balance",
-  "price": "$0.01",
-  "priceNum": 0.01,
-  "desc": "Wallet DAI balance.",
-  "group": "Wallets",
-  "tags": [
-   "wallet",
-   "dai",
-   "balance"
-  ],
-  "params": true
- },
- {
-  "name": "Wallet USDbC Balance",
-  "path": "/wallets/{address}/usdbc-balance",
-  "price": "$0.01",
-  "priceNum": 0.01,
-  "desc": "Wallet USDbC balance.",
-  "group": "Wallets",
-  "tags": [
-   "wallet",
-   "usdbc",
-   "balance"
-  ],
-  "params": true
- },
- {
-  "name": "Wallet HIGHER Balance",
-  "path": "/wallets/{address}/higher-balance",
-  "price": "$0.01",
-  "priceNum": 0.01,
-  "desc": "Wallet HIGHER balance.",
-  "group": "Wallets",
-  "tags": [
-   "wallet",
-   "higher",
-   "balance"
-  ],
-  "params": true
- },
- {
-  "name": "DeFi TVL",
-  "path": "/defi/tvl",
+  "name": "Defi Categories",
+  "path": "/defi/categories",
   "price": "0.01",
   "priceNum": 0.01,
-  "desc": "Total value locked on Base.",
+  "desc": "Solana DeFi TVL by protocol category (lending, DEX, liquid staking, ...), top 15.",
   "group": "DeFi",
   "tags": [
    "defi",
-   "tvl",
-   "base"
-  ],
-  "params": false
- },
- {
-  "name": "Gas Tracker",
-  "path": "/defi/gas-tracker",
-  "price": "0.01",
-  "priceNum": 0.01,
-  "desc": "Current Base gas prices (slow/average/fast).",
-  "group": "DeFi",
-  "tags": [
-   "gas",
-   "base",
-   "l2",
-   "pricing"
-  ],
-  "params": false
- },
- {
-  "name": "DeFi Aave Reserves",
-  "path": "/defi/aave/reserves",
-  "price": "0.01",
-  "priceNum": 0.01,
-  "desc": "Aave V3 reserve assets on Base.",
-  "group": "DeFi",
-  "tags": [
-   "defi",
-   "aave",
-   "lending"
-  ],
-  "params": false
- },
- {
-  "name": "DeFi Protocols",
-  "path": "/defi/protocols",
-  "price": "0.01",
-  "priceNum": 0.01,
-  "desc": "Top protocols by TVL.",
-  "group": "DeFi",
-  "tags": [
-   "defi",
-   "protocols",
+   "categories",
    "tvl"
   ],
   "params": false
  },
  {
-  "name": "DeFi Protocols Base",
-  "path": "/defi/protocols/base",
+  "name": "Defi Dex Volume",
+  "path": "/defi/dex/volume",
   "price": "0.01",
   "priceNum": 0.01,
-  "desc": "Top protocols on Base by TVL.",
-  "group": "DeFi",
-  "tags": [
-   "defi",
-   "protocols",
-   "base"
-  ],
-  "params": false
- },
- {
-  "name": "DeFi Stablecoins",
-  "path": "/defi/stablecoins",
-  "price": "0.01",
-  "priceNum": 0.01,
-  "desc": "Largest stablecoins by circulating supply.",
-  "group": "DeFi",
-  "tags": [
-   "defi",
-   "stablecoins"
-  ],
-  "params": false
- },
- {
-  "name": "DeFi TVL Protocol",
-  "path": "/defi/tvl/{protocol}",
-  "price": "0.01",
-  "priceNum": 0.01,
-  "desc": "Total value locked for one protocol.",
-  "group": "DeFi",
-  "tags": [
-   "defi",
-   "tvl",
-   "protocol"
-  ],
-  "params": true
- },
- {
-  "name": "DeFi Yields Base",
-  "path": "/defi/yields/base",
-  "price": "0.01",
-  "priceNum": 0.01,
-  "desc": "Highest-APY yield pools on Base.",
-  "group": "DeFi",
-  "tags": [
-   "defi",
-   "yields",
-   "base"
-  ],
-  "params": false
- },
- {
-  "name": "DeFi Yields Pool",
-  "path": "/defi/yields/pool/{pool}",
-  "price": "0.01",
-  "priceNum": 0.01,
-  "desc": "Yield details for one pool by id.",
-  "group": "DeFi",
-  "tags": [
-   "defi",
-   "yields",
-   "pool"
-  ],
-  "params": true
- },
- {
-  "name": "DeFi Yields Stable",
-  "path": "/defi/yields/stable",
-  "price": "0.01",
-  "priceNum": 0.01,
-  "desc": "Highest-APY stablecoin yield pools.",
-  "group": "DeFi",
-  "tags": [
-   "defi",
-   "yields",
-   "stablecoin"
-  ],
-  "params": false
- },
- {
-  "name": "DeFi Yields Top",
-  "path": "/defi/yields/top",
-  "price": "0.01",
-  "priceNum": 0.01,
-  "desc": "Highest-APY yield pools across chains.",
-  "group": "DeFi",
-  "tags": [
-   "defi",
-   "yields",
-   "apy"
-  ],
-  "params": false
- },
- {
-  "name": "Token Price",
-  "path": "/defi/token-price/{token_address}",
-  "price": "0.01",
-  "priceNum": 0.01,
-  "desc": "Get token price via DEX liquidity pool analysis.",
-  "group": "DeFi",
-  "tags": [
-   "token",
-   "base",
-   "defi"
-  ],
-  "params": true
- },
- {
-  "name": "Token Security",
-  "path": "/defi/token-security/{token_address}",
-  "price": "0.02",
-  "priceNum": 0.02,
-  "desc": "Quick token security check on Base.",
-  "group": "DeFi",
-  "tags": [
-   "token",
-   "security",
-   "base"
-  ],
-  "params": true
- },
- {
-  "name": "Chain Gas Base Fee",
-  "path": "/chain/gas/base-fee",
-  "price": "$0.01",
-  "priceNum": 0.01,
-  "desc": "Current base fee + predicted next-block base fee.",
-  "group": "DeFi",
-  "tags": [
-   "gas",
-   "base-fee",
-   "eip1559"
-  ],
-  "params": false
- },
- {
-  "name": "Chain Gas Fee History",
-  "path": "/chain/gas/fee-history/{blocks}",
-  "price": "$0.01",
-  "priceNum": 0.01,
-  "desc": "Fee history for the last N blocks (1-20).",
-  "group": "DeFi",
-  "tags": [
-   "gas",
-   "fee-history"
-  ],
-  "params": true
- },
- {
-  "name": "Chain Gas Transfer Cost",
-  "path": "/chain/gas/transfer-cost",
-  "price": "$0.01",
-  "priceNum": 0.01,
-  "desc": "Cost of a plain 21,000-gas ETH transfer on Base.",
-  "group": "DeFi",
-  "tags": [
-   "gas",
-   "transfer",
-   "cost"
-  ],
-  "params": false
- },
- {
-  "name": "Chain Gas Transfer Cost USD",
-  "path": "/chain/gas/transfer-cost-usd",
-  "price": "$0.01",
-  "priceNum": 0.01,
-  "desc": "Cost of a plain ETH transfer on Base in USD.",
-  "group": "DeFi",
-  "tags": [
-   "gas",
-   "transfer",
-   "usd"
-  ],
-  "params": false
- },
- {
-  "name": "Chain Gas Max Fee",
-  "path": "/chain/gas/max-fee",
-  "price": "$0.01",
-  "priceNum": 0.01,
-  "desc": "Current base fee + max priority fee.",
-  "group": "DeFi",
-  "tags": [
-   "gas",
-   "max-fee",
-   "priority"
-  ],
-  "params": false
- },
- {
-  "name": "DeFi Protocol",
-  "path": "/defi/protocol/{slug}",
-  "price": "$0.01",
-  "priceNum": 0.01,
-  "desc": "One protocol's TVL detail by slug.",
-  "group": "DeFi",
-  "tags": [
-   "defi",
-   "protocol",
-   "tvl"
-  ],
-  "params": true
- },
- {
-  "name": "DeFi Chains",
-  "path": "/defi/chains",
-  "price": "$0.01",
-  "priceNum": 0.01,
-  "desc": "TVL by chain, top 20.",
-  "group": "DeFi",
-  "tags": [
-   "defi",
-   "chains",
-   "tvl"
-  ],
-  "params": false
- },
- {
-  "name": "DeFi Chain",
-  "path": "/defi/chains/{chain}",
-  "price": "$0.01",
-  "priceNum": 0.01,
-  "desc": "TVL for one chain.",
-  "group": "DeFi",
-  "tags": [
-   "defi",
-   "chain",
-   "tvl"
-  ],
-  "params": true
- },
- {
-  "name": "DeFi Chain History",
-  "path": "/defi/chains/{chain}/history",
-  "price": "$0.01",
-  "priceNum": 0.01,
-  "desc": "TVL history for one chain: first, latest, 30-day change.",
-  "group": "DeFi",
-  "tags": [
-   "defi",
-   "chain",
-   "history"
-  ],
-  "params": true
- },
- {
-  "name": "DeFi Fees Overview",
-  "path": "/defi/fees/overview",
-  "price": "$0.01",
-  "priceNum": 0.01,
-  "desc": "Top 10 protocols by 24h fees (all chains).",
-  "group": "DeFi",
-  "tags": [
-   "defi",
-   "fees",
-   "overview"
-  ],
-  "params": false
- },
- {
-  "name": "DeFi Yields Chart",
-  "path": "/defi/yields/chart/{pool}",
-  "price": "$0.01",
-  "priceNum": 0.01,
-  "desc": "TVL/APY history for one yield pool (last 30 points).",
-  "group": "DeFi",
-  "tags": [
-   "defi",
-   "yields",
-   "chart"
-  ],
-  "params": true
- },
- {
-  "name": "DeFi Yields IL",
-  "path": "/defi/yields/il/{pool}",
-  "price": "$0.01",
-  "priceNum": 0.01,
-  "desc": "Impermanent-loss risk + APY for one yield pool.",
-  "group": "DeFi",
-  "tags": [
-   "defi",
-   "yields",
-   "il"
-  ],
-  "params": true
- },
- {
-  "name": "DeFi Yields Project",
-  "path": "/defi/yields/project/{project}",
-  "price": "$0.01",
-  "priceNum": 0.01,
-  "desc": "Top 10 yield pools for one project, by APY.",
-  "group": "DeFi",
-  "tags": [
-   "defi",
-   "yields",
-   "project"
-  ],
-  "params": true
- },
- {
-  "name": "DeFi Yields Token",
-  "path": "/defi/yields/token/{symbol}",
-  "price": "$0.01",
-  "priceNum": 0.01,
-  "desc": "Top 10 yield pools for one token symbol, by APY.",
-  "group": "DeFi",
-  "tags": [
-   "defi",
-   "yields",
-   "token"
-  ],
-  "params": true
- },
- {
-  "name": "DeFi Yields Stable Chain",
-  "path": "/defi/yields/stable/{chain}",
-  "price": "$0.01",
-  "priceNum": 0.01,
-  "desc": "Top 10 stablecoin yield pools on one chain, by APY.",
-  "group": "DeFi",
-  "tags": [
-   "defi",
-   "yields",
-   "stablecoin"
-  ],
-  "params": true
- },
- {
-  "name": "DeFi DEX Volume 7d",
-  "path": "/defi/dex/volume/7d",
-  "price": "$0.01",
-  "priceNum": 0.01,
-  "desc": "Total DEX volume, last 7 days (all chains).",
+  "desc": "Solana DEX volume totals (DeFiLlama): 24h, 7d, 30d volumes and day/week/month changes.",
   "group": "DeFi",
   "tags": [
    "defi",
@@ -2037,249 +1982,717 @@ var ENDPOINTS = [
   "params": false
  },
  {
-  "name": "DeFi DEX Volume Base 7d",
-  "path": "/defi/dex/volume/base/7d",
-  "price": "$0.01",
+  "name": "Defi Dex Volume History",
+  "path": "/defi/dex/volume/history",
+  "price": "0.01",
   "priceNum": 0.01,
-  "desc": "Total DEX volume on Base, last 7 days.",
+  "desc": "Solana DEX volume for the last 14 days (DeFiLlama daily totals).",
   "group": "DeFi",
   "tags": [
    "defi",
    "dex",
-   "volume",
-   "base"
+   "volume"
   ],
   "params": false
  },
  {
-  "name": "Lending Aave Markets",
-  "path": "/lending/aave/markets",
-  "price": "$0.02",
-  "priceNum": 0.02,
-  "desc": "All Aave V3 markets on Base with on-chain supply/borrow APY.",
-  "group": "Lending",
+  "name": "Defi Dex Volume Top",
+  "path": "/defi/dex/volume/top",
+  "price": "0.01",
+  "priceNum": 0.01,
+  "desc": "Top Solana DEXes by 24h volume (DeFiLlama overview breakdown).",
+  "group": "DeFi",
   "tags": [
-   "lending",
-   "aave",
-   "markets"
+   "defi",
+   "dex",
+   "volume"
   ],
   "params": false
  },
  {
-  "name": "Lending Aave Market",
-  "path": "/lending/aave/market/{asset}",
-  "price": "$0.01",
+  "name": "Defi Fees",
+  "path": "/defi/fees",
+  "price": "0.01",
   "priceNum": 0.01,
-  "desc": "Aave V3 market for one asset: on-chain rates + aToken/debt tokens.",
-  "group": "Lending",
+  "desc": "Solana protocol fees totals (DeFiLlama): 24h, 7d, 30d fees and changes.",
+  "group": "DeFi",
   "tags": [
-   "lending",
-   "aave",
-   "market"
-  ],
-  "params": true
- },
- {
-  "name": "Lending Aave User",
-  "path": "/lending/aave/user/{wallet}",
-  "price": "$0.01",
-  "priceNum": 0.01,
-  "desc": "Aave V3 account data for one wallet: collateral, debt, health factor.",
-  "group": "Lending",
-  "tags": [
-   "lending",
-   "aave",
-   "account"
-  ],
-  "params": true
- },
- {
-  "name": "Lending Aave TVL",
-  "path": "/lending/aave/tvl",
-  "price": "$0.01",
-  "priceNum": 0.01,
-  "desc": "Aave V3 TVL on Base.",
-  "group": "Lending",
-  "tags": [
-   "lending",
-   "aave",
-   "tvl"
+   "defi",
+   "fees",
+   "solana"
   ],
   "params": false
  },
  {
-  "name": "Lending Compound Markets",
-  "path": "/lending/compound/markets",
-  "price": "$0.01",
+  "name": "Defi Fees History",
+  "path": "/defi/fees/history",
+  "price": "0.01",
   "priceNum": 0.01,
-  "desc": "Compound V3 yield pools on Base, top 10 by TVL.",
-  "group": "Lending",
+  "desc": "Solana protocol fees for the last 14 days (DeFiLlama daily totals).",
+  "group": "DeFi",
   "tags": [
-   "lending",
-   "compound",
-   "markets"
+   "defi",
+   "fees",
+   "history"
   ],
   "params": false
  },
  {
-  "name": "Lending Compound USDC",
-  "path": "/lending/compound/usdc",
-  "price": "$0.01",
+  "name": "Defi Fees Top",
+  "path": "/defi/fees/top",
+  "price": "0.01",
   "priceNum": 0.01,
-  "desc": "Compound V3 Comet USDC market on Base: utilization, totals, APY.",
-  "group": "Lending",
+  "desc": "Top fee-earning protocols on Solana in the last 24h (DeFiLlama overview breakdown).",
+  "group": "DeFi",
   "tags": [
-   "lending",
-   "compound",
-   "usdc"
-  ],
-  "params": false
- },
- {
-  "name": "Lending Compound User",
-  "path": "/lending/compound/user/{wallet}",
-  "price": "$0.01",
-  "priceNum": 0.01,
-  "desc": "Compound V3 Comet USDC position for one wallet: supplied/borrowed.",
-  "group": "Lending",
-  "tags": [
-   "lending",
-   "compound",
-   "account"
-  ],
-  "params": true
- },
- {
-  "name": "Lending Morpho Pools",
-  "path": "/lending/morpho/pools",
-  "price": "$0.01",
-  "priceNum": 0.01,
-  "desc": "Morpho Blue yield pools on Base, top 10 by TVL.",
-  "group": "Lending",
-  "tags": [
-   "lending",
-   "morpho",
-   "pools"
-  ],
-  "params": false
- },
- {
-  "name": "Lending Morpho Stable",
-  "path": "/lending/morpho/stable",
-  "price": "$0.01",
-  "priceNum": 0.01,
-  "desc": "Highest-APY Morpho Blue stablecoin pools on Base.",
-  "group": "Lending",
-  "tags": [
-   "lending",
-   "morpho",
-   "stablecoin"
-  ],
-  "params": false
- },
- {
-  "name": "Lending Rates",
-  "path": "/lending/rates/{asset}",
-  "price": "$0.01",
-  "priceNum": 0.01,
-  "desc": "Lending rates for one asset: Aave on-chain + yield pools.",
-  "group": "Lending",
-  "tags": [
-   "lending",
-   "rates",
-   "aave"
-  ],
-  "params": true
- },
- {
-  "name": "Lending Top APY",
-  "path": "/lending/top-apy",
-  "price": "$0.01",
-  "priceNum": 0.01,
-  "desc": "Top 10 lending APY pools on Base.",
-  "group": "Lending",
-  "tags": [
-   "lending",
-   "apy",
+   "defi",
+   "fees",
    "top"
   ],
   "params": false
  },
  {
-  "name": "Lending Stablecoin Rates",
-  "path": "/lending/stablecoin-rates",
-  "price": "$0.01",
+  "name": "Defi Liquid Staking",
+  "path": "/defi/liquid-staking",
+  "price": "0.01",
   "priceNum": 0.01,
-  "desc": "Aave V3 supply/borrow APY for USDC, DAI and USDbC on Base.",
-  "group": "Lending",
+  "desc": "Liquid staking protocols on Solana by TVL (DeFiLlama category filter): Sanctum, Jito, Marinade and peers.",
+  "group": "DeFi",
   "tags": [
-   "lending",
-   "stablecoin",
-   "rates"
+   "defi",
+   "liquid-staking",
+   "lst"
   ],
   "params": false
  },
  {
-  "name": "Lending USDC Rate",
-  "path": "/lending/usdc-rate",
-  "price": "$0.01",
+  "name": "Defi Protocol",
+  "path": "/defi/protocol/{slug}",
+  "price": "0.01",
   "priceNum": 0.01,
-  "desc": "Aave V3 USDC market rates on Base.",
-  "group": "Lending",
+  "desc": "One DeFiLlama protocol (by slug): category, chains, and its Solana TVL position.",
+  "group": "DeFi",
   "tags": [
-   "lending",
-   "aave",
+   "defi",
+   "protocol",
+   "tvl"
+  ],
+  "params": true
+ },
+ {
+  "name": "Defi Protocol Tvl",
+  "path": "/defi/protocol/{slug}/tvl",
+  "price": "0.01",
+  "priceNum": 0.01,
+  "desc": "One protocol's Solana TVL over time: current value plus 7d and 30d changes from its chain history.",
+  "group": "DeFi",
+  "tags": [
+   "defi",
+   "protocol",
+   "tvl"
+  ],
+  "params": true
+ },
+ {
+  "name": "Defi Protocols",
+  "path": "/defi/protocols",
+  "price": "0.01",
+  "priceNum": 0.01,
+  "desc": "Top 25 protocols on Solana by TVL (DeFiLlama), with category and 1d/7d change.",
+  "group": "DeFi",
+  "tags": [
+   "defi",
+   "protocols",
+   "tvl"
+  ],
+  "params": false
+ },
+ {
+  "name": "Defi Protocols Count",
+  "path": "/defi/protocols/count",
+  "price": "0.01",
+  "priceNum": 0.01,
+  "desc": "How many DeFiLlama protocols hold TVL on Solana, and their combined Solana TVL.",
+  "group": "DeFi",
+  "tags": [
+   "defi",
+   "protocols",
+   "count"
+  ],
+  "params": false
+ },
+ {
+  "name": "Defi Tvl",
+  "path": "/defi/tvl",
+  "price": "0.01",
+  "priceNum": 0.01,
+  "desc": "Total value locked on Solana right now (DeFiLlama), with Solana's rank among all chains.",
+  "group": "DeFi",
+  "tags": [
+   "defi",
+   "tvl",
+   "solana"
+  ],
+  "params": false
+ },
+ {
+  "name": "Defi Tvl Change",
+  "path": "/defi/tvl/change",
+  "price": "0.01",
+  "priceNum": 0.01,
+  "desc": "Solana TVL percent changes over 1, 7 and 30 days (DeFiLlama history).",
+  "group": "DeFi",
+  "tags": [
+   "defi",
+   "tvl",
+   "change"
+  ],
+  "params": false
+ },
+ {
+  "name": "Defi Tvl Dominance",
+  "path": "/defi/tvl/dominance",
+  "price": "0.01",
+  "priceNum": 0.01,
+  "desc": "Solana's share of total cross-chain DeFi TVL and its rank (DeFiLlama).",
+  "group": "DeFi",
+  "tags": [
+   "defi",
+   "tvl",
+   "dominance"
+  ],
+  "params": false
+ },
+ {
+  "name": "Defi Tvl History",
+  "path": "/defi/tvl/history",
+  "price": "0.01",
+  "priceNum": 0.01,
+  "desc": "Solana TVL history summary: latest value, 7d/30d-ago values, all-time high and its date.",
+  "group": "DeFi",
+  "tags": [
+   "defi",
+   "tvl",
+   "history"
+  ],
+  "params": false
+ },
+ {
+  "name": "Defi Yields",
+  "path": "/defi/yields",
+  "price": "0.01",
+  "priceNum": 0.01,
+  "desc": "Highest-APY yield pools on Solana right now (DeFiLlama yields, minimum $100k TVL, top 15).",
+  "group": "DeFi",
+  "tags": [
+   "defi",
+   "yields",
+   "apy"
+  ],
+  "params": false
+ },
+ {
+  "name": "Defi Yields Pool",
+  "path": "/defi/yields/pool/{pool_id}",
+  "price": "0.01",
+  "priceNum": 0.01,
+  "desc": "One DeFiLlama yield pool's recent history: latest APY/TVL and 30-day average APY.",
+  "group": "DeFi",
+  "tags": [
+   "defi",
+   "yields",
+   "pool"
+  ],
+  "params": true
+ },
+ {
+  "name": "Defi Yields Project",
+  "path": "/defi/yields/project/{project}",
+  "price": "0.01",
+  "priceNum": 0.01,
+  "desc": "Yield pools of one project on Solana (DeFiLlama project id, e.g. kamino, jito-liquid-staking): pools, TVL, best APY.",
+  "group": "DeFi",
+  "tags": [
+   "defi",
+   "yields",
+   "project"
+  ],
+  "params": true
+ },
+ {
+  "name": "Defi Yields Sol",
+  "path": "/defi/yields/sol",
+  "price": "0.01",
+  "priceNum": 0.01,
+  "desc": "Best yields for SOL and liquid-staked SOL pools on Solana (symbol contains SOL).",
+  "group": "DeFi",
+  "tags": [
+   "defi",
+   "yields",
+   "sol"
+  ],
+  "params": false
+ },
+ {
+  "name": "Defi Yields Stablecoins",
+  "path": "/defi/yields/stablecoins",
+  "price": "0.01",
+  "priceNum": 0.01,
+  "desc": "Best stablecoin yields on Solana (DeFiLlama yields, stablecoin pools, minimum $100k TVL).",
+  "group": "DeFi",
+  "tags": [
+   "defi",
+   "yields",
+   "stablecoins"
+  ],
+  "params": false
+ },
+ {
+  "name": "Defi Yields Top Tvl",
+  "path": "/defi/yields/top-tvl",
+  "price": "0.01",
+  "priceNum": 0.01,
+  "desc": "Largest yield pools on Solana by TVL (DeFiLlama yields, top 15) with their APYs.",
+  "group": "DeFi",
+  "tags": [
+   "defi",
+   "yields",
+   "tvl"
+  ],
+  "params": false
+ },
+ {
+  "name": "Defi Yields Usdc",
+  "path": "/defi/yields/usdc",
+  "price": "0.01",
+  "priceNum": 0.01,
+  "desc": "Best USDC yields on Solana (DeFiLlama yields, symbol contains USDC, minimum $50k TVL).",
+  "group": "DeFi",
+  "tags": [
+   "defi",
+   "yields",
    "usdc"
   ],
   "params": false
  },
  {
-  "name": "Lending WETH Rate",
-  "path": "/lending/weth-rate",
-  "price": "$0.01",
-  "priceNum": 0.01,
-  "desc": "Aave V3 WETH market rates on Base.",
-  "group": "Lending",
+  "name": "Solana DeFi Summary",
+  "path": "/defi/solana/summary",
+  "price": "0.02",
+  "priceNum": 0.02,
+  "desc": "Solana DeFi in one call: TVL, DEX volume, protocol fees, stablecoin value on Solana, protocol count and median yield.",
+  "group": "DeFi",
   "tags": [
-   "lending",
-   "aave",
-   "weth"
+   "defi",
+   "summary",
+   "solana"
   ],
   "params": false
  },
  {
-  "name": "Stablecoins Top",
-  "path": "/stablecoins/top",
-  "price": "$0.01",
+  "name": "Oracle Btc",
+  "path": "/oracles/btc",
+  "price": "0.01",
   "priceNum": 0.01,
-  "desc": "Top 10 stablecoins by circulating supply.",
-  "group": "Stablecoins",
+  "desc": "Cross-source BTC price check on Solana (cbBTC mint): Jupiter vs Dexscreener vs CoinGecko bitcoin.",
+  "group": "Oracles",
   "tags": [
-   "stablecoins",
-   "top",
-   "supply"
+   "oracle",
+   "btc",
+   "price"
   ],
   "params": false
  },
  {
-  "name": "Stablecoins Asset",
-  "path": "/stablecoins/{asset}",
-  "price": "$0.01",
+  "name": "Oracle Coingecko",
+  "path": "/oracles/coingecko/{mint}",
+  "price": "0.01",
   "priceNum": 0.01,
-  "desc": "One stablecoin by id, symbol, or gecko_id, with per-chain supply.",
-  "group": "Stablecoins",
+  "desc": "CoinGecko's price view of one Solana mint by contract address.",
+  "group": "Oracles",
   "tags": [
-   "stablecoins",
-   "asset"
+   "oracle",
+   "coingecko",
+   "price"
   ],
   "params": true
  },
  {
+  "name": "Oracle Deviation",
+  "path": "/oracles/deviation/{mint}",
+  "price": "0.01",
+  "priceNum": 0.01,
+  "desc": "Price deviation between Jupiter and Dexscreener for one Solana mint (percent, with both prices).",
+  "group": "Oracles",
+  "tags": [
+   "oracle",
+   "deviation",
+   "price"
+  ],
+  "params": true
+ },
+ {
+  "name": "Oracle Dexscreener",
+  "path": "/oracles/dexscreener/{mint}",
+  "price": "0.01",
+  "priceNum": 0.01,
+  "desc": "Dexscreener's price view of one Solana mint from its deepest base-asset pair.",
+  "group": "Oracles",
+  "tags": [
+   "oracle",
+   "dexscreener",
+   "price"
+  ],
+  "params": true
+ },
+ {
+  "name": "Oracle Eth",
+  "path": "/oracles/eth",
+  "price": "0.01",
+  "priceNum": 0.01,
+  "desc": "Cross-source ETH price check on Solana (bridged ETH mint): Jupiter vs Dexscreener vs CoinGecko ethereum.",
+  "group": "Oracles",
+  "tags": [
+   "oracle",
+   "eth",
+   "price"
+  ],
+  "params": false
+ },
+ {
+  "name": "Oracle Jupiter",
+  "path": "/oracles/jupiter/{mint}",
+  "price": "0.01",
+  "priceNum": 0.01,
+  "desc": "Jupiter's oracle-grade price detail for one mint: price, 24h change, liquidity, last-update block.",
+  "group": "Oracles",
+  "tags": [
+   "oracle",
+   "jupiter",
+   "price"
+  ],
+  "params": true
+ },
+ {
+  "name": "Oracle Price",
+  "path": "/oracles/price/{mint}",
+  "price": "0.01",
+  "priceNum": 0.01,
+  "desc": "Cross-source USD price check for one Solana mint: Jupiter vs Dexscreener, median and max deviation.",
+  "group": "Oracles",
+  "tags": [
+   "oracle",
+   "price",
+   "cross-source"
+  ],
+  "params": true
+ },
+ {
+  "name": "Oracle Pyth Feed",
+  "path": "/oracles/pyth/feed/{symbol}",
+  "price": "0.01",
+  "priceNum": 0.01,
+  "desc": "One Pyth feed by symbol (e.g. SOL/USD): feed id, base, quote, display symbol, market hours.",
+  "group": "Oracles",
+  "tags": [
+   "oracle",
+   "pyth",
+   "feed"
+  ],
+  "params": true
+ },
+ {
+  "name": "Oracle Pyth Feeds",
+  "path": "/oracles/pyth/feeds",
+  "price": "0.01",
+  "priceNum": 0.01,
+  "desc": "Pyth price-feed directory (crypto): total feed count and the first 50 feeds with ids and symbols.",
+  "group": "Oracles",
+  "tags": [
+   "oracle",
+   "pyth",
+   "feeds"
+  ],
+  "params": false
+ },
+ {
+  "name": "Oracle Pyth Feeds Search",
+  "path": "/oracles/pyth/feeds/search/{query}",
+  "price": "0.01",
+  "priceNum": 0.01,
+  "desc": "Search the Pyth feed directory (e.g. SOL, BTC/USD, JUP): matching feeds with their feed ids.",
+  "group": "Oracles",
+  "tags": [
+   "oracle",
+   "pyth",
+   "search"
+  ],
+  "params": true
+ },
+ {
+  "name": "Oracle Usdc",
+  "path": "/oracles/usdc",
+  "price": "0.01",
+  "priceNum": 0.01,
+  "desc": "USDC peg check on Solana: Jupiter, Dexscreener and CoinGecko prices compared against the $1 peg.",
+  "group": "Oracles",
+  "tags": [
+   "oracle",
+   "usdc",
+   "peg"
+  ],
+  "params": false
+ },
+ {
+  "name": "SOL Price Cross-Check (Premium)",
+  "path": "/oracles/sol",
+  "price": "0.02",
+  "priceNum": 0.02,
+  "desc": "Cross-source SOL price check: Jupiter, Dexscreener and CoinGecko compared, with median and max deviation.",
+  "group": "Oracles",
+  "tags": [
+   "oracle",
+   "sol",
+   "price"
+  ],
+  "params": false
+ },
+ {
+  "name": "Memecoin Holders",
+  "path": "/memecoins/{mint}/holders",
+  "price": "0.01",
+  "priceNum": 0.01,
+  "desc": "Largest holders of one memecoin mint (getTokenLargestAccounts, top 20 with supply shares).",
+  "group": "Memecoins",
+  "tags": [
+   "memecoins",
+   "holders"
+  ],
+  "params": true
+ },
+ {
+  "name": "Memecoin Movers",
+  "path": "/memecoins/movers",
+  "price": "0.01",
+  "priceNum": 0.01,
+  "desc": "Biggest memecoin movers among trending Solana pools, ranked by absolute 24h price change.",
+  "group": "Memecoins",
+  "tags": [
+   "memecoins",
+   "movers",
+   "gainers"
+  ],
+  "params": false
+ },
+ {
+  "name": "Memecoin Pools",
+  "path": "/memecoins/pools",
+  "price": "0.01",
+  "priceNum": 0.01,
+  "desc": "Top pump.fun AMM pools on GeckoTerminal (graduated memecoins trade here).",
+  "group": "Memecoins",
+  "tags": [
+   "memecoins",
+   "pools",
+   "pumpfun"
+  ],
+  "params": false
+ },
+ {
+  "name": "Memecoin Price",
+  "path": "/memecoins/{mint}/price",
+  "price": "0.01",
+  "priceNum": 0.01,
+  "desc": "Price of one memecoin: Dexscreener best pair first, GeckoTerminal top pool as fallback.",
+  "group": "Memecoins",
+  "tags": [
+   "memecoins",
+   "price"
+  ],
+  "params": true
+ },
+ {
+  "name": "Memecoin Profile",
+  "path": "/memecoins/{mint}",
+  "price": "0.01",
+  "priceNum": 0.01,
+  "desc": "Memecoin profile for one mint: deepest pair data, price, liquidity, links (Dexscreener).",
+  "group": "Memecoins",
+  "tags": [
+   "memecoins",
+   "profile",
+   "dex"
+  ],
+  "params": true
+ },
+ {
+  "name": "Memecoin Risk",
+  "path": "/memecoins/{mint}/risk",
+  "price": "0.01",
+  "priceNum": 0.01,
+  "desc": "Memecoin risk snapshot for one mint: mint/freeze authority status, top-10 holder share, deepest-pair liquidity.",
+  "group": "Memecoins",
+  "tags": [
+   "memecoins",
+   "risk",
+   "safety"
+  ],
+  "params": true
+ },
+ {
+  "name": "Memecoin Search",
+  "path": "/memecoins/search/{query}",
+  "price": "0.01",
+  "priceNum": 0.01,
+  "desc": "Search Solana memecoin pairs by name or symbol (Dexscreener, top 10 by liquidity).",
+  "group": "Memecoins",
+  "tags": [
+   "memecoins",
+   "search"
+  ],
+  "params": true
+ },
+ {
+  "name": "Memecoin Stats",
+  "path": "/memecoins/stats",
+  "price": "0.01",
+  "priceNum": 0.01,
+  "desc": "pump.fun launchpad snapshot: launches in the newest 50, graduated share of the top 50, combined top-50 market cap.",
+  "group": "Memecoins",
+  "tags": [
+   "memecoins",
+   "stats",
+   "pumpfun"
+  ],
+  "params": false
+ },
+ {
+  "name": "Memecoin Trades",
+  "path": "/memecoins/{mint}/trades",
+  "price": "0.01",
+  "priceNum": 0.01,
+  "desc": "Recent trades of one memecoin in its top GeckoTerminal pool (latest 20).",
+  "group": "Memecoins",
+  "tags": [
+   "memecoins",
+   "trades"
+  ],
+  "params": true
+ },
+ {
+  "name": "Memecoin Trending Pools",
+  "path": "/memecoins/trending/pools",
+  "price": "0.01",
+  "priceNum": 0.01,
+  "desc": "Trending Solana pools (GeckoTerminal) \u2014 the memecoin-heavy board, top 10 with 24h changes.",
+  "group": "Memecoins",
+  "tags": [
+   "memecoins",
+   "trending",
+   "pools"
+  ],
+  "params": false
+ },
+ {
+  "name": "Memecoins New",
+  "path": "/memecoins/new",
+  "price": "0.01",
+  "priceNum": 0.01,
+  "desc": "Newest memecoins launched on pump.fun (latest 25): mint, name, market cap, creator, bonding state.",
+  "group": "Memecoins",
+  "tags": [
+   "memecoins",
+   "pumpfun",
+   "new"
+  ],
+  "params": false
+ },
+ {
+  "name": "Memecoins Trending",
+  "path": "/memecoins/trending",
+  "price": "0.01",
+  "priceNum": 0.01,
+  "desc": "Biggest memecoins on pump.fun by market cap (top 25): the trending board.",
+  "group": "Memecoins",
+  "tags": [
+   "memecoins",
+   "pumpfun",
+   "trending"
+  ],
+  "params": false
+ },
+ {
+  "name": "Graduating Memecoins (Premium)",
+  "path": "/memecoins/graduating",
+  "price": "0.02",
+  "priceNum": 0.02,
+  "desc": "pump.fun coins closest to graduation: still on the bonding curve (not complete), ranked by market cap.",
+  "group": "Memecoins",
+  "tags": [
+   "memecoins",
+   "pumpfun",
+   "graduating"
+  ],
+  "params": false
+ },
+ {
+  "name": "Stablecoin Detail",
+  "path": "/stablecoins/{asset}",
+  "price": "0.01",
+  "priceNum": 0.01,
+  "desc": "One stablecoin in detail (by symbol or DeFiLlama id): supply, price, peg mechanism, and its Solana-chain amount.",
+  "group": "Stablecoins",
+  "tags": [
+   "stablecoins",
+   "detail"
+  ],
+  "params": true
+ },
+ {
+  "name": "Stablecoin Pyusd",
+  "path": "/stablecoins/pyusd",
+  "price": "0.01",
+  "priceNum": 0.01,
+  "desc": "PYUSD (PayPal USD) in detail: global supply and its Solana-chain amount.",
+  "group": "Stablecoins",
+  "tags": [
+   "stablecoins",
+   "pyusd"
+  ],
+  "params": false
+ },
+ {
+  "name": "Stablecoin Usdc",
+  "path": "/stablecoins/usdc",
+  "price": "0.01",
+  "priceNum": 0.01,
+  "desc": "USDC in detail: global supply, price, and how much USDC circulates on Solana.",
+  "group": "Stablecoins",
+  "tags": [
+   "stablecoins",
+   "usdc"
+  ],
+  "params": false
+ },
+ {
+  "name": "Stablecoin Usdt",
+  "path": "/stablecoins/usdt",
+  "price": "0.01",
+  "priceNum": 0.01,
+  "desc": "USDT in detail: global supply, price, and how much USDT circulates on Solana.",
+  "group": "Stablecoins",
+  "tags": [
+   "stablecoins",
+   "usdt"
+  ],
+  "params": false
+ },
+ {
   "name": "Stablecoins Chains",
   "path": "/stablecoins/chains",
-  "price": "$0.01",
+  "price": "0.01",
   "priceNum": 0.01,
-  "desc": "Stablecoin supply by chain, top 15.",
+  "desc": "Stablecoin value by chain (DeFiLlama stablecoinchains), top 15 \u2014 Solana highlighted by rank.",
   "group": "Stablecoins",
   "tags": [
    "stablecoins",
@@ -2290,615 +2703,366 @@ var ENDPOINTS = [
  {
   "name": "Stablecoins Pegs",
   "path": "/stablecoins/pegs",
-  "price": "$0.01",
+  "price": "0.01",
   "priceNum": 0.01,
-  "desc": "Stablecoins furthest from their $1 peg right now.",
+  "desc": "Stablecoins trading furthest from their peg right now (DeFiLlama prices, top 10 by absolute deviation).",
   "group": "Stablecoins",
   "tags": [
    "stablecoins",
-   "peg",
-   "depeg"
+   "pegs",
+   "deviation"
   ],
   "params": false
  },
  {
-  "name": "Stablecoins Chain",
-  "path": "/stablecoins/chain/{chain}",
-  "price": "$0.01",
+  "name": "Stablecoins Solana",
+  "path": "/stablecoins/solana",
+  "price": "0.01",
   "priceNum": 0.01,
-  "desc": "Top 15 stablecoins by circulating supply on one chain.",
+  "desc": "Stablecoin value circulating on Solana: chain total plus the top stablecoins' Solana amounts.",
   "group": "Stablecoins",
   "tags": [
    "stablecoins",
+   "solana",
    "chain"
   ],
-  "params": true
+  "params": false
  },
  {
-  "name": "Stablecoins Total",
-  "path": "/stablecoins/total",
-  "price": "$0.01",
+  "name": "Stablecoins Top",
+  "path": "/stablecoins/top",
+  "price": "0.01",
   "priceNum": 0.01,
-  "desc": "Total circulating supply of all stablecoins.",
+  "desc": "Top 12 stablecoins by market cap with prices and peg types (DeFiLlama).",
   "group": "Stablecoins",
   "tags": [
    "stablecoins",
-   "total"
+   "top"
   ],
   "params": false
  },
  {
-  "name": "Oracles Feeds",
-  "path": "/oracles/feeds",
-  "price": "$0.01",
+  "name": "Markets Ecosystem",
+  "path": "/markets/ecosystem",
+  "price": "0.01",
   "priceNum": 0.01,
-  "desc": "Chainlink price feeds on Base: ETH/USD, BTC/USD, USDC/USD.",
-  "group": "Oracles",
+  "desc": "Top Solana-ecosystem tokens by market cap (CoinGecko category): price, volume, 24h change.",
+  "group": "Markets",
   "tags": [
-   "oracles",
-   "chainlink",
-   "feeds"
+   "markets",
+   "ecosystem",
+   "solana"
   ],
   "params": false
  },
  {
-  "name": "Oracles Price",
-  "path": "/oracles/price/{symbol}",
-  "price": "$0.01",
+  "name": "Markets Ecosystem Gainers",
+  "path": "/markets/ecosystem/gainers",
+  "price": "0.01",
   "priceNum": 0.01,
-  "desc": "Chainlink price for one symbol (eth, btc, usdc).",
-  "group": "Oracles",
+  "desc": "Biggest 24h gainers in the Solana ecosystem category (CoinGecko, top 10).",
+  "group": "Markets",
   "tags": [
-   "oracles",
-   "chainlink",
-   "price"
-  ],
-  "params": true
- },
- {
-  "name": "Oracles ETH",
-  "path": "/oracles/eth",
-  "price": "$0.01",
-  "priceNum": 0.01,
-  "desc": "Chainlink ETH/USD on Base.",
-  "group": "Oracles",
-  "tags": [
-   "oracles",
-   "chainlink",
-   "eth"
+   "markets",
+   "ecosystem",
+   "gainers"
   ],
   "params": false
  },
  {
-  "name": "Oracles BTC",
-  "path": "/oracles/btc",
-  "price": "$0.01",
+  "name": "Markets Ecosystem Losers",
+  "path": "/markets/ecosystem/losers",
+  "price": "0.01",
   "priceNum": 0.01,
-  "desc": "Chainlink BTC/USD on Base.",
-  "group": "Oracles",
+  "desc": "Biggest 24h losers in the Solana ecosystem category (CoinGecko, top 10).",
+  "group": "Markets",
   "tags": [
-   "oracles",
-   "chainlink",
-   "btc"
+   "markets",
+   "ecosystem",
+   "losers"
   ],
   "params": false
  },
  {
-  "name": "Oracles USDC",
-  "path": "/oracles/usdc",
-  "price": "$0.01",
+  "name": "Markets Fear Greed",
+  "path": "/markets/fear-greed",
+  "price": "0.01",
   "priceNum": 0.01,
-  "desc": "Chainlink USDC/USD on Base.",
-  "group": "Oracles",
+  "desc": "Crypto Fear & Greed index: current value, classification and timestamp (Alternative.me).",
+  "group": "Markets",
   "tags": [
-   "oracles",
-   "chainlink",
-   "usdc"
+   "markets",
+   "fear-greed",
+   "sentiment"
   ],
   "params": false
  },
  {
-  "name": "Oracles vs CoinGecko",
-  "path": "/oracles/vs-coingecko",
-  "price": "$0.01",
+  "name": "Markets Fear Greed History",
+  "path": "/markets/fear-greed/history",
+  "price": "0.01",
   "priceNum": 0.01,
-  "desc": "Chainlink ETH/USD vs CoinGecko ETH price (oracle deviation check).",
-  "group": "Oracles",
+  "desc": "Fear & Greed index for the last 7 days with the weekly average (Alternative.me).",
+  "group": "Markets",
   "tags": [
-   "oracles",
-   "chainlink",
+   "markets",
+   "fear-greed",
+   "history"
+  ],
+  "params": false
+ },
+ {
+  "name": "Markets Global",
+  "path": "/markets/global",
+  "price": "0.01",
+  "priceNum": 0.01,
+  "desc": "Global crypto market snapshot (CoinGecko): total market cap, volume, BTC/ETH dominance, active coins.",
+  "group": "Markets",
+  "tags": [
+   "markets",
+   "global",
    "coingecko"
   ],
   "params": false
  },
  {
-  "name": "Governance Proposals",
-  "path": "/gov/proposals",
-  "price": "$0.01",
+  "name": "Markets Sol",
+  "path": "/markets/sol",
+  "price": "0.01",
   "priceNum": 0.01,
-  "desc": "Latest 10 Snapshot proposals across all DAOs.",
-  "group": "Governance",
+  "desc": "SOL market data (CoinGecko): price, market cap and rank, volume, ATH, 24h/7d/30d changes.",
+  "group": "Markets",
   "tags": [
-   "governance",
-   "snapshot",
-   "proposals"
+   "markets",
+   "sol",
+   "coingecko"
   ],
   "params": false
  },
  {
-  "name": "Governance Space Proposals",
-  "path": "/gov/space/{space}/proposals",
-  "price": "$0.01",
-  "priceNum": 0.01,
-  "desc": "Latest 10 Snapshot proposals for one space.",
-  "group": "Governance",
-  "tags": [
-   "governance",
-   "snapshot",
-   "space"
-  ],
-  "params": true
- },
- {
-  "name": "Governance Proposal",
-  "path": "/gov/proposal/{proposal_id}",
-  "price": "$0.01",
-  "priceNum": 0.01,
-  "desc": "One Snapshot proposal by id, with scores.",
-  "group": "Governance",
-  "tags": [
-   "governance",
-   "snapshot",
-   "proposal"
-  ],
-  "params": true
- },
- {
-  "name": "Governance Votes",
-  "path": "/gov/proposal/{proposal_id}/votes",
-  "price": "$0.01",
-  "priceNum": 0.01,
-  "desc": "Top 20 votes on one Snapshot proposal, by voting power.",
-  "group": "Governance",
-  "tags": [
-   "governance",
-   "snapshot",
-   "votes"
-  ],
-  "params": true
- },
- {
-  "name": "Governance Space",
-  "path": "/gov/space/{space}",
-  "price": "$0.01",
-  "priceNum": 0.01,
-  "desc": "One Snapshot space: name, about, proposal/follower counts.",
-  "group": "Governance",
-  "tags": [
-   "governance",
-   "snapshot",
-   "space"
-  ],
-  "params": true
- },
- {
-  "name": "NFT Balance",
-  "path": "/nfts/{collection}/balance/{wallet}",
+  "name": "Markets Sol History",
+  "path": "/markets/sol/history/{days}",
   "price": "0.01",
   "priceNum": 0.01,
-  "desc": "How many NFTs of a collection a wallet holds.",
-  "group": "NFTs",
+  "desc": "SOL price history summary for N days (CoinGecko market chart): start/end, high, low, change.",
+  "group": "Markets",
   "tags": [
-   "nft",
-   "balance",
-   "wallet"
+   "markets",
+   "sol",
+   "history"
   ],
   "params": true
  },
  {
-  "name": "NFT Exists",
-  "path": "/nfts/{collection}/exists/{tokenId}",
+  "name": "Markets Sol Ohlc",
+  "path": "/markets/sol/ohlc/{days}",
   "price": "0.01",
   "priceNum": 0.01,
-  "desc": "Whether an NFT token id exists.",
-  "group": "NFTs",
+  "desc": "SOL OHLC candles from CoinGecko (days: 1, 7, 14, 30, 90, 180 or 365; latest 40 candles).",
+  "group": "Markets",
   "tags": [
-   "nft",
-   "exists",
-   "erc721"
+   "markets",
+   "sol",
+   "ohlc"
   ],
   "params": true
  },
  {
-  "name": "NFT Owner",
-  "path": "/nfts/{collection}/owner/{tokenId}",
+  "name": "Markets Sol Price",
+  "path": "/markets/sol/price",
   "price": "0.01",
   "priceNum": 0.01,
-  "desc": "Owner of one NFT by token id.",
-  "group": "NFTs",
+  "desc": "SOL simple price (CoinGecko): USD price, market cap, 24h volume and 24h change in one light call.",
+  "group": "Markets",
   "tags": [
-   "nft",
-   "owner",
-   "erc721"
-  ],
-  "params": true
- },
- {
-  "name": "NFT Supply",
-  "path": "/nfts/{collection}/supply",
-  "price": "0.01",
-  "priceNum": 0.01,
-  "desc": "Total supply of an enumerable NFT collection.",
-  "group": "NFTs",
-  "tags": [
-   "nft",
-   "supply",
-   "erc721"
-  ],
-  "params": true
- },
- {
-  "name": "NFT Info",
-  "path": "/nfts/{collection}/info",
-  "price": "0.01",
-  "priceNum": 0.01,
-  "desc": "ERC721 collection name and symbol.",
-  "group": "NFTs",
-  "tags": [
-   "nft",
-   "collection",
-   "erc721"
-  ],
-  "params": true
- },
- {
-  "name": "NFT Interfaces",
-  "path": "/nfts/{collection}/interfaces",
-  "price": "0.01",
-  "priceNum": 0.01,
-  "desc": "Which token standards an NFT contract supports (ERC721/1155/Enumerable).",
-  "group": "NFTs",
-  "tags": [
-   "nft",
-   "erc165",
-   "standards"
-  ],
-  "params": true
- },
- {
-  "name": "NFT Token",
-  "path": "/nfts/{collection}/token/{tokenId}",
-  "price": "0.01",
-  "priceNum": 0.01,
-  "desc": "NFT tokenURI plus fetched metadata.",
-  "group": "NFTs",
-  "tags": [
-   "nft",
-   "metadata",
-   "tokenuri"
-  ],
-  "params": true
- },
- {
-  "name": "NFT Token URI",
-  "path": "/nfts/{collection}/token/{token_id}/uri",
-  "price": "$0.01",
-  "priceNum": 0.01,
-  "desc": "Raw tokenURI for one NFT token.",
-  "group": "NFTs",
-  "tags": [
-   "nft",
-   "tokenuri"
-  ],
-  "params": true
- },
- {
-  "name": "NFT Token Image",
-  "path": "/nfts/{collection}/token/{token_id}/image",
-  "price": "$0.01",
-  "priceNum": 0.01,
-  "desc": "Image URL from one NFT token's metadata.",
-  "group": "NFTs",
-  "tags": [
-   "nft",
-   "image",
-   "metadata"
-  ],
-  "params": true
- },
- {
-  "name": "NFT Token Attributes",
-  "path": "/nfts/{collection}/token/{token_id}/attributes",
-  "price": "$0.01",
-  "priceNum": 0.01,
-  "desc": "Traits/attributes from one NFT token's metadata.",
-  "group": "NFTs",
-  "tags": [
-   "nft",
-   "traits",
-   "metadata"
-  ],
-  "params": true
- },
- {
-  "name": "NFT1155 Balance",
-  "path": "/nfts1155/{collection}/balance/{wallet}/{token_id}",
-  "price": "$0.01",
-  "priceNum": 0.01,
-  "desc": "ERC1155 balance of one wallet for one token id.",
-  "group": "NFTs",
-  "tags": [
-   "nft",
-   "erc1155",
-   "balance"
-  ],
-  "params": true
- },
- {
-  "name": "NFT1155 URI",
-  "path": "/nfts1155/{collection}/uri/{token_id}",
-  "price": "$0.01",
-  "priceNum": 0.01,
-  "desc": "ERC1155 metadata URI for one token id.",
-  "group": "NFTs",
-  "tags": [
-   "nft",
-   "erc1155",
-   "uri"
-  ],
-  "params": true
- },
- {
-  "name": "NFT1155 Supply",
-  "path": "/nfts1155/{collection}/supply/{token_id}",
-  "price": "$0.01",
-  "priceNum": 0.01,
-  "desc": "ERC1155 total supply for one token id (if the contract tracks it).",
-  "group": "NFTs",
-  "tags": [
-   "nft",
-   "erc1155",
-   "supply"
-  ],
-  "params": true
- },
- {
-  "name": "ENS Avatar",
-  "path": "/ens/avatar/{name}",
-  "price": "0.01",
-  "priceNum": 0.01,
-  "desc": "Avatar URL for an ENS name.",
-  "group": "ENS",
-  "tags": [
-   "ens",
-   "avatar"
-  ],
-  "params": true
- },
- {
-  "name": "ENS Profile",
-  "path": "/ens/profile/{name}",
-  "price": "0.01",
-  "priceNum": 0.01,
-  "desc": "Full public profile for an ENS name.",
-  "group": "ENS",
-  "tags": [
-   "ens",
-   "profile"
-  ],
-  "params": true
- },
- {
-  "name": "ENS Resolve",
-  "path": "/ens/resolve/{name}",
-  "price": "0.01",
-  "priceNum": 0.01,
-  "desc": "Resolve an ENS name to its address.",
-  "group": "ENS",
-  "tags": [
-   "ens",
-   "resolve"
-  ],
-  "params": true
- },
- {
-  "name": "ENS Reverse",
-  "path": "/ens/reverse/{address}",
-  "price": "0.01",
-  "priceNum": 0.01,
-  "desc": "Reverse-resolve a wallet address to its ENS name.",
-  "group": "ENS",
-  "tags": [
-   "ens",
-   "reverse"
-  ],
-  "params": true
- },
- {
-  "name": "ENS Records",
-  "path": "/ens/{name}/records",
-  "price": "$0.01",
-  "priceNum": 0.01,
-  "desc": "ENS text records / socials for one name.",
-  "group": "ENS",
-  "tags": [
-   "ens",
-   "records",
-   "socials"
-  ],
-  "params": true
- },
- {
-  "name": "ENS Content",
-  "path": "/ens/{name}/content",
-  "price": "$0.01",
-  "priceNum": 0.01,
-  "desc": "ENS content hash + avatar for one name.",
-  "group": "ENS",
-  "tags": [
-   "ens",
-   "content",
-   "avatar"
-  ],
-  "params": true
- },
- {
-  "name": "Memecoins New Pairs",
-  "path": "/memes/new-pairs",
-  "price": "$0.01",
-  "priceNum": 0.01,
-  "desc": "Newest Base token profiles on Dexscreener.",
-  "group": "Memecoins",
-  "tags": [
-   "memes",
-   "new",
-   "pairs"
+   "markets",
+   "sol",
+   "price"
   ],
   "params": false
  },
  {
-  "name": "Memecoins Trending",
-  "path": "/memes/trending",
-  "price": "$0.02",
-  "priceNum": 0.02,
-  "desc": "Top 15 Base pairs by 24h volume across the main Base tokens.",
-  "group": "Memecoins",
+  "name": "Markets Trending",
+  "path": "/markets/trending",
+  "price": "0.01",
+  "priceNum": 0.01,
+  "desc": "Trending coins on CoinGecko search right now (global list, Solana names included when trending).",
+  "group": "Markets",
   "tags": [
-   "memes",
+   "markets",
    "trending",
-   "volume"
+   "coingecko"
   ],
   "params": false
  },
  {
-  "name": "Memecoins Boosted",
-  "path": "/memes/boosted",
-  "price": "$0.01",
-  "priceNum": 0.01,
-  "desc": "Latest boosted Base tokens on Dexscreener.",
-  "group": "Memecoins",
-  "tags": [
-   "memes",
-   "boosted"
-  ],
-  "params": false
- },
- {
-  "name": "Memecoins Price Change",
-  "path": "/memes/{token}/price-change",
-  "price": "$0.01",
-  "priceNum": 0.01,
-  "desc": "Price changes (5m/1h/6h/24h) for one token's best pair.",
-  "group": "Memecoins",
-  "tags": [
-   "memes",
-   "price-change"
-  ],
-  "params": true
- },
- {
-  "name": "Memecoins Holders",
-  "path": "/memes/{token}/holders",
-  "price": "$0.01",
-  "priceNum": 0.01,
-  "desc": "Holder count + top holders for one token.",
-  "group": "Memecoins",
-  "tags": [
-   "memes",
-   "holders"
-  ],
-  "params": true
- },
- {
-  "name": "Prediction Markets",
-  "path": "/predict/markets",
-  "price": "$0.01",
-  "priceNum": 0.01,
-  "desc": "Top 15 active Polymarket markets by liquidity.",
-  "group": "Prediction",
-  "tags": [
-   "prediction",
-   "polymarket",
-   "markets"
-  ],
-  "params": false
- },
- {
-  "name": "Prediction Trending",
-  "path": "/predict/trending",
-  "price": "$0.01",
-  "priceNum": 0.01,
-  "desc": "Top 15 active Polymarket markets by 24h volume.",
-  "group": "Prediction",
-  "tags": [
-   "prediction",
-   "polymarket",
-   "trending"
-  ],
-  "params": false
- },
- {
-  "name": "Prediction Search",
-  "path": "/predict/search/{query}",
-  "price": "$0.01",
-  "priceNum": 0.01,
-  "desc": "Search active Polymarket markets by keyword.",
-  "group": "Prediction",
-  "tags": [
-   "prediction",
-   "polymarket",
-   "search"
-  ],
-  "params": true
- },
- {
-  "name": "Prediction Events",
-  "path": "/predict/events",
-  "price": "$0.01",
-  "priceNum": 0.01,
-  "desc": "Latest 20 active Polymarket events.",
-  "group": "Prediction",
-  "tags": [
-   "prediction",
-   "polymarket",
-   "events"
-  ],
-  "params": false
- },
- {
-  "name": "Prediction Market",
-  "path": "/predict/market/{slug}",
-  "price": "$0.01",
-  "priceNum": 0.01,
-  "desc": "One Polymarket market by slug, with outcomes and prices.",
-  "group": "Prediction",
-  "tags": [
-   "prediction",
-   "polymarket",
-   "market"
-  ],
-  "params": true
- },
- {
-  "name": "Prediction Markets Closing",
-  "path": "/predict/markets/closing",
-  "price": "$0.01",
-  "priceNum": 0.01,
-  "desc": "Active Polymarket markets ending soonest (next 15 by end date).",
-  "group": "Prediction",
-  "tags": [
-   "prediction",
-   "polymarket",
-   "closing"
-  ],
-  "params": false
- },
- {
-  "name": "Validate Address",
-  "path": "/utils/address/validate/{address}",
+  "name": "Nft Accounts",
+  "path": "/nfts/{mint}/accounts",
   "price": "0.01",
   "priceNum": 0.01,
-  "desc": "Validate an Ethereum address and return its checksum form.",
+  "desc": "All token accounts holding a balance of one mint (for an NFT this is the single holder account).",
+  "group": "NFTs",
+  "tags": [
+   "nfts",
+   "accounts",
+   "rpc"
+  ],
+  "params": true
+ },
+ {
+  "name": "Nft Collection",
+  "path": "/nfts/collections/{symbol}",
+  "price": "0.01",
+  "priceNum": 0.01,
+  "desc": "One Solana NFT collection's Magic Eden profile: name, description, image and social links.",
+  "group": "NFTs",
+  "tags": [
+   "nfts",
+   "collections",
+   "magiceden"
+  ],
+  "params": true
+ },
+ {
+  "name": "Nft Collection Stats",
+  "path": "/nfts/collections/{symbol}/stats",
+  "price": "0.01",
+  "priceNum": 0.01,
+  "desc": "Magic Eden stats for one Solana NFT collection: floor price, listed count, average sale prices, volumes.",
+  "group": "NFTs",
+  "tags": [
+   "nfts",
+   "collections",
+   "stats"
+  ],
+  "params": true
+ },
+ {
+  "name": "Nft Collections",
+  "path": "/nfts/collections",
+  "price": "0.01",
+  "priceNum": 0.01,
+  "desc": "Solana NFT collections on Magic Eden (first page of 20): symbol, name, image, description.",
+  "group": "NFTs",
+  "tags": [
+   "nfts",
+   "collections",
+   "magiceden"
+  ],
+  "params": false
+ },
+ {
+  "name": "Nft Owner",
+  "path": "/nfts/{mint}/owner",
+  "price": "0.01",
+  "priceNum": 0.01,
+  "desc": "Current holder of one NFT mint: the largest token account and its owner (an NFT has exactly one holder of 1 unit).",
+  "group": "NFTs",
+  "tags": [
+   "nfts",
+   "owner",
+   "rpc"
+  ],
+  "params": true
+ },
+ {
+  "name": "Transaction Balances",
+  "path": "/transactions/{signature}/balances",
+  "price": "0.01",
+  "priceNum": 0.01,
+  "desc": "Pre/post balances for one transaction: SOL changes per account and SPL token balance changes.",
+  "group": "Transactions",
+  "tags": [
+   "transaction",
+   "balances"
+  ],
+  "params": true
+ },
+ {
+  "name": "Transaction Detail",
+  "path": "/transactions/{signature}",
+  "price": "0.01",
+  "priceNum": 0.01,
+  "desc": "One Solana transaction: slot, time, fee, status, compute units, programs involved and SOL balance changes.",
+  "group": "Transactions",
+  "tags": [
+   "transaction",
+   "detail"
+  ],
+  "params": true
+ },
+ {
+  "name": "Transaction Fee",
+  "path": "/transactions/{signature}/fee",
+  "price": "0.01",
+  "priceNum": 0.01,
+  "desc": "Fee breakdown of one Solana transaction: fee in lamports/SOL/USD, compute units consumed and cost units.",
+  "group": "Transactions",
+  "tags": [
+   "transaction",
+   "fee"
+  ],
+  "params": true
+ },
+ {
+  "name": "Transaction Programs",
+  "path": "/transactions/{signature}/programs",
+  "price": "0.01",
+  "priceNum": 0.01,
+  "desc": "Programs invoked by one Solana transaction: program ids, instruction counts and log size.",
+  "group": "Transactions",
+  "tags": [
+   "transaction",
+   "programs"
+  ],
+  "params": true
+ },
+ {
+  "name": "Transaction Status",
+  "path": "/transactions/{signature}/status",
+  "price": "0.01",
+  "priceNum": 0.01,
+  "desc": "Confirmation status of one Solana transaction: finalized/confirmed status, slot, error.",
+  "group": "Transactions",
+  "tags": [
+   "transaction",
+   "status"
+  ],
+  "params": true
+ },
+ {
+  "name": "Transactions Block",
+  "path": "/transactions/block/{slot}",
+  "price": "0.01",
+  "priceNum": 0.01,
+  "desc": "All transaction signatures in one Solana block (first 100 plus total count).",
+  "group": "Transactions",
+  "tags": [
+   "transaction",
+   "block"
+  ],
+  "params": true
+ },
+ {
+  "name": "Utils Address Type",
+  "path": "/utils/address/{address}/type",
+  "price": "0.01",
+  "priceNum": 0.01,
+  "desc": "Classify one Solana address by its owner program: wallet, mint, token account, stake account, vote account, program or unknown.",
+  "group": "Utilities",
+  "tags": [
+   "utils",
+   "address",
+   "type"
+  ],
+  "params": true
+ },
+ {
+  "name": "Utils Address Validate",
+  "path": "/utils/address/{address}/validate",
+  "price": "0.01",
+  "priceNum": 0.01,
+  "desc": "Validate a Solana address: base58 format, 32-byte length, and whether it is on the ed25519 curve (off-curve means a PDA).",
   "group": "Utilities",
   "tags": [
    "utils",
@@ -2908,81 +3072,39 @@ var ENDPOINTS = [
   "params": true
  },
  {
-  "name": "Convert Ether to Wei",
-  "path": "/utils/convert/ether-wei/{amount}",
+  "name": "Utils Convert Lamports",
+  "path": "/utils/convert/lamports/{amount}",
   "price": "0.01",
   "priceNum": 0.01,
-  "desc": "Convert ether to wei.",
+  "desc": "Convert lamports to SOL (and USD at the live price).",
   "group": "Utilities",
   "tags": [
    "utils",
    "convert",
-   "ether"
+   "lamports"
   ],
   "params": true
  },
  {
-  "name": "Convert Wei",
-  "path": "/utils/convert/wei/{amount}",
+  "name": "Utils Convert Sol",
+  "path": "/utils/convert/sol/{amount}",
   "price": "0.01",
   "priceNum": 0.01,
-  "desc": "Convert wei to ether and gwei.",
+  "desc": "Convert a SOL amount to lamports and USD at the live price.",
   "group": "Utilities",
   "tags": [
    "utils",
    "convert",
-   "wei"
+   "sol"
   ],
   "params": true
  },
  {
-  "name": "Keccak-256 Hash",
-  "path": "/utils/address/keccak/{text}",
+  "name": "Utils Convert Sol Usd",
+  "path": "/utils/convert/sol-usd/{amount}",
   "price": "0.01",
   "priceNum": 0.01,
-  "desc": "Keccak-256 hash of text.",
-  "group": "Utilities",
-  "tags": [
-   "utils",
-   "hash",
-   "keccak"
-  ],
-  "params": true
- },
- {
-  "name": "Coin Price",
-  "path": "/utils/coin-price/{coin}",
-  "price": "0.01",
-  "priceNum": 0.01,
-  "desc": "Live USD price for a coin by CoinGecko id.",
-  "group": "Utilities",
-  "tags": [
-   "utils",
-   "coin",
-   "price"
-  ],
-  "params": true
- },
- {
-  "name": "Convert ETH to USD",
-  "path": "/utils/convert/eth-usd/{amount}",
-  "price": "0.01",
-  "priceNum": 0.01,
-  "desc": "Convert an ETH amount to USD at the live price.",
-  "group": "Utilities",
-  "tags": [
-   "utils",
-   "convert",
-   "eth"
-  ],
-  "params": true
- },
- {
-  "name": "Convert USD to ETH",
-  "path": "/utils/convert/usd-eth/{amount}",
-  "price": "0.01",
-  "priceNum": 0.01,
-  "desc": "Convert a USD amount to ETH at the live price.",
+  "desc": "Convert a SOL amount to USD at the live Jupiter price.",
   "group": "Utilities",
   "tags": [
    "utils",
@@ -2992,199 +3114,87 @@ var ENDPOINTS = [
   "params": true
  },
  {
-  "name": "ETH Price in USD",
-  "path": "/utils/eth-usd",
+  "name": "Utils Convert Usd Sol",
+  "path": "/utils/convert/usd-sol/{amount}",
   "price": "0.01",
   "priceNum": 0.01,
-  "desc": "Live ETH price in USD.",
-  "group": "Utilities",
-  "tags": [
-   "utils",
-   "eth",
-   "price"
-  ],
-  "params": false
- },
- {
-  "name": "Fear & Greed Index",
-  "path": "/utils/fear-greed",
-  "price": "0.01",
-  "priceNum": 0.01,
-  "desc": "Crypto Fear & Greed Index.",
-  "group": "Utilities",
-  "tags": [
-   "utils",
-   "fear-greed",
-   "sentiment"
-  ],
-  "params": false
- },
- {
-  "name": "Gas Cost Calculator",
-  "path": "/utils/gas-cost/{gwei}/{gas}",
-  "price": "0.01",
-  "priceNum": 0.01,
-  "desc": "Cost of a transaction in ETH and USD at the live ETH price.",
-  "group": "Utilities",
-  "tags": [
-   "utils",
-   "gas",
-   "cost"
-  ],
-  "params": true
- },
- {
-  "name": "Global Market Stats",
-  "path": "/utils/market/global",
-  "price": "0.01",
-  "priceNum": 0.01,
-  "desc": "Global crypto market stats from CoinGecko.",
-  "group": "Utilities",
-  "tags": [
-   "utils",
-   "market",
-   "global"
-  ],
-  "params": false
- },
- {
-  "name": "Top 10 by Market Cap",
-  "path": "/utils/market/top",
-  "price": "0.01",
-  "priceNum": 0.01,
-  "desc": "Top 10 cryptocurrencies by market cap.",
-  "group": "Utilities",
-  "tags": [
-   "utils",
-   "market",
-   "top"
-  ],
-  "params": false
- },
- {
-  "name": "Trending Coins",
-  "path": "/utils/market/trending",
-  "price": "0.01",
-  "priceNum": 0.01,
-  "desc": "Trending coins on CoinGecko.",
-  "group": "Utilities",
-  "tags": [
-   "utils",
-   "market",
-   "trending"
-  ],
-  "params": false
- },
- {
-  "name": "Coin Detail",
-  "path": "/utils/coin/{coin}",
-  "price": "0.01",
-  "priceNum": 0.01,
-  "desc": "Detail for a coin by CoinGecko id.",
-  "group": "Utilities",
-  "tags": [
-   "utils",
-   "coin",
-   "detail"
-  ],
-  "params": true
- },
- {
-  "name": "Coin Price History",
-  "path": "/utils/coin/{coin}/history/{days}",
-  "price": "$0.01",
-  "priceNum": 0.01,
-  "desc": "Price history for one CoinGecko coin (1-365 days).",
-  "group": "Utilities",
-  "tags": [
-   "utils",
-   "coin",
-   "history"
-  ],
-  "params": true
- },
- {
-  "name": "Convert USDC to ETH",
-  "path": "/utils/convert/usdc-eth/{amount}",
-  "price": "$0.01",
-  "priceNum": 0.01,
-  "desc": "Convert a USDC amount to ETH at the current price.",
+  "desc": "Convert a USD amount to SOL at the live Jupiter price.",
   "group": "Utilities",
   "tags": [
    "utils",
    "convert",
-   "usdc",
-   "eth"
+   "usd"
   ],
   "params": true
  },
  {
-  "name": "Fear & Greed History",
-  "path": "/utils/market/fear-greed/history",
-  "price": "$0.01",
+  "name": "Utils Epoch Slots",
+  "path": "/utils/epoch/{epoch}/slots",
+  "price": "0.01",
   "priceNum": 0.01,
-  "desc": "Fear & Greed index, last 7 days.",
+  "desc": "Slot range of one Solana epoch from the epoch schedule: first slot, last slot, and estimated start/end times.",
   "group": "Utilities",
   "tags": [
    "utils",
-   "fear-greed",
-   "history"
+   "epoch",
+   "slots"
+  ],
+  "params": true
+ },
+ {
+  "name": "Utils Fees Priority",
+  "path": "/utils/fees/priority",
+  "price": "0.01",
+  "priceNum": 0.01,
+  "desc": "Current priority-fee estimate for a simple Solana transfer: median network prioritization fee plus the 5,000-lamport base fee.",
+  "group": "Utilities",
+  "tags": [
+   "utils",
+   "fees",
+   "estimate"
   ],
   "params": false
  },
  {
-  "name": "Coin All-Time High",
-  "path": "/utils/coin/{coin}/ath",
-  "price": "$0.01",
+  "name": "Utils Slot Time",
+  "path": "/utils/slot/time/{slot}",
+  "price": "0.01",
   "priceNum": 0.01,
-  "desc": "All-time high/low for one CoinGecko coin (USD).",
+  "desc": "Estimated wall-clock time of one slot: exact getBlockTime when the node has it, otherwise an estimate from average slot duration.",
   "group": "Utilities",
   "tags": [
    "utils",
-   "coin",
-   "ath"
+   "slot",
+   "time"
   ],
   "params": true
  },
  {
-  "name": "Convert Gwei to ETH",
-  "path": "/utils/convert/gwei-eth/{amount}",
-  "price": "$0.01",
+  "name": "Utils Time Slot",
+  "path": "/utils/time/slot/{timestamp}",
+  "price": "0.01",
   "priceNum": 0.01,
-  "desc": "Convert gwei to ETH.",
+  "desc": "Estimated slot at a given Unix timestamp, extrapolated from the current slot and average slot duration.",
   "group": "Utilities",
   "tags": [
    "utils",
-   "convert",
-   "gwei",
-   "eth"
+   "time",
+   "slot"
   ],
   "params": true
  },
  {
-  "name": "Coin Price Change",
-  "path": "/utils/coin/{coin}/change",
-  "price": "$0.01",
-  "priceNum": 0.01,
-  "desc": "Price change (24h/7d/30d/1y) for one CoinGecko coin.",
-  "group": "Utilities",
-  "tags": [
-   "utils",
-   "coin",
-   "change"
-  ],
-  "params": true
- },
- {
-  "name": "Service Health",
+  "name": "Health Check",
   "path": "/health",
   "price": "0",
-  "priceNum": 0.0,
-  "desc": "Liveness probe \u2014 free, no payment required.",
+  "priceNum": 0,
+  "desc": "Service health, network, payee and endpoint count. Free, no payment needed.",
   "group": "Service",
   "tags": [
+   "health",
    "status",
-   "health"
+   "free",
+   "solana"
   ],
   "params": false
  },
@@ -3193,94 +3203,114 @@ var ENDPOINTS = [
   "path": "/mcp/status",
   "price": "0.01",
   "priceNum": 0.01,
-  "desc": "MCP server status.",
+  "desc": "MCP server status for the Solana x402 service.",
   "group": "Service",
   "tags": [
    "status",
-   "mcp"
+   "mcp",
+   "solana"
   ],
   "params": false
  },
  {
-  "name": "MCP Tools",
+  "name": "MCP Tools List",
   "path": "/mcp/tools",
   "price": "0.01",
   "priceNum": 0.01,
-  "desc": "MCP tools list.",
+  "desc": "MCP tools list for the Solana x402 service.",
   "group": "Service",
   "tags": [
    "tools",
-   "mcp"
+   "mcp",
+   "solana"
   ],
   "params": false
  }
 ];
-
 var GROUP_INFO = {
-  "Tokens":    { blurb: "Live prices, pairs, liquidity, supply and on-chain metadata for any Base token.", icon: "◉" },
-  "Chain":     { blurb: "Blocks, transactions, receipts, the gas oracle and node status, straight from Base RPC.", icon: "⛓" },
-  "DEX":       { blurb: "Trending pairs, volume, fees and Uniswap V3 pool state.", icon: "⇄" },
-  "Wallets":   { blurb: "Balances, portfolio value, token holdings and ENS for any Base address.", icon: "▣" },
-  "DeFi":      { blurb: "TVL, top yields, stablecoins, Aave reserves, the gas tracker and token security checks.", icon: "％" },
-  "NFTs":      { blurb: "Collection info, ownership, balances, supply and metadata for ERC-721 collections.", icon: "▦" },
-  "ENS":       { blurb: "Resolve names, reverse-lookup addresses, avatars and full public profiles.", icon: "@" },
-  "Utilities": { blurb: "ETH price, market stats, the Fear & Greed index, conversions and address tools.", icon: "⚒" },
-  "Lending":   { blurb: "Aave, Compound and Morpho markets, rates and positions on Base.", icon: "▤" },
-  "Stablecoins": { blurb: "Pegs, supply, yields and chain breakdowns for every major stablecoin.", icon: "◈" },
-  "Oracles":    { blurb: "Chainlink price feeds on Base, compared against CoinGecko.", icon: "◐" },
-  "Governance": { blurb: "DAO proposals, votes and spaces from Snapshot.", icon: "⚖" },
-  "Memecoins":  { blurb: "New pairs, trending tokens, boosts and price moves on Base.", icon: "✦" },
-  "Prediction": { blurb: "Polymarket markets, events and trending questions.", icon: "◔" },
-  "Service":   { blurb: "Health, MCP status and the tool list — including the free liveness probe.", icon: "✓" }
+ "Tokens": {
+  "blurb": "Live prices, pairs, liquidity, supply, holder concentration and metadata for any SPL token.",
+  "icon": "\u25c9"
+ },
+ "Chain": {
+  "blurb": "Slots, blocks, epochs, validators, supply and fees, straight from Solana RPC.",
+  "icon": "\u26d3"
+ },
+ "DEX": {
+  "blurb": "Solana DEX pairs and pools \u2014 Raydium, Orca, Meteora, PumpSwap and more \u2014 via Dexscreener and GeckoTerminal.",
+  "icon": "\u21c4"
+ },
+ "Wallets": {
+  "blurb": "SOL and SPL balances, token holdings, stake accounts and history for any Solana address.",
+  "icon": "\u25a3"
+ },
+ "DeFi": {
+  "blurb": "Solana TVL, protocols, DEX volumes, fees and yields from DeFiLlama.",
+  "icon": "\u25a6"
+ },
+ "Oracles": {
+  "blurb": "Pyth price-feed directory plus cross-source price checks across Jupiter, Dexscreener and CoinGecko.",
+  "icon": "\u25d0"
+ },
+ "Memecoins": {
+  "blurb": "pump.fun launches, trending and graduating memecoins, movers and risk snapshots.",
+  "icon": "\u2726"
+ },
+ "Stablecoins": {
+  "blurb": "Stablecoin supplies and peg health, with Solana-chain breakdowns.",
+  "icon": "\u2b22"
+ },
+ "Markets": {
+  "blurb": "SOL and Solana-ecosystem market data, trending coins and sentiment from CoinGecko.",
+  "icon": "\u25b2"
+ },
+ "NFTs": {
+  "blurb": "Solana NFT collections and floor stats from Magic Eden, plus on-chain holder reads.",
+  "icon": "\u25a9"
+ },
+ "Transactions": {
+  "blurb": "Transaction detail, status, balances and error inspection by signature.",
+  "icon": "\u2261"
+ },
+ "Utilities": {
+  "blurb": "Lamports/SOL/USD conversion, address validation and slot-time-epoch math.",
+  "icon": "\u2692"
+ },
+ "Service": {
+  "blurb": "Health and service status for the API itself.",
+  "icon": "\u2665"
+ }
 };
-var GROUP_ORDER = ["Tokens","Chain","DEX","Wallets","DeFi","Lending","Stablecoins","Oracles","Governance","NFTs","ENS","Memecoins","Prediction","Utilities","Service"];
-
+var GROUP_ORDER = ["Tokens", "Chain", "DEX", "Wallets", "DeFi", "Oracles", "Memecoins", "Stablecoins", "Markets", "NFTs", "Transactions", "Utilities", "Service"];
 var PICKS = [
-  { path: "/health", why: "Check the service is alive. Free, no wallet needed — open it in a browser." },
-  { path: "/mcp/status", why: "The cheapest paid call there is. The standard first test of a wallet setup." },
-  { path: "/defi/gas-tracker", why: "Current Base gas prices — slow, average and fast — in one call." },
-  { path: "/utils/fear-greed", why: "The Crypto Fear & Greed Index, ready for dashboards and bots." },
-  { path: "/tokens/trending", why: "The top boosted tokens on Dexscreener right now." },
-  { path: "/defi/token-security/{token_address}", why: "A quick security check on any Base token before you touch it." }
+  { path: "/health", why: "Free — service status, network and payee in one call." },
+  { path: "/chain/slot", why: "The current Solana slot and block height." },
+  { path: "/markets/sol", why: "SOL market data: price, market cap, ATH and changes." },
+  { path: "/memecoins/trending", why: "The biggest pump.fun memecoins by market cap right now." },
+  { path: "/defi/solana/summary", why: "Solana DeFi in one call: TVL, DEX volume, fees, yields." },
+  { path: "/oracles/sol", why: "SOL price cross-checked across Jupiter, Dexscreener and CoinGecko." }
 ];
 
-function fmtPrice(e){ return e.priceNum === 0 ? "FREE" : "$" + e.price; }
-var PARAM_HINTS = {
-  address: "0x… — a Base address", wallet: "0x… — a wallet address", owner: "0x… — owner address",
-  spender: "0x… — spender address", to: "0x… — recipient address", collection: "0x… — collection contract",
-  pool: "0x… — pool address", pair: "0x… — pair address", token_address: "0x… — token contract",
-  hash: "0x… — transaction hash", number: "e.g. 21400000", tokenId: "e.g. 1",
-  name: "e.g. vitalik.eth", coin: "CoinGecko id, e.g. ethereum", query: "search text",
-  text: "any text", amount: "e.g. 1.5", protocol: "e.g. aerodrome", chain: "e.g. base",
-  gwei: "e.g. 0.05", gas: "e.g. 21000",
-  asset: "0x… — token contract", slug: "e.g. aave-v3", project: "e.g. aave-v3", symbol: "e.g. ETH", space: "e.g. aave.eth",
-  proposal_id: "0x… — proposal id", blocks: "e.g. 5", count: "e.g. 3", days: "e.g. 7", token_id: "e.g. 1",
-  tx_hash: "0x… — transaction hash", n: "e.g. 10", token: "0x… — token contract"
-};
-function paramHint(n){ return PARAM_HINTS[n] || ("value for {" + n + "}"); }
-function esc(s){ return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+var state = { group: "All", price: "all", q: "", sort: "group" };
 
-var toastTimer = null;
-function toast(msg){
-  var t = document.getElementById("toast");
-  t.textContent = msg;
-  t.classList.add("show");
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(function(){ t.classList.remove("show"); }, 2400);
+function esc(s){
+  return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
-function copyText(text, msg){
-  function done(){ toast(msg); }
-  if (navigator.clipboard && navigator.clipboard.writeText){
-    navigator.clipboard.writeText(text).then(done, function(){ fallback(); });
-  } else { fallback(); }
-  function fallback(){
-    var ta = document.createElement("textarea");
-    ta.value = text; ta.style.position = "fixed"; ta.style.opacity = "0";
-    document.body.appendChild(ta); ta.select();
-    try { document.execCommand("copy"); done(); } catch(e){ toast("Copy failed — long-press to copy manually"); }
-    document.body.removeChild(ta);
-  }
+function fmtPrice(e){ return e.priceNum === 0 ? "Free" : "$" + e.price; }
+function paramHint(name){
+  var hints = {
+    mint: "SPL mint address", address: "base58 address", wallet: "base58 address",
+    owner: "base58 address", identity: "validator identity pubkey",
+    signature: "transaction signature", slot: "e.g. 391200000",
+    start_slot: "e.g. 391199000", epoch: "e.g. 900", limit: "e.g. 10",
+    days: "e.g. 30", amount: "e.g. 1.5", size: "bytes, e.g. 100",
+    timestamp: "unix seconds", query: "search text", symbol: "e.g. SOL/USD",
+    asset: "e.g. USDC", slug: "defillama protocol slug", pair: "pair address",
+    pool: "pool address", dex: "e.g. raydium"
+  };
+  return hints[name] || name;
 }
+
 /* Category cards */
 (function(){
   var grid = document.getElementById("catGrid");
@@ -3288,50 +3318,41 @@ function copyText(text, msg){
   GROUP_ORDER.forEach(function(g){
     var items = ENDPOINTS.filter(function(e){ return e.group === g; });
     if (!items.length) return;
-    var prices = items.map(function(e){ return e.priceNum; });
-    var lo = Math.min.apply(null, prices), hi = Math.max.apply(null, prices);
-    var loItem = items.filter(function(e){ return e.priceNum === lo; })[0];
-    var hiItem = items.filter(function(e){ return e.priceNum === hi; })[0];
-    var range = lo === hi
-      ? (lo === 0 ? "Free" : "$" + loItem.price + " per call")
-      : (lo === 0 ? "Free" : "$" + loItem.price) + " – $" + hiItem.price + " per call";
     html += '<button type="button" class="cat" data-group="' + g + '">' +
-      '<span class="row"><h3>' + GROUP_INFO[g].icon + " " + g + '</h3><span class="count">' + items.length + '</span></span>' +
-      "<p>" + GROUP_INFO[g].blurb + '</p>' +
-      '<span class="range">' + range + '</span><br><span class="go">View endpoints →</span></button>';
+      '<span class="row"><h3>' + GROUP_INFO[g].icon + " " + g + '</h3><span class="count">' + items.length + "</span></span>" +
+      "<p>" + GROUP_INFO[g].blurb + "</p></button>";
   });
   grid.innerHTML = html;
   grid.addEventListener("click", function(ev){
     var c = ev.target.closest("[data-group]");
     if (!c) return;
     setGroup(c.getAttribute("data-group"));
-    document.getElementById("catalog").scrollIntoView({ behavior: "smooth", block: "start" });
+    document.getElementById("catalog").scrollIntoView({ behavior: "smooth" });
   });
 })();
 
-/* Starter picks */
+/* Picks */
 (function(){
-  var wrap = document.getElementById("picks");
+  var byPath = {};
+  ENDPOINTS.forEach(function(e){ byPath[e.path] = e; });
   var html = "";
   PICKS.forEach(function(p){
-    var e = ENDPOINTS.filter(function(x){ return x.path === p.path; })[0];
+    var e = byPath[p.path];
     if (!e) return;
-    html += '<div class="pick"><div class="body"><h3>' + esc(e.name) + "</h3><p>" + esc(p.why) + "</p>" +
-      '<code class="mono">GET ' + esc(e.path) + "</code></div>" +
-      '<span class="price' + (e.priceNum === 0 ? " free" : "") + '">' + fmtPrice(e) + "</span></div>";
+    html += '<div class="pick"><div class="top"><h3>' + esc(e.name) + '</h3><span class="price' +
+      (e.priceNum === 0 ? " free" : "") + '">' + fmtPrice(e) + "</span></div>" +
+      "<p>" + esc(p.why) + '</p><div class="pathrow"><code>GET ' + esc(e.path) + "</code></div></div>";
   });
-  wrap.innerHTML = html;
+  document.getElementById("picks").innerHTML = html;
 })();
 
-/* Explorer */
-var state = { q: "", group: "All", price: "all", sort: "group" };
-
+/* Pills */
 (function(){
   var pills = document.getElementById("pills");
   var groups = ["All"].concat(GROUP_ORDER);
   pills.innerHTML = groups.map(function(g){
-    var n = g === "All" ? ENDPOINTS.length : ENDPOINTS.filter(function(e){ return e.group === g; }).length;
-    return '<button type="button" class="pill" data-g="' + g + '" aria-pressed="' + (g === "All") + '">' + g + "<small>" + n + "</small></button>";
+    return '<button type="button" class="pill" data-g="' + g + '" aria-pressed="' +
+      (g === "All" ? "true" : "false") + '">' + g + "</button>";
   }).join("");
   pills.addEventListener("click", function(ev){
     var b = ev.target.closest("[data-g]");
@@ -3386,10 +3407,10 @@ function render(){
     return '<article class="card">' +
       '<div class="top"><h3>' + esc(e.name) + '</h3><span class="price' + (e.priceNum === 0 ? " free" : "") + '">' + fmtPrice(e) + "</span></div>" +
       "<p>" + esc(e.desc) + "</p>" +
-      '<div class="pathrow"><code>GET ' + esc(e.path) + '</code>' +
+      '<div class="pathrow"><code>GET ' + esc(e.path) + "</code>" +
       (e.params
         ? '<span class="open-note">template</span>'
-        : '<a class="openlink" href="' + esc(BASE + e.path) + '" target="_blank" rel="noopener" aria-label="Open the ' + esc(e.name) + ' endpoint in a new tab — paid endpoints answer 402 until paid">Open ↗</a>') + '</div>' +
+        : '<a class="openlink" href="' + esc(BASE + e.path) + '" target="_blank" rel="noopener" aria-label="Open the ' + esc(e.name) + ' endpoint in a new tab — paid endpoints answer 402 until paid">Open ↗</a>') + "</div>" +
       '<div class="cardfoot"><div class="meta"><span class="tag">' + e.group + "</span>" +
       (e.params ? '<span class="param">takes parameters</span>' : "") + "</div>" +
       '<button type="button" class="paybtn' + (e.priceNum === 0 ? " free-btn" : "") + '" data-pay="' + esc(e.path) + '">' +
@@ -3410,6 +3431,60 @@ document.getElementById("priceFilter").addEventListener("change", function(ev){ 
 document.getElementById("sortBy").addEventListener("change", function(ev){ state.sort = ev.target.value; render(); });
 render();
 
+/* Pay & Call: show the live 402 payment terms (or the free JSON). */
+function decodePaymentRequired(res){
+  var h = res.headers.get("payment-required");
+  if (!h) return null;
+  try { return JSON.parse(atob(h)); } catch (e) { return null; }
+}
+function showTerms(card, url){
+  var box = card.querySelector(".payresult");
+  box.hidden = false;
+  box.innerHTML = '<p class="pstatus">Contacting the service…</p>';
+  fetch(url).then(function(res){
+    if (res.status === 200){
+      return res.text().then(function(t){
+        box.innerHTML = '<p class="pstatus">200 OK — free endpoint:</p><pre>' + esc(t.slice(0, 600)) + "</pre>";
+      });
+    }
+    var doc = decodePaymentRequired(res);
+    if (doc && doc.accepts && doc.accepts[0]){
+      var a = doc.accepts[0];
+      box.innerHTML = '<p class="pstatus">402 Payment Required — live terms:</p><pre>' +
+        esc(JSON.stringify(a, null, 1).slice(0, 800)) + "</pre>" +
+        '<p class="pstatus">Pay with any x402 SVM client to get the data.</p>';
+    } else {
+      box.innerHTML = '<p class="pstatus">HTTP ' + res.status + " — no payment terms returned.</p>";
+    }
+  }).catch(function(err){
+    box.innerHTML = '<p class="pstatus err">Request failed: ' + esc(String(err)) + "</p>";
+  });
+}
+document.getElementById("grid").addEventListener("click", function(ev){
+  var card = ev.target.closest(".card");
+  if (!card) return;
+  var confirmBtn = ev.target.closest("[data-confirm]");
+  if (confirmBtn){
+    var path = confirmBtn.getAttribute("data-confirm");
+    var ok = true;
+    card.querySelectorAll("[data-param]").forEach(function(inp){
+      var v = inp.value.trim();
+      if (!v) ok = false;
+      path = path.replace("{" + inp.getAttribute("data-param") + "}", encodeURIComponent(v));
+    });
+    if (!ok){ alert("Fill in every parameter first."); return; }
+    showTerms(card, BASE + path);
+    return;
+  }
+  var payBtn = ev.target.closest("[data-pay]");
+  if (payBtn){
+    var p = payBtn.getAttribute("data-pay");
+    var form = card.querySelector(".payform");
+    if (form){ form.hidden = !form.hidden; return; }
+    showTerms(card, BASE + p);
+  }
+});
+
 /* Code tabs */
 document.querySelectorAll(".codebox .tab").forEach(function(tab){
   tab.addEventListener("click", function(){
@@ -3418,117 +3493,6 @@ document.querySelectorAll(".codebox .tab").forEach(function(tab){
       document.getElementById("panel-" + k).hidden = k !== tab.getAttribute("data-tab");
     });
   });
-});
-
-</script>
-
-<script>
-/* ---------- Solana settlement: live 402 terms viewer ----------
-   This variant settles in USDC on Solana (x402 "exact" SVM scheme).
-   Browser EVM wallets cannot sign Solana payments, so instead of the
-   Base variant's in-page wallet flow, Pay & Call fetches the endpoint
-   and displays the live 402 payment terms it answers with. Pay from
-   any x402 client holding USDC on Solana. */
-(function(){
-  var status = document.getElementById("walletStatus");
-  if (status){
-    status.innerHTML = "This variant of the service settles in <b>USDC on Solana</b>. " +
-      "Call any endpoint from an x402 client with a Solana wallet — or click an endpoint's " +
-      "<b>Pay &amp; Call</b> button to see its live 402 payment terms (network, asset, amount, payTo). " +
-      "The facilitator covers the Solana network fee.";
-  }
-  ["connectBtn", "disconnectBtn"].forEach(function(id){
-    var b = document.getElementById(id);
-    if (b) b.hidden = true;
-  });
-})();
-
-function setStatus(card, text, isErr){
-  var box = card.querySelector(".payresult");
-  box.hidden = false;
-  box.innerHTML = '<p class="' + (isErr ? "err" : "ok") + '">' + text + "</p>";
-}
-
-function showJson(card, statusHtml, data){
-  var box = card.querySelector(".payresult");
-  box.hidden = false;
-  box.innerHTML = '<p class="ok">' + statusHtml + "</p>" +
-    (data ? "<pre>" + esc(JSON.stringify(data, null, 2)) + "</pre>" : "");
-}
-
-async function payAndCall(e, filledPath, card, btn){
-  var oldLabel = btn.textContent;
-  btn.disabled = true;
-  btn.textContent = "Fetching terms…";
-  try {
-    var res = await fetch(filledPath, { method: "GET" });
-    if (res.status === 200){
-      var data = await res.json().catch(function(){ return null; });
-      showJson(card, "✓ HTTP 200 — this endpoint answered without payment.", data);
-      return;
-    }
-    if (res.status !== 402){
-      setStatus(card, "The service answered HTTP " + res.status + " — no payment terms were offered.", true);
-      return;
-    }
-    var header = res.headers.get("payment-required");
-    var terms = null;
-    if (header){
-      try { terms = JSON.parse(atob(header.replace(/\s/g, ""))); } catch (ignore){}
-    }
-    if (!terms){
-      terms = await res.json().catch(function(){ return null; });
-    }
-    if (terms && terms.accepts && terms.accepts.length){
-      var a = terms.accepts[0];
-      var amount = a.amount !== undefined ? a.amount : a.maxAmountRequired;
-      var usdc = amount !== undefined && !isNaN(Number(amount))
-        ? " ($" + (Number(amount) / 1e6).toFixed(2) + ")" : "";
-      showJson(card,
-        "HTTP 402 — pay <b>" + esc(String(amount)) + "</b> atomic USDC" + usdc +
-        " on <b>" + esc(String(a.network)) + "</b> to <span class=\"mono\">" + esc(String(a.payTo)) +
-        "</span> (asset <span class=\"mono\">" + esc(String(a.asset)) + "</span>). " +
-        "Send the payment with any x402 Solana client and retry the call.",
-        terms);
-    } else {
-      setStatus(card, "HTTP 402 received, but the payment terms could not be read.", true);
-    }
-  } catch (err){
-    setStatus(card, "Something went wrong before any result came back (" +
-      (err && err.message ? err.message : "network error") + "). No payment was made.", true);
-  } finally {
-    btn.disabled = false;
-    btn.textContent = oldLabel;
-  }
-}
-
-document.getElementById("grid").addEventListener("click", function(ev){
-  var payBtn = ev.target.closest("[data-pay]");
-  var confirmBtn = ev.target.closest("[data-confirm]");
-  if (!payBtn && !confirmBtn) return;
-  var path = (payBtn || confirmBtn).getAttribute(payBtn ? "data-pay" : "data-confirm");
-  var e = ENDPOINTS.filter(function(x){ return x.path === path; })[0];
-  if (!e) return;
-  var card = (payBtn || confirmBtn).closest(".card");
-
-  if (confirmBtn){
-    var filled = e.path;
-    var missing = false;
-    card.querySelectorAll("[data-param]").forEach(function(input){
-      var v = input.value.trim();
-      if (!v) missing = true;
-      filled = filled.split("{" + input.getAttribute("data-param") + "}").join(encodeURIComponent(v));
-    });
-    if (missing){ setStatus(card, "Fill in every parameter above first — the endpoint needs a value in each {placeholder}.", true); return; }
-    payAndCall(e, filled, card, confirmBtn);
-    return;
-  }
-  if (e.params){
-    var form = card.querySelector(".payform");
-    form.hidden = !form.hidden;
-    return;
-  }
-  payAndCall(e, e.path, card, payBtn);
 });
 </script>
 </body>

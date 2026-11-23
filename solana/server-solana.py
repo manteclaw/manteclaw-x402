@@ -1,25 +1,42 @@
-# Manteclaw x402 service — SOLANA SETTLEMENT VARIANT (FastAPI + x402 2.9.0)
+# Manteclaw x402 service — SOLANA-NATIVE EDITION (FastAPI + x402 2.9.0)
 #
-# Same API surface and data as the Base service (server-v5.py): 200
-# endpoints total, 199 paid + free /health. The endpoints serve
-# Base/EVM data; only the PAYMENT settlement differs — payments are
-# USDC on Solana mainnet via the x402 "exact" SVM scheme, settled
-# through PayAI's facilitator. (x402 services commonly serve data about
-# one chain while settling on another; the 402 terms name the Solana
-# network, the Solana USDC mint and the Solana payTo.)
+# 200 endpoints total: 199 paid + free /health. Every endpoint serves
+# SOLANA data, and payments settle in USDC on Solana mainnet via the
+# x402 "exact" SVM scheme through PayAI's facilitator.
 #
-# Prices mirror the Base service exactly: 193 endpoints at $0.01 and
-# 6 at $0.02 (the price map lives in the REGISTRY below, unchanged).
+# (This service previously cloned the Base service's endpoint set and
+# served Base/EVM data with Solana settlement. Alex directed on
+# 2026-11-23 that the Solana APIs be Solana-focused, so the endpoint
+# set was rebuilt Solana-native: the payment wiring is unchanged, the
+# data is all Solana now.)
 #
-# Data sources (all free, no API keys) — unchanged from the Base build:
-#   - Base RPC (mainnet.base.org) via web3: blocks, txs, balances, code,
-#     ERC20/ERC721/ Uniswap-V3 / Aave reads. NOTE: the public RPC refuses
-#     eth_getLogs (429), so no endpoint here uses log queries.
-#   - Dexscreener public API: token prices, pairs, liquidity, volume, txns.
-#   - DeFiLlama public APIs: chain/protocol TVL, DEX volumes, yields,
-#     stablecoins, fees.
-#   - CoinGecko public API (no key): coin prices, global stats, trending.
-#   - ENSIdeas / ensdata.net public APIs: ENS resolve / reverse.
+# Prices mirror the Base service's shape: 193 endpoints at $0.01 and 6
+# premium endpoints at $0.02 (the price map lives in the REGISTRY
+# below).
+#
+# Data sources (all free, no API keys):
+#   - Solana public RPC (api.mainnet-beta.solana.com): slots, blocks,
+#     epochs, supply, validators, SPL token mints/accounts, wallet
+#     balances and signatures, transactions, stake accounts.
+#   - Jupiter lite API (lite-api.jup.ag): token prices (price v3) and
+#     token metadata search.
+#   - Dexscreener public API: Solana DEX pairs, prices, liquidity,
+#     volume, boosts and token profiles (chainId=solana; pair lists are
+#     filtered to pairs where the token is the BASE asset).
+#   - GeckoTerminal public API: Solana pools, trending/new pools,
+#     pool trades and OHLCV.
+#   - DeFiLlama public APIs: Solana TVL, protocols, DEX volumes, fees,
+#     yields and stablecoins.
+#   - Pyth Hermes public API: price-feed directory/metadata. (Pyth's
+#     price-update endpoints now require an API key, so live prices
+#     here come from Jupiter / Dexscreener / CoinGecko cross-checks;
+#     the Pyth endpoints serve the real feed directory data.)
+#   - pump.fun public API (frontend-api-v3): new / trending /
+#     graduating memecoins.
+#   - CoinGecko public API (no key): SOL and Solana-ecosystem market
+#     data, global stats, trending.
+#   - Magic Eden public API: NFT collection list and stats (small
+#     family — it is the only free NFT source that answers reliably).
 #   - Alternative.me public API: Fear & Greed index.
 #
 # No secrets, keys, or private keys anywhere in this file. The only
@@ -54,8 +71,6 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from dotenv import load_dotenv
-from web3 import Web3
-from eth_abi import decode as abi_decode
 import httpx
 
 # x402 v2.9.0 imports
@@ -68,11 +83,6 @@ from x402.extensions.bazaar import OutputConfig, declare_discovery_extension
 
 # Load environment variables from .env
 load_dotenv()
-
-# Base RPC: use the configured Alchemy URL when present, otherwise the
-# public Base endpoint.
-RPC_URL = os.environ.get("ALCHEMY_BASE_RPC") or "https://mainnet.base.org"
-w3 = Web3(Web3.HTTPProvider(RPC_URL))
 
 # Wallet for receiving payments — Alex's Solana payout wallet
 # (receive-only; no key material for it exists anywhere in this
@@ -110,166 +120,311 @@ server.register(network=SOLANA_NETWORK, server=ExactSvmServerScheme())
 
 # ===== shared HTTP client (free public APIs, no keys) =====
 
-HTTP_TIMEOUT = 15.0
+HTTP_TIMEOUT = 20.0
 http_client = httpx.AsyncClient(timeout=HTTP_TIMEOUT, follow_redirects=True)
 
+SOLANA_RPC = os.environ.get("SOLANA_RPC_URL", "https://api.mainnet-beta.solana.com")
+JUPITER = "https://lite-api.jup.ag"
 DEXSCREENER = "https://api.dexscreener.com"
+GECKOTERMINAL = "https://api.geckoterminal.com/api/v2"
 LLAMA = "https://api.llama.fi"
 YIELDS = "https://yields.llama.fi"
-STABLECOINS = "https://stablecoins.llama.fi"
+STABLECOINS_API = "https://stablecoins.llama.fi"
 COINGECKO = "https://api.coingecko.com/api/v3"
-ENSIDEAS = "https://api.ensideas.com"
-ENSDATA = "https://api.ensdata.net"
+PYTH_HERMES = "https://hermes.pyth.network"
+PUMPFUN = "https://frontend-api-v3.pump.fun"
+MAGICEDEN = "https://api-mainnet.magiceden.dev/v2"
 FNG = "https://api.alternative.me"
 
-# Well-known Base token contracts (verified on-chain to hold code).
-USDC = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"
-WETH = "0x4200000000000000000000000000000000000006"
-AERO = "0x3f5bF3EdAc59d650D8fDf9657a71F2f904A3a4Ee"
-AAVE_POOL = "0xA238Dd80C259a72e81d7e4664a9801593F98d1c5"
+LAMPORTS_PER_SOL = 1_000_000_000
+U64_MAX = 18446744073709551615
 
-# Curated top Base tokens for wallet balance scans. Symbol/decimals are
-# immutable on-chain metadata, verified against the contracts.
-CURATED_TOKENS = [
-    {"address": USDC, "symbol": "USDC", "decimals": 6, "name": "USD Coin"},
-    {"address": WETH, "symbol": "WETH", "decimals": 18, "name": "Wrapped Ether"},
-    {"address": AERO, "symbol": "AERO", "decimals": 18, "name": "Aerodrome Finance"},
-    {"address": "0x2Ae3F1Ec7F1F5012CFEab0185bfc7aa3cf0DEc22", "symbol": "cbETH", "decimals": 18, "name": "Coinbase Wrapped Staked ETH"},
-    {"address": "0x50c5725949A6F0c72E6C4a641F24049A917DB0Cb", "symbol": "DAI", "decimals": 18, "name": "Dai Stablecoin"},
-    {"address": "0xd9aAEc86B65D86f6A7B5B1b0c42FFA531710b6CA", "symbol": "USDbC", "decimals": 6, "name": "USD Base Coin"},
-    {"address": "0x0578d8A44db98B23BF096A382e016e29a5Ce0FFE", "symbol": "HIGHER", "decimals": 18, "name": "Higher"},
-]
+# Well-known Solana programs and mints.
+SYSTEM_PROGRAM = "11111111111111111111111111111111"
+TOKEN_PROGRAM = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+TOKEN_2022_PROGRAM = "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"
+STAKE_PROGRAM = "Stake11111111111111111111111111111111111111"
+VOTE_PROGRAM = "Vote111111111111111111111111111111111111111"
+ATA_PROGRAM = "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
+WSOL = "So11111111111111111111111111111111111111112"
+USDT = "Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB"
 
-# ===== helpers =====
+# Curated Solana majors for batch-price / cross-source endpoints.
+MAJOR_MINTS = {
+    "SOL": WSOL,
+    "USDC": SOLANA_USDC,
+    "USDT": USDT,
+    "JUP": "JUPyiwrYJFskUPiHa7hkeR8VUtAeFoSYbKedZNsDvCN",
+    "JTO": "jtojtomepa8beP8AuQc6eXt5FriJwfFMwQx2v2f9mCL",
+    "PYTH": "HZ1JovNiVvGrGNiiYvEozEVgZ58xaU3RKwX8eACQBCt3",
+    "WIF": "EKpQGSJtjMFqKZ9KQanSqYXRcF8fBopzLHYxdM65zcjm",
+    "BONK": "DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263",
+    "RAY": "4k3Dyjzvzp8eMZWUXbBCjEvwSkkk59S5iCNLY3QrkX6P",
+}
 
-async def _get_json(url, params=None):
+# ===== tiny TTL cache (public RPC / free APIs are rate-limited) =====
+
+_CACHE = {}
+
+
+def _cache_get(key):
+    ent = _CACHE.get(key)
+    if ent and ent[0] > time.time():
+        return ent[1]
+    return None
+
+
+def _cache_put(key, value, ttl):
+    if ttl and ttl > 0:
+        _CACHE[key] = (time.time() + ttl, value)
+    return value
+
+
+# ===== generic JSON GET with cache + one connection retry =====
+
+async def _get_json(url, params=None, ttl=0):
     """GET a public JSON API. Returns the parsed body, or an error dict."""
-    try:
-        r = await http_client.get(url, params=params)
-        if r.status_code != 200:
-            return {"error": f"upstream HTTP {r.status_code}", "url": url}
+    key = None
+    if ttl:
+        key = "GET:" + url + ":" + json.dumps(params or {}, sort_keys=True, default=str)
+        hit = _cache_get(key)
+        if hit is not None:
+            return hit
+    last_err = None
+    for attempt in range(2):
         try:
-            return r.json()
-        except Exception:
-            return {"error": "upstream returned non-JSON", "url": url}
-    except Exception as e:
-        return {"error": str(e)[:200], "url": url}
+            r = await http_client.get(url, params=params)
+            if r.status_code != 200:
+                return {"error": f"upstream HTTP {r.status_code}", "url": url}
+            try:
+                data = r.json()
+            except Exception:
+                return {"error": "upstream returned non-JSON", "url": url}
+            if key:
+                _cache_put(key, data, ttl)
+            return data
+        except Exception as e:
+            last_err = e
+            if attempt == 0:
+                await asyncio.sleep(0.6)
+    return {"error": str(last_err)[:200], "url": url}
 
 
-def _checksum(addr: str) -> str:
-    return Web3.to_checksum_address(addr)
+def _is_error(data):
+    return isinstance(data, dict) and "error" in data
 
 
-def _addr32(addr: str) -> bytes:
-    return b"\x00" * 12 + bytes.fromhex(_checksum(addr)[2:])
+# ===== Solana JSON-RPC =====
+
+# Per-method cache TTLs (seconds). Freshness-critical reads get tiny
+# TTLs; slow-moving cluster data gets longer ones. The public RPC
+# rate-limits aggressively, so even 2-5s of caching matters.
+_RPC_TTL = {
+    "getSlot": 2, "getBlockHeight": 2, "getEpochInfo": 5,
+    "getRecentPerformanceSamples": 10, "getRecentPrioritizationFees": 10,
+    "getBlockProduction": 30, "getSupply": 30, "getTransactionCount": 5,
+    "getVoteAccounts": 60, "getLeaderSchedule": 120, "getClusterNodes": 120,
+    "getVersion": 3600, "getGenesisHash": 3600, "getEpochSchedule": 3600,
+    "getInflationRate": 300, "getInflationGovernor": 300,
+    "getHealth": 20, "minimumLedgerSlot": 10, "getHighestSnapshotSlot": 10,
+    "getMaxRetransmitSlot": 5, "getMaxShredInsertSlot": 5,
+}
+
+# Methods the public RPC throttles hard: retry with backoff on 429.
+_RPC_HEAVY = {
+    "getTokenLargestAccounts", "getProgramAccounts", "getBlock",
+    "getVoteAccounts", "getClusterNodes", "getLeaderSchedule", "getSupply",
+}
+
+_rpc_id = [0]
 
 
-def _eth_call(to: str, data_hex: str):
-    return w3.eth.call({"to": _checksum(to), "data": data_hex})
-
-
-def _decode_string(raw: bytes) -> str:
-    try:
-        return abi_decode(["string"], raw)[0]
-    except Exception:
-        pass
-    try:
-        b = abi_decode(["bytes32"], raw)[0]
-        return b.split(b"\x00")[0].decode("utf-8", "replace")
-    except Exception:
-        return raw.hex()
-
-
-def _decode_uint(raw: bytes) -> int:
-    try:
-        return int(abi_decode(["uint256"], raw)[0])
-    except Exception:
-        return int.from_bytes(raw, "big")
-
-
-def _decode_bool(raw: bytes) -> bool:
-    try:
-        return bool(abi_decode(["bool"], raw)[0])
-    except Exception:
-        return raw[-1:] == b"\x01"
-
-
-# ERC20 / ERC721 function selectors
-SEL_NAME = "06fdde03"
-SEL_SYMBOL = "95d89b41"
-SEL_DECIMALS = "313ce567"
-SEL_TOTAL_SUPPLY = "18160ddd"
-SEL_BALANCE_OF = "70a08231"
-SEL_ALLOWANCE = "dd62ed3e"
-SEL_OWNER_OF = "6352211e"
-SEL_TOKEN_URI = "c87b56dd"
-SEL_SUPPORTS_INTERFACE = "01ffc9a7"
-
-
-def _erc20_str(token: str, selector: str) -> str:
-    return _decode_string(_eth_call(token, "0x" + selector))
-
-
-def _erc20_uint(token: str, selector: str, args: bytes = b"") -> int:
-    return _decode_uint(_eth_call(token, "0x" + selector + args.hex()))
-
-
-def _erc20_balance(token: str, wallet: str) -> int:
-    return _erc20_uint(token, SEL_BALANCE_OF, _addr32(wallet))
-
-
-def _token_meta(token: str):
-    """Best-effort ERC20 name/symbol/decimals. Returns dict; missing fields are None."""
-    meta = {"name": None, "symbol": None, "decimals": None}
-    for key, sel in (("name", SEL_NAME), ("symbol", SEL_SYMBOL)):
+async def _rpc(method, params=None, ttl=None, retries=None):
+    """One Solana JSON-RPC call. Returns the `result` value, or an
+    error dict {"error": ...} (the service-wide error convention)."""
+    params = params or []
+    if ttl is None:
+        ttl = _RPC_TTL.get(method, 0)
+    key = None
+    if ttl:
+        key = "RPC:" + method + ":" + json.dumps(params, sort_keys=True, default=str)
+        hit = _cache_get(key)
+        if hit is not None:
+            return hit
+    if retries is None:
+        retries = 3 if method in _RPC_HEAVY else 1
+    last_err = None
+    for attempt in range(retries + 1):
+        _rpc_id[0] += 1
         try:
-            meta[key] = _erc20_str(token, sel)
-        except Exception:
-            pass
-    try:
-        raw = _eth_call(token, "0x" + SEL_DECIMALS)
-        meta["decimals"] = int.from_bytes(raw, "big") if len(raw) == 32 else None
-        if meta["decimals"] is not None and meta["decimals"] > 36:
-            meta["decimals"] = None
-    except Exception:
-        pass
-    return meta
+            r = await http_client.post(SOLANA_RPC, json={
+                "jsonrpc": "2.0", "id": _rpc_id[0], "method": method, "params": params,
+            })
+            if r.status_code == 429:
+                last_err = "upstream HTTP 429"
+                if attempt < retries:
+                    await asyncio.sleep(0.8 * (attempt + 1))
+                    continue
+                return {"error": "upstream HTTP 429", "url": SOLANA_RPC}
+            if r.status_code != 200:
+                return {"error": f"upstream HTTP {r.status_code}", "url": SOLANA_RPC}
+            data = r.json()
+        except Exception as e:
+            last_err = str(e)[:200]
+            if attempt < retries:
+                await asyncio.sleep(0.6 * (attempt + 1))
+                continue
+            return {"error": last_err, "url": SOLANA_RPC}
+        if isinstance(data, dict) and data.get("error"):
+            err = data["error"]
+            msg = err.get("message", str(err)) if isinstance(err, dict) else str(err)
+            code = err.get("code") if isinstance(err, dict) else None
+            if code == -32429 or "429" in str(msg) or "rate" in str(msg).lower():
+                if attempt < retries:
+                    await asyncio.sleep(0.8 * (attempt + 1))
+                    continue
+            return {"error": f"RPC error: {msg}", "url": SOLANA_RPC}
+        result = data.get("result") if isinstance(data, dict) else None
+        if key:
+            _cache_put(key, result, ttl)
+        return result
+    return {"error": str(last_err)[:200], "url": SOLANA_RPC}
 
 
-def _best_pair(pairs):
-    """Pick the Dexscreener pair with the most liquidity (best price source)."""
-    if not pairs:
+# ===== small helpers =====
+
+def _sol(lamports):
+    """Lamports -> SOL as a float (None-safe)."""
+    if lamports is None:
         return None
-    def liq(p):
-        try:
-            return float((p.get("liquidity") or {}).get("usd") or 0)
-        except Exception:
-            return 0.0
-    return max(pairs, key=liq)
+    return lamports / LAMPORTS_PER_SOL
 
 
-async def _dex_pairs_for_token(addr: str):
-    data = await _get_json(f"{DEXSCREENER}/latest/dex/tokens/{addr}")
-    if isinstance(data, dict) and "error" in data:
+def _round(x, nd=6):
+    if isinstance(x, (int, float)) and not isinstance(x, bool):
+        return round(float(x), nd)
+    return x
+
+
+def _fnum(x):
+    """Best-effort float conversion (APIs mix strings and numbers)."""
+    try:
+        if x is None:
+            return None
+        return float(x)
+    except (TypeError, ValueError):
+        return None
+
+
+def _is_sol_address(s):
+    if not isinstance(s, str) or not (32 <= len(s) <= 44):
+        return False
+    try:
+        from solders.pubkey import Pubkey
+        Pubkey.from_string(s)
+        return True
+    except Exception:
+        return False
+
+
+def _on_curve(s):
+    try:
+        from solders.pubkey import Pubkey
+        return bool(Pubkey.from_string(s).is_on_curve())
+    except Exception:
+        return None
+
+
+def _err_addr(param="address"):
+    return {"error": f"invalid Solana {param} (expected a base58 public key)"}
+
+
+# ===== Jupiter (prices + token metadata) =====
+
+async def _jupiter_prices(mints, ttl=15):
+    """Jupiter price v3 for a list of mints -> {mint: price-entry}."""
+    if not mints:
+        return {}
+    data = await _get_json(
+        f"{JUPITER}/price/v3", params={"ids": ",".join(mints)}, ttl=ttl
+    )
+    if _is_error(data) or not isinstance(data, dict):
+        return data if _is_error(data) else {}
+    return data
+
+
+async def _sol_price_usd():
+    """Live SOL price in USD from Jupiter price v3 (cached 30s)."""
+    data = await _jupiter_prices([WSOL], ttl=30)
+    entry = data.get(WSOL) if isinstance(data, dict) else None
+    if isinstance(entry, dict):
+        return _fnum(entry.get("usdPrice"))
+    return None
+
+
+async def _jupiter_search(query, ttl=60):
+    """Jupiter token search -> list of token metadata entries."""
+    data = await _get_json(f"{JUPITER}/tokens/v2/search", params={"query": query}, ttl=ttl)
+    if _is_error(data):
+        return data
+    return data if isinstance(data, list) else []
+
+
+def _jupiter_token_trim(t):
+    stats = t.get("stats24h") or {}
+    return {
+        "mint": t.get("id"),
+        "name": t.get("name"),
+        "symbol": t.get("symbol"),
+        "decimals": t.get("decimals"),
+        "icon": t.get("icon"),
+        "tags": t.get("tags"),
+        "buy_volume_24h": _round(_fnum(stats.get("buyVolume")), 2),
+        "sell_volume_24h": _round(_fnum(stats.get("sellVolume")), 2),
+        "holder_count": t.get("holderCount"),
+        "fdv": _round(_fnum(t.get("fdv")), 2),
+        "market_cap": _round(_fnum(t.get("mcap")), 2),
+        "liquidity": _round(_fnum(t.get("liquidity")), 2),
+        "price_usd": _round(_fnum(t.get("usdPrice")), 8),
+        "organic_score": t.get("organicScore"),
+        "is_verified": "verified" in (t.get("tags") or []),
+    }
+
+
+# ===== Dexscreener (Solana pairs; BASE-asset filtering) =====
+
+async def _ds_token_pairs(mint, ttl=20):
+    """All Dexscreener pairs for a token on Solana (either side)."""
+    data = await _get_json(f"{DEXSCREENER}/latest/dex/tokens/{mint}", ttl=ttl)
+    if _is_error(data):
         return data
     pairs = data.get("pairs") if isinstance(data, dict) else None
     if not pairs:
-        return {"error": "no DEX pairs found for token", "token": addr}
-    return pairs
+        return {"error": "no DEX pairs found for token", "token": mint}
+    return [p for p in pairs if p.get("chainId") == "solana"]
 
 
-async def _eth_price_usd():
-    """Live ETH price in USD from the WETH/USDC Dexscreener pair."""
-    pairs = await _dex_pairs_for_token(WETH)
-    if isinstance(pairs, dict):
+async def _ds_base_pairs(mint, ttl=20):
+    """Solana pairs where the token is the BASE asset.
+
+    Dexscreener's token endpoint also returns pairs where the token is
+    only the QUOTE currency; counting those as the token's own pairs
+    misstates its price/liquidity (the quote-side bug found on the Base
+    service). Always filter to base-asset pairs for token statistics.
+    """
+    pairs = await _ds_token_pairs(mint, ttl=ttl)
+    if _is_error(pairs):
+        return pairs
+    return [p for p in pairs if (p.get("baseToken") or {}).get("address") == mint]
+
+
+def _best_pair(pairs):
+    """Pick the Dexscreener pair with the most liquidity."""
+    if not pairs:
         return None
-    best = _best_pair(pairs)
-    if not best:
-        return None
-    try:
-        return float(best.get("priceUsd"))
-    except Exception:
-        return None
+    def liq(p):
+        return _fnum((p.get("liquidity") or {}).get("usd")) or 0.0
+    return max(pairs, key=liq)
 
 
 def _trim_pair(p):
@@ -279,13 +434,278 @@ def _trim_pair(p):
         "pair": p.get("pairAddress"),
         "url": p.get("url"),
         "base_token": (p.get("baseToken") or {}).get("symbol"),
+        "base_address": (p.get("baseToken") or {}).get("address"),
         "quote_token": (p.get("quoteToken") or {}).get("symbol"),
+        "quote_address": (p.get("quoteToken") or {}).get("address"),
         "price_usd": p.get("priceUsd"),
         "price_native": p.get("priceNative"),
         "liquidity_usd": (p.get("liquidity") or {}).get("usd"),
         "volume_24h": (p.get("volume") or {}).get("h24"),
         "market_cap": p.get("marketCap"),
         "fdv": p.get("fdv"),
+        "pair_created_at": p.get("pairCreatedAt"),
+    }
+
+
+async def _ds_search(query, ttl=20):
+    """Dexscreener search, Solana pairs only."""
+    data = await _get_json(f"{DEXSCREENER}/latest/dex/search", params={"q": query}, ttl=ttl)
+    if _is_error(data):
+        return data
+    pairs = data.get("pairs") if isinstance(data, dict) else None
+    if not pairs:
+        return {"error": "no DEX pairs found", "query": query}
+    return [p for p in pairs if p.get("chainId") == "solana"]
+
+
+async def _ds_boosts(kind, ttl=30):
+    """Dexscreener token boosts ('top' or 'latest'), Solana only."""
+    data = await _get_json(f"{DEXSCREENER}/token-boosts/{kind}/v1", ttl=ttl)
+    if _is_error(data):
+        return data
+    items = data if isinstance(data, list) else []
+    return [b for b in items if b.get("chainId") == "solana"]
+
+
+def _trim_boost(b):
+    return {
+        "token": b.get("tokenAddress"),
+        "chain": b.get("chainId"),
+        "url": b.get("url"),
+        "description": (b.get("description") or "")[:200] or None,
+        "boost_amount": b.get("amount"),
+        "boost_total": b.get("totalAmount"),
+        "links": b.get("links"),
+    }
+
+
+# ===== GeckoTerminal (Solana pools) =====
+
+async def _gt(path, ttl=30):
+    return await _get_json(f"{GECKOTERMINAL}{path}", ttl=ttl)
+
+
+def _gt_pool_trim(pool):
+    a = pool.get("attributes") or {}
+    rel = pool.get("relationships") or {}
+    return {
+        "pool": a.get("address"),
+        "name": a.get("name"),
+        "dex": ((rel.get("dex") or {}).get("data") or {}).get("id"),
+        "base_token": ((rel.get("base_token") or {}).get("data") or {}).get("id"),
+        "quote_token": ((rel.get("quote_token") or {}).get("data") or {}).get("id"),
+        "base_price_usd": _fnum(a.get("base_token_price_usd")),
+        "quote_price_usd": _fnum(a.get("quote_token_price_usd")),
+        "reserve_usd": _round(_fnum(a.get("reserve_in_usd")), 2),
+        "volume_24h_usd": _round(_fnum((a.get("volume_usd") or {}).get("h24")), 2),
+        "volume_1h_usd": _round(_fnum((a.get("volume_usd") or {}).get("h1")), 2),
+        "price_change_24h_pct": _fnum((a.get("price_change_percentage") or {}).get("h24")),
+        "txns_24h": (a.get("transactions") or {}).get("h24"),
+        "created_at": a.get("pool_created_at"),
+        "fdv_usd": _round(_fnum(a.get("fdv_usd")), 2),
+        "market_cap_usd": _round(_fnum(a.get("market_cap_usd")), 2),
+    }
+
+
+# ===== DeFiLlama (cached heavy payloads) =====
+
+async def _llama_protocols(ttl=300):
+    return await _get_json(f"{LLAMA}/protocols", ttl=ttl)
+
+
+async def _llama_chains(ttl=120):
+    return await _get_json(f"{LLAMA}/v2/chains", ttl=ttl)
+
+
+async def _llama_yield_pools(ttl=300):
+    data = await _get_json(f"{YIELDS}/pools", ttl=ttl)
+    if _is_error(data):
+        return data
+    pools = data.get("data") if isinstance(data, dict) else None
+    return pools or []
+
+
+async def _llama_stablecoins(ttl=300):
+    data = await _get_json(
+        f"{STABLECOINS_API}/stablecoins", params={"includePrices": "true"}, ttl=ttl
+    )
+    if _is_error(data):
+        return data
+    return data.get("peggedAssets") if isinstance(data, dict) else None
+
+
+def _solana_protocols(protocols):
+    """Protocols with a Solana TVL entry, richest first."""
+    out = []
+    for p in protocols or []:
+        ct = (p.get("chainTvls") or {}).get("Solana")
+        if ct:
+            out.append(p)
+    out.sort(key=lambda p: -((p.get("chainTvls") or {}).get("Solana") or 0))
+    return out
+
+
+def _trim_protocol(p):
+    return {
+        "name": p.get("name"),
+        "slug": p.get("slug"),
+        "symbol": p.get("symbol"),
+        "category": p.get("category"),
+        "solana_tvl": _round(_fnum((p.get("chainTvls") or {}).get("Solana")), 2),
+        "total_tvl": _round(_fnum(p.get("tvl")), 2),
+        "change_1d_pct": _round(_fnum(p.get("change_1d")), 3),
+        "change_7d_pct": _round(_fnum(p.get("change_7d")), 3),
+        "url": p.get("url"),
+    }
+
+
+def _trim_yield_pool(p):
+    return {
+        "pool": p.get("pool"),
+        "project": p.get("project"),
+        "symbol": p.get("symbol"),
+        "chain": p.get("chain"),
+        "tvl_usd": _round(_fnum(p.get("tvlUsd")), 2),
+        "apy": _round(_fnum(p.get("apy")), 4),
+        "apy_base": _round(_fnum(p.get("apyBase")), 4),
+        "apy_reward": _round(_fnum(p.get("apyReward")), 4),
+        "stablecoin": p.get("stablecoin"),
+        "il_risk": p.get("ilRisk"),
+        "exposure": p.get("exposure"),
+    }
+
+
+def _overview_top_protocols(overview, limit=10):
+    """Top protocols from a DeFiLlama overview payload (dexs/fees).
+
+    The overview response shape varies: prefer its `protocols` list
+    (entries carry total24h), then breakdown24h, then the last day of
+    totalDataChartBreakdown. Returns [] if none is usable.
+    """
+    if not isinstance(overview, dict):
+        return []
+    protos = overview.get("protocols")
+    if isinstance(protos, list) and protos:
+        rows = []
+        for p in protos:
+            if not isinstance(p, dict):
+                continue
+            total = _fnum(p.get("total24h"))
+            if total is None:
+                continue
+            rows.append({
+                "name": p.get("displayName") or p.get("name"),
+                "slug": p.get("slug") or p.get("name"),
+                "total_24h": _round(total, 2),
+                "change_1d_pct": _round(_fnum(p.get("change_1d")), 3),
+            })
+        rows.sort(key=lambda r: -(r["total_24h"] or 0))
+        if rows:
+            return rows[:limit]
+    breakdown = overview.get("breakdown24h")
+    if isinstance(breakdown, dict) and breakdown:
+        rows = []
+        for chain_map in breakdown.values():
+            if isinstance(chain_map, dict):
+                for name, val in chain_map.items():
+                    v = _fnum(val[0] if isinstance(val, list) and val else val)
+                    if v is not None:
+                        rows.append({"name": name, "slug": name, "total_24h": _round(v, 2),
+                                     "change_1d_pct": None})
+        rows.sort(key=lambda r: -(r["total_24h"] or 0))
+        if rows:
+            return rows[:limit]
+    chart_bd = overview.get("totalDataChartBreakdown")
+    if isinstance(chart_bd, list) and chart_bd:
+        last = chart_bd[-1]
+        if isinstance(last, list) and len(last) == 2 and isinstance(last[1], dict):
+            rows = [{"name": k, "slug": k, "total_24h": _round(_fnum(v), 2),
+                     "change_1d_pct": None}
+                    for k, v in last[1].items() if _fnum(v) is not None]
+            rows.sort(key=lambda r: -(r["total_24h"] or 0))
+            return rows[:limit]
+    return []
+
+
+# ===== Pyth Hermes (feed directory — price updates are key-gated) =====
+
+async def _pyth_feeds(query=None, ttl=600):
+    params = {"asset_type": "crypto"}
+    if query:
+        params["query"] = query
+    return await _get_json(f"{PYTH_HERMES}/v2/price_feeds", params=params, ttl=ttl)
+
+
+def _trim_pyth_feed(f):
+    a = f.get("attributes") or {}
+    return {
+        "id": f.get("id"),
+        "symbol": a.get("symbol"),
+        "base": a.get("base"),
+        "quote_currency": a.get("quote_currency"),
+        "display_symbol": a.get("display_symbol"),
+        "asset_type": a.get("asset_type"),
+        "market_open": (f.get("market_hours") or {}).get("is_open"),
+    }
+
+
+# ===== SPL token helpers (RPC) =====
+
+async def _mint_info(mint):
+    """Parsed mint account info via getAccountInfo (jsonParsed)."""
+    res = await _rpc("getAccountInfo", [mint, {"encoding": "jsonParsed"}])
+    if _is_error(res):
+        return res
+    value = (res or {}).get("value")
+    if not value:
+        return {"error": "account not found", "mint": mint}
+    parsed = ((value.get("data") or {}).get("parsed") or {})
+    if parsed.get("type") != "mint":
+        return {"error": "account is not an SPL token mint", "mint": mint,
+                "owner_program": value.get("owner")}
+    return {"info": parsed.get("info") or {}, "owner_program": value.get("owner"),
+            "lamports": value.get("lamports")}
+
+
+async def _token_accounts_by_owner(owner, mint=None, program=None):
+    """getTokenAccountsByOwner (jsonParsed). Returns the value list.
+
+    The RPC filter map must contain a SINGLE key — {mint} XOR
+    {programId}; passing both is rejected ("expected map with a single
+    key"). When both are requested, query by mint (the canonical form;
+    the node resolves the mint's token program) and post-filter the
+    returned accounts by their owner program.
+    """
+    filt = {}
+    if mint:
+        filt["mint"] = mint
+    elif program:
+        filt["programId"] = program
+    res = await _rpc("getTokenAccountsByOwner", [owner, filt, {"encoding": "jsonParsed"}])
+    if _is_error(res):
+        return res
+    value = (res or {}).get("value") or []
+    if mint and program:
+        value = [e for e in value
+                 if (e.get("account") or {}).get("owner") == program]
+    return value
+
+
+def _trim_token_account(entry, program=None):
+    acct = entry.get("account") or {}
+    parsed = ((acct.get("data") or {}).get("parsed") or {})
+    info = parsed.get("info") or {}
+    amt = info.get("tokenAmount") or {}
+    return {
+        "account": entry.get("pubkey"),
+        "mint": info.get("mint"),
+        "owner": info.get("owner"),
+        "amount": amt.get("uiAmount"),
+        "amount_raw": amt.get("amount"),
+        "decimals": amt.get("decimals"),
+        "program": program,
+        "lamports": acct.get("lamports"),
+        "state": info.get("state"),
     }
 
 
@@ -313,121 +733,19 @@ def endpoint(path, price, description, category, tags, eid):
     return deco
 
 
-# ===== EXISTING v3 ENDPOINTS (same paths, same prices) =====
-
-@endpoint("/defi/gas-tracker", "$0.01",
-          "Current Base gas prices (slow/average/fast). $0.01 USDC per call.",
-          "gas", ["gas", "base", "l2", "pricing"], "gas-tracker")
-async def gas_tracker():
-    """Current Base gas prices (slow/average/fast). $0.01 USDC per call."""
-    block = w3.eth.get_block("latest")
-    base_fee = block.get("baseFeePerGas", 0)
-
-    return {
-        "base_fee_gwei": round(Web3.from_wei(base_fee, "gwei"), 2),
-        "slow": round(Web3.from_wei(int(base_fee * 1.0), "gwei"), 2),
-        "average": round(Web3.from_wei(int(base_fee * 1.2), "gwei"), 2),
-        "fast": round(Web3.from_wei(int(base_fee * 1.5), "gwei"), 2),
-        "block_number": block.number,
-        "timestamp": block.timestamp,
-    }
-
-
-@endpoint("/defi/token-price/{token_address}", "$0.01",
-          "Get token price via DEX liquidity pool analysis. $0.01 USDC per call.",
-          "defi", ["token", "base", "defi"], "token-price")
-async def token_price(token_address: str):
-    """Get token price via DEX liquidity pool analysis. $0.01 USDC per call."""
-    token = _checksum(token_address)
-
-    code = w3.eth.get_code(token)
-    if len(code) == 0:
-        return {"error": "Not a contract address"}
-
-    try:
-        symbol = _erc20_str(token, SEL_SYMBOL)
-        decimals = _erc20_uint(token, SEL_DECIMALS)
-        return {
-            "token": token,
-            "symbol": symbol,
-            "decimals": decimals,
-            "network": "base",
-            "note": "Price data requires DEX pool analysis (integrate Aerodrome/Uniswap subgraph)",
-        }
-    except Exception as e:
-        return {"error": str(e)[:200], "token": token}
-
-
-@endpoint("/defi/wallet-analyzer/{address}", "$0.01",
-          "Analyze wallet activity on Base. $0.01 USDC per call.",
-          "analytics", ["wallet", "base", "analytics"], "wallet-analyzer")
-async def wallet_analyzer(address: str):
-    """Analyze wallet activity on Base. $0.01 USDC per call."""
-    addr = _checksum(address)
-
-    balance = w3.eth.get_balance(addr)
-    tx_count = w3.eth.get_transaction_count(addr)
-
-    return {
-        "address": addr,
-        "eth_balance": float(Web3.from_wei(balance, "ether")),
-        "tx_count": tx_count,
-        "network": "base",
-        "is_contract": len(w3.eth.get_code(addr)) > 0,
-        "analysis": "Basic wallet scan. Full token portfolio requires Alchemy API integration.",
-    }
-
-
-@endpoint("/defi/token-security/{token_address}", "$0.02",
-          "Quick token security check on Base. $0.02 USDC per call.",
-          "security", ["token", "security", "base"], "token-security")
-async def token_security(token_address: str):
-    """Quick token security check on Base. $0.02 USDC per call."""
-    token = _checksum(token_address)
-
-    code = w3.eth.get_code(token)
-    code_len = len(code)
-
-    checks = {
-        "is_contract": code_len > 0,
-        "code_size": code_len,
-        "has_code": code_len > 100,
-        "risk_flags": [],
-    }
-
-    if code_len == 0:
-        checks["risk_flags"].append("NO_CONTRACT_CODE")
-    if code_len < 200:
-        checks["risk_flags"].append("VERY_SMALL_CONTRACT")
-
-    code_hex = code.hex() if code_len > 0 else ""
-    dangerous_funcs = ["selfdestruct", "delegatecall"]
-    for func in dangerous_funcs:
-        if func in code_hex.lower():
-            checks["risk_flags"].append(f"HAS_{func.upper()}")
-
-    risk_score = len(checks["risk_flags"]) * 25  # 0-100 scale
-    checks["risk_score"] = min(risk_score, 100)
-    checks["risk_level"] = "LOW" if risk_score < 25 else "MEDIUM" if risk_score < 50 else "HIGH"
-
-    return {
-        "token": token,
-        "network": "base",
-        "checks": checks,
-        "note": "This is a basic static analysis. Full security scan requires GoPlus Security API integration.",
-    }
-
+# ===== SERVICE STATUS =====
 
 @endpoint("/mcp/status", "$0.01",
-          "MCP server status. $0.01 USDC per call.",
-          "status", ["status", "mcp"], "mcp-status")
+          "MCP server status for the Solana x402 service. $0.01 USDC per call.",
+          "status", ["status", "mcp", "solana"], "mcp-status")
 async def mcp_status():
-    return {"status": "online", "version": "5.0", "endpoints": 200, "network": "base", "x402_version": "2.9.0"}
+    return {"status": "online", "version": "5.0", "endpoints": len(REGISTRY) + 1,
+            "network": "solana", "data_chain": "solana", "x402_version": "2.9.0"}
 
 
 @endpoint("/mcp/tools", "$0.01",
-          "MCP tools list. $0.01 USDC per call.",
-          "status", ["tools", "mcp"], "mcp-tools")
+          "MCP tools list for the Solana x402 service. $0.01 USDC per call.",
+          "status", ["tools", "mcp", "solana"], "mcp-tools")
 async def mcp_tools():
     # Generated from the registry at request time, so it always matches
     # the live route set.
@@ -436,4070 +754,4492 @@ async def mcp_tools():
             {"name": e["id"], "price": e["price"].lstrip("$"), "endpoint": e["path"]}
             for e in REGISTRY
         ],
-        "pricing_model": "per_call_usdc_on_base",
+        "pricing_model": "per_call_usdc_on_solana",
         "wallet": WALLET_ADDRESS,
         "x402_version": "2.9.0",
     }
 
-# ===== TOKEN DATA (Dexscreener + on-chain ERC20) =====
 
-@endpoint("/tokens/{address}/price", "$0.01",
-          "Live USD price of a Base token from DEX pairs. $0.01 USDC per call.",
-          "token", ["token", "price", "base"], "token-live-price")
-async def token_live_price(address: str):
-    pairs = await _dex_pairs_for_token(_checksum(address))
-    if isinstance(pairs, dict):
+# ===== CHAIN (Solana RPC) =====
+
+@endpoint("/chain/slot", "$0.01",
+          "Current Solana slot (finalized). $0.01 USDC per call.",
+          "chain", ["chain", "slot", "solana"], "chain-slot")
+async def chain_slot():
+    slot = await _rpc("getSlot", [{"commitment": "finalized"}])
+    if _is_error(slot):
+        return slot
+    height = await _rpc("getBlockHeight", [{"commitment": "finalized"}])
+    return {"slot": slot, "block_height": height if not _is_error(height) else None,
+            "network": "solana"}
+
+
+@endpoint("/chain/block/latest", "$0.01",
+          "Latest finalized Solana block summary: hash, height, time, transaction count. $0.01 USDC per call.",
+          "chain", ["chain", "block", "solana"], "chain-block-latest")
+async def chain_block_latest():
+    slot = await _rpc("getSlot", [{"commitment": "finalized"}])
+    if _is_error(slot):
+        return slot
+    block = await _rpc("getBlock", [slot, {"encoding": "json",
+                                           "transactionDetails": "signatures",
+                                           "rewards": False,
+                                           "maxSupportedTransactionVersion": 0}])
+    if _is_error(block) or not block:
+        return block if _is_error(block) else {"error": "block not available", "slot": slot}
+    sigs = block.get("signatures") or []
+    return {
+        "slot": slot,
+        "block_height": block.get("blockHeight"),
+        "blockhash": block.get("blockhash"),
+        "parent_slot": block.get("parentSlot"),
+        "previous_blockhash": block.get("previousBlockhash"),
+        "block_time": block.get("blockTime"),
+        "transaction_count": len(sigs),
+        "first_signatures": sigs[:5],
+        "network": "solana",
+    }
+
+
+@endpoint("/chain/block/{slot}", "$0.01",
+          "One Solana block by slot: hash, height, time, parent, transaction count and sample signatures. $0.01 USDC per call.",
+          "chain", ["chain", "block", "solana"], "chain-block")
+async def chain_block(slot: int):
+    block = await _rpc("getBlock", [slot, {"encoding": "json",
+                                           "transactionDetails": "signatures",
+                                           "rewards": False,
+                                           "maxSupportedTransactionVersion": 0}])
+    if _is_error(block):
+        return block
+    if not block:
+        return {"error": "block not available (pruned or skipped slot)", "slot": slot}
+    sigs = block.get("signatures") or []
+    return {
+        "slot": slot,
+        "block_height": block.get("blockHeight"),
+        "blockhash": block.get("blockhash"),
+        "parent_slot": block.get("parentSlot"),
+        "previous_blockhash": block.get("previousBlockhash"),
+        "block_time": block.get("blockTime"),
+        "transaction_count": len(sigs),
+        "signatures": sigs[:25],
+        "network": "solana",
+    }
+
+
+@endpoint("/chain/block/{slot}/signatures", "$0.01",
+          "Transaction signatures included in one Solana block (first 50 plus total count). $0.01 USDC per call.",
+          "chain", ["chain", "block", "signatures"], "chain-block-signatures")
+async def chain_block_signatures(slot: int):
+    block = await _rpc("getBlock", [slot, {"encoding": "json",
+                                           "transactionDetails": "signatures",
+                                           "rewards": False,
+                                           "maxSupportedTransactionVersion": 0}])
+    if _is_error(block):
+        return block
+    if not block:
+        return {"error": "block not available (pruned or skipped slot)", "slot": slot}
+    sigs = block.get("signatures") or []
+    return {"slot": slot, "count": len(sigs), "signatures": sigs[:50], "network": "solana"}
+
+
+@endpoint("/chain/block-time/{slot}", "$0.01",
+          "Estimated Unix timestamp of one Solana slot (getBlockTime). $0.01 USDC per call.",
+          "chain", ["chain", "block", "time"], "chain-block-time")
+async def chain_block_time(slot: int):
+    t = await _rpc("getBlockTime", [slot])
+    if _is_error(t):
+        return t
+    return {"slot": slot, "block_time": t, "network": "solana",
+            "note": None if t is not None else "no block was produced at this slot"}
+
+
+@endpoint("/chain/blocks/recent", "$0.01",
+          "The most recent slots that produced blocks on Solana (getBlocksWithLimit). $0.01 USDC per call.",
+          "chain", ["chain", "blocks", "recent"], "chain-blocks-recent")
+async def chain_blocks_recent():
+    slot = await _rpc("getSlot", [{"commitment": "finalized"}])
+    if _is_error(slot):
+        return slot
+    start = max(slot - 1000, 0)
+    blocks = await _rpc("getBlocksWithLimit", [start, 25])
+    if _is_error(blocks):
+        return blocks
+    return {"current_slot": slot, "recent_block_slots": blocks,
+            "count": len(blocks or []), "network": "solana"}
+
+
+@endpoint("/chain/block-production", "$0.01",
+          "Solana block production for the current epoch: validator count, blocks produced, leader slots, top producers. $0.01 USDC per call.",
+          "chain", ["chain", "validators", "blocks"], "chain-block-production")
+async def chain_block_production():
+    res = await _rpc("getBlockProduction", [])
+    if _is_error(res):
+        return res
+    value = (res or {}).get("value") or {}
+    by_id = value.get("byIdentity") or {}
+    rows = [{"identity": k, "leader_slots": v[0], "blocks_produced": v[1]}
+            for k, v in by_id.items() if isinstance(v, list) and len(v) == 2]
+    rows.sort(key=lambda r: -r["blocks_produced"])
+    return {
+        "range": value.get("range"),
+        "validator_count": len(rows),
+        "total_blocks_produced": sum(r["blocks_produced"] for r in rows),
+        "total_leader_slots": sum(r["leader_slots"] for r in rows),
+        "top_producers": rows[:5],
+        "network": "solana",
+    }
+
+
+@endpoint("/chain/block-production/{identity}", "$0.01",
+          "Block production of one Solana validator identity in the current epoch. $0.01 USDC per call.",
+          "chain", ["chain", "validators", "blocks"], "chain-block-production-validator")
+async def chain_block_production_validator(identity: str):
+    if not _is_sol_address(identity):
+        return _err_addr("identity")
+    res = await _rpc("getBlockProduction", [{"identity": identity}])
+    if _is_error(res):
+        return res
+    value = (res or {}).get("value") or {}
+    entry = (value.get("byIdentity") or {}).get(identity)
+    return {
+        "identity": identity,
+        "range": value.get("range"),
+        "leader_slots": entry[0] if entry else 0,
+        "blocks_produced": entry[1] if entry else 0,
+        "network": "solana",
+    }
+
+
+@endpoint("/chain/epoch/info", "$0.01",
+          "Current Solana epoch info: epoch, absolute slot, slot index, slots in epoch, block height, transaction count. $0.01 USDC per call.",
+          "chain", ["chain", "epoch", "solana"], "chain-epoch-info")
+async def chain_epoch_info():
+    info = await _rpc("getEpochInfo", [])
+    if _is_error(info):
+        return info
+    info = dict(info or {})
+    info["network"] = "solana"
+    return info
+
+
+@endpoint("/chain/epoch/schedule", "$0.01",
+          "Solana epoch schedule: slots per epoch, leader schedule offset, warmup, first normal epoch/slot. $0.01 USDC per call.",
+          "chain", ["chain", "epoch", "schedule"], "chain-epoch-schedule")
+async def chain_epoch_schedule():
+    sched = await _rpc("getEpochSchedule", [])
+    if _is_error(sched):
+        return sched
+    sched = dict(sched or {})
+    sched["network"] = "solana"
+    return sched
+
+
+@endpoint("/chain/epoch/progress", "$0.01",
+          "Progress through the current Solana epoch: percent complete, slots remaining, estimated time to epoch end. $0.01 USDC per call.",
+          "chain", ["chain", "epoch", "progress"], "chain-epoch-progress")
+async def chain_epoch_progress():
+    info = await _rpc("getEpochInfo", [])
+    if _is_error(info):
+        return info
+    samples = await _rpc("getRecentPerformanceSamples", [12])
+    slot_secs = None
+    if not _is_error(samples) and samples:
+        tot_slots = sum(s.get("numSlots") or 0 for s in samples)
+        tot_secs = sum(s.get("samplePeriodSecs") or 0 for s in samples)
+        if tot_slots and tot_secs:
+            slot_secs = tot_secs / tot_slots
+    idx = info.get("slotIndex") or 0
+    total = info.get("slotsInEpoch") or 432000
+    remaining = total - idx
+    return {
+        "epoch": info.get("epoch"),
+        "slot_index": idx,
+        "slots_in_epoch": total,
+        "percent_complete": round(100.0 * idx / total, 3) if total else None,
+        "slots_remaining": remaining,
+        "avg_slot_seconds": _round(slot_secs, 4),
+        "estimated_seconds_remaining": int(remaining * slot_secs) if slot_secs else None,
+        "estimated_end_unix": int(time.time() + remaining * slot_secs) if slot_secs else None,
+        "network": "solana",
+    }
+
+
+@endpoint("/chain/leader-schedule/{epoch}", "$0.01",
+          "Leader schedule summary for one Solana epoch: validator count, total leader slots, top leaders. $0.01 USDC per call.",
+          "chain", ["chain", "epoch", "leaders"], "chain-leader-schedule")
+async def chain_leader_schedule(epoch: int):
+    sched = await _rpc("getEpochSchedule", [])
+    if _is_error(sched):
+        return sched
+    slots_per_epoch = sched.get("slotsPerEpoch") or 432000
+    first_normal_slot = sched.get("firstNormalSlot") or 0
+    first_slot = first_normal_slot + epoch * slots_per_epoch
+    res = await _rpc("getLeaderSchedule", [first_slot, {"commitment": "finalized"}])
+    if _is_error(res):
+        return res
+    if not res:
+        return {"error": "no leader schedule available for epoch", "epoch": epoch}
+    rows = [{"identity": k, "leader_slots": len(v)} for k, v in res.items()]
+    rows.sort(key=lambda r: -r["leader_slots"])
+    return {
+        "epoch": epoch,
+        "epoch_first_slot": first_slot,
+        "validator_count": len(rows),
+        "total_leader_slots": sum(r["leader_slots"] for r in rows),
+        "top_leaders": rows[:10],
+        "network": "solana",
+    }
+
+
+@endpoint("/chain/slot-leaders/{start}/{limit}", "$0.01",
+          "Solana slot leaders starting at a slot (limit capped at 100). $0.01 USDC per call.",
+          "chain", ["chain", "leaders", "slots"], "chain-slot-leaders")
+async def chain_slot_leaders(start: int, limit: int):
+    limit = max(1, min(limit, 100))
+    leaders = await _rpc("getSlotLeaders", [start, limit])
+    if _is_error(leaders):
+        return leaders
+    return {"start_slot": start, "count": len(leaders or []),
+            "leaders": leaders, "network": "solana"}
+
+
+@endpoint("/chain/supply", "$0.01",
+          "Solana supply: total, circulating and non-circulating SOL (non-circulating account list replaced by its count). $0.01 USDC per call.",
+          "chain", ["chain", "supply", "sol"], "chain-supply")
+async def chain_supply():
+    res = await _rpc("getSupply", [{"excludeNonCirculatingAccountsList": True}])
+    if _is_error(res):
+        # Some nodes ignore the exclude flag; retry plain and trim locally.
+        res = await _rpc("getSupply", [])
+        if _is_error(res):
+            return res
+    value = (res or {}).get("value") or {}
+    accounts = value.get("nonCirculatingAccounts") or []
+    total = value.get("total")
+    circ = value.get("circulating")
+    return {
+        "total_lamports": total,
+        "total_sol": _round(_sol(total), 2),
+        "circulating_lamports": circ,
+        "circulating_sol": _round(_sol(circ), 2),
+        "non_circulating_lamports": value.get("nonCirculating"),
+        "non_circulating_sol": _round(_sol(value.get("nonCirculating")), 2),
+        "non_circulating_accounts": len(accounts),
+        "circulating_percent": round(100.0 * circ / total, 3) if total and circ else None,
+        "network": "solana",
+    }
+
+
+@endpoint("/chain/supply/circulating", "$0.01",
+          "Circulating SOL supply with its USD value at the live SOL price. $0.01 USDC per call.",
+          "chain", ["chain", "supply", "circulating"], "chain-supply-circulating")
+async def chain_supply_circulating():
+    res = await _rpc("getSupply", [{"excludeNonCirculatingAccountsList": True}])
+    if _is_error(res):
+        res = await _rpc("getSupply", [])
+        if _is_error(res):
+            return res
+    value = (res or {}).get("value") or {}
+    circ_sol = _sol(value.get("circulating"))
+    price = await _sol_price_usd()
+    return {
+        "circulating_sol": _round(circ_sol, 2),
+        "sol_price_usd": _round(price, 4),
+        "circulating_value_usd": _round(circ_sol * price, 2) if circ_sol and price else None,
+        "network": "solana",
+    }
+
+
+@endpoint("/chain/inflation", "$0.01",
+          "Current Solana inflation rate: total, validator and foundation percentages for the current epoch. $0.01 USDC per call.",
+          "chain", ["chain", "inflation", "sol"], "chain-inflation")
+async def chain_inflation():
+    rate = await _rpc("getInflationRate", [])
+    if _is_error(rate):
+        return rate
+    rate = dict(rate or {})
+    rate["network"] = "solana"
+    return rate
+
+
+@endpoint("/chain/inflation/governor", "$0.01",
+          "Solana inflation governor parameters: initial, terminal, taper, foundation percent and term. $0.01 USDC per call.",
+          "chain", ["chain", "inflation", "governor"], "chain-inflation-governor")
+async def chain_inflation_governor():
+    gov = await _rpc("getInflationGovernor", [])
+    if _is_error(gov):
+        return gov
+    gov = dict(gov or {})
+    gov["network"] = "solana"
+    return gov
+
+
+@endpoint("/chain/performance", "$0.01",
+          "Latest Solana performance sample: transactions per second over the most recent sample window. $0.01 USDC per call.",
+          "chain", ["chain", "performance", "tps"], "chain-performance")
+async def chain_performance():
+    samples = await _rpc("getRecentPerformanceSamples", [1])
+    if _is_error(samples):
+        return samples
+    if not samples:
+        return {"error": "no performance samples returned"}
+    s = samples[0]
+    secs = s.get("samplePeriodSecs") or 0
+    return {
+        "slot": s.get("slot"),
+        "sample_period_secs": secs,
+        "num_slots": s.get("numSlots"),
+        "num_transactions": s.get("numTransactions"),
+        "num_non_vote_transactions": s.get("numNonVoteTransactions"),
+        "tps": round(s["numTransactions"] / secs, 2) if secs else None,
+        "non_vote_tps": round(s["numNonVoteTransactions"] / secs, 2) if secs else None,
+        "network": "solana",
+    }
+
+
+@endpoint("/chain/performance/{limit}", "$0.01",
+          "Recent Solana performance samples with average TPS (limit capped at 60). $0.01 USDC per call.",
+          "chain", ["chain", "performance", "tps"], "chain-performance-history")
+async def chain_performance_history(limit: int):
+    limit = max(1, min(limit, 60))
+    samples = await _rpc("getRecentPerformanceSamples", [limit])
+    if _is_error(samples):
+        return samples
+    rows = []
+    tps_vals = []
+    for s in samples or []:
+        secs = s.get("samplePeriodSecs") or 0
+        tps = round(s["numTransactions"] / secs, 2) if secs and s.get("numTransactions") is not None else None
+        if tps is not None:
+            tps_vals.append(tps)
+        rows.append({"slot": s.get("slot"), "num_slots": s.get("numSlots"),
+                     "num_transactions": s.get("numTransactions"),
+                     "num_non_vote_transactions": s.get("numNonVoteTransactions"),
+                     "sample_period_secs": secs, "tps": tps})
+    return {
+        "samples": rows,
+        "count": len(rows),
+        "avg_tps": round(sum(tps_vals) / len(tps_vals), 2) if tps_vals else None,
+        "network": "solana",
+    }
+
+
+@endpoint("/chain/version", "$0.01",
+          "Solana cluster software version and feature set of the RPC node. $0.01 USDC per call.",
+          "chain", ["chain", "version", "node"], "chain-version")
+async def chain_version():
+    v = await _rpc("getVersion", [])
+    if _is_error(v):
+        return v
+    return {"solana_core": (v or {}).get("solana-core"),
+            "feature_set": (v or {}).get("feature-set"), "network": "solana"}
+
+
+@endpoint("/chain/cluster-nodes", "$0.01",
+          "Solana cluster nodes summary: node count, nodes with RPC, version histogram, sample nodes. $0.01 USDC per call.",
+          "chain", ["chain", "nodes", "cluster"], "chain-cluster-nodes")
+async def chain_cluster_nodes():
+    nodes = await _rpc("getClusterNodes", [])
+    if _is_error(nodes):
+        return nodes
+    nodes = nodes or []
+    versions = {}
+    for n in nodes:
+        ver = n.get("version") or "unknown"
+        versions[ver] = versions.get(ver, 0) + 1
+    top_versions = sorted(versions.items(), key=lambda kv: -kv[1])[:5]
+    return {
+        "node_count": len(nodes),
+        "nodes_with_rpc": sum(1 for n in nodes if n.get("rpc")),
+        "versions": [{"version": v, "nodes": c} for v, c in top_versions],
+        "sample": [{"pubkey": n.get("pubkey"), "gossip": n.get("gossip"),
+                    "version": n.get("version")} for n in nodes[:10]],
+        "network": "solana",
+    }
+
+
+@endpoint("/chain/vote-accounts", "$0.01",
+          "Solana validator vote accounts summary: current and delinquent counts, total activated stake, largest validator share. $0.01 USDC per call.",
+          "chain", ["chain", "validators", "stake"], "chain-vote-accounts")
+async def chain_vote_accounts():
+    res = await _rpc("getVoteAccounts", [])
+    if _is_error(res):
+        return res
+    current = (res or {}).get("current") or []
+    delinquent = (res or {}).get("delinquent") or []
+    total_stake = sum(v.get("activatedStake") or 0 for v in current)
+    top = max(current, key=lambda v: v.get("activatedStake") or 0) if current else None
+    return {
+        "current_validators": len(current),
+        "delinquent_validators": len(delinquent),
+        "total_activated_stake_sol": _round(_sol(total_stake), 2),
+        "largest_validator": {
+            "vote_pubkey": top.get("votePubkey"),
+            "node_pubkey": top.get("nodePubkey"),
+            "stake_sol": _round(_sol(top.get("activatedStake")), 2),
+            "share_percent": round(100.0 * (top.get("activatedStake") or 0) / total_stake, 3) if total_stake else None,
+        } if top else None,
+        "network": "solana",
+    }
+
+
+@endpoint("/chain/vote-accounts/current", "$0.01",
+          "Top 20 current Solana validators by activated stake: vote account, node identity, stake, commission, last vote. $0.01 USDC per call.",
+          "chain", ["chain", "validators", "stake"], "chain-vote-accounts-current")
+async def chain_vote_accounts_current():
+    res = await _rpc("getVoteAccounts", [])
+    if _is_error(res):
+        return res
+    current = sorted((res or {}).get("current") or [],
+                     key=lambda v: -(v.get("activatedStake") or 0))[:20]
+    return {
+        "validators": [{
+            "vote_pubkey": v.get("votePubkey"),
+            "node_pubkey": v.get("nodePubkey"),
+            "stake_sol": _round(_sol(v.get("activatedStake")), 4),
+            "commission": v.get("commission"),
+            "last_vote": v.get("lastVote"),
+            "root_slot": v.get("rootSlot"),
+        } for v in current],
+        "count": len(current),
+        "network": "solana",
+    }
+
+
+@endpoint("/chain/vote-accounts/delinquent", "$0.01",
+          "Delinquent Solana validators: count and the 20 with the most stake at risk. $0.01 USDC per call.",
+          "chain", ["chain", "validators", "delinquent"], "chain-vote-accounts-delinquent")
+async def chain_vote_accounts_delinquent():
+    res = await _rpc("getVoteAccounts", [])
+    if _is_error(res):
+        return res
+    delinquent = sorted((res or {}).get("delinquent") or [],
+                        key=lambda v: -(v.get("activatedStake") or 0))
+    return {
+        "delinquent_count": len(delinquent),
+        "validators": [{
+            "vote_pubkey": v.get("votePubkey"),
+            "node_pubkey": v.get("nodePubkey"),
+            "stake_sol": _round(_sol(v.get("activatedStake")), 4),
+            "commission": v.get("commission"),
+            "last_vote": v.get("lastVote"),
+        } for v in delinquent[:20]],
+        "network": "solana",
+    }
+
+
+@endpoint("/chain/block-commitment/{slot}", "$0.01",
+          "Block commitment for one Solana slot: per-cluster stake commitment levels and total active stake. $0.01 USDC per call.",
+          "chain", ["chain", "block", "commitment"], "chain-block-commitment")
+async def chain_block_commitment(slot: int):
+    res = await _rpc("getBlockCommitment", [slot])
+    if _is_error(res):
+        return res
+    commitment = (res or {}).get("commitment")
+    return {
+        "slot": slot,
+        "total_stake_lamports": (res or {}).get("totalStake"),
+        "total_stake_sol": _round(_sol((res or {}).get("totalStake")), 2),
+        "commitment_levels": commitment,
+        "note": None if commitment else "commitment is only tracked for recent slots",
+        "network": "solana",
+    }
+
+
+@endpoint("/chain/prioritization-fees", "$0.01",
+          "Recent Solana prioritization fees (micro-lamports per compute unit): min, median, p75, p90, max across recent slots. $0.01 USDC per call.",
+          "chain", ["chain", "fees", "priority"], "chain-prioritization-fees")
+async def chain_prioritization_fees():
+    fees = await _rpc("getRecentPrioritizationFees", [])
+    if _is_error(fees):
+        return fees
+    vals = sorted(f.get("prioritizationFee") or 0 for f in (fees or []))
+    if not vals:
+        return {"error": "no prioritization fee data returned"}
+    def pct(p):
+        return vals[min(len(vals) - 1, int(len(vals) * p))]
+    nonzero = [v for v in vals if v > 0]
+    return {
+        "slots_sampled": len(vals),
+        "min_micro_lamports": vals[0],
+        "median_micro_lamports": vals[len(vals) // 2],
+        "p75_micro_lamports": pct(0.75),
+        "p90_micro_lamports": pct(0.90),
+        "max_micro_lamports": vals[-1],
+        "slots_with_fees_percent": round(100.0 * len(nonzero) / len(vals), 1),
+        "network": "solana",
+    }
+
+
+@endpoint("/chain/prioritization-fees/{address}", "$0.01",
+          "Recent prioritization fees for transactions writing to one Solana account: median, p90 and max. $0.01 USDC per call.",
+          "chain", ["chain", "fees", "priority"], "chain-prioritization-fees-account")
+async def chain_prioritization_fees_account(address: str):
+    if not _is_sol_address(address):
+        return _err_addr()
+    fees = await _rpc("getRecentPrioritizationFees", [[address]])
+    if _is_error(fees):
+        return fees
+    vals = sorted(f.get("prioritizationFee") or 0 for f in (fees or []))
+    if not vals:
+        return {"error": "no prioritization fee data for account", "address": address}
+    return {
+        "address": address,
+        "slots_sampled": len(vals),
+        "median_micro_lamports": vals[len(vals) // 2],
+        "p90_micro_lamports": vals[min(len(vals) - 1, int(len(vals) * 0.9))],
+        "max_micro_lamports": vals[-1],
+        "network": "solana",
+    }
+
+
+@endpoint("/chain/minimum-ledger-slot", "$0.01",
+          "Minimum ledger slot still available on the Solana RPC node. $0.01 USDC per call.",
+          "chain", ["chain", "ledger", "slot"], "chain-minimum-ledger-slot")
+async def chain_minimum_ledger_slot():
+    slot = await _rpc("minimumLedgerSlot", [])
+    if _is_error(slot):
+        return slot
+    return {"minimum_ledger_slot": slot, "network": "solana"}
+
+
+@endpoint("/chain/genesis-hash", "$0.01",
+          "Solana mainnet genesis hash. $0.01 USDC per call.",
+          "chain", ["chain", "genesis"], "chain-genesis-hash")
+async def chain_genesis_hash():
+    h = await _rpc("getGenesisHash", [])
+    if _is_error(h):
+        return h
+    return {"genesis_hash": h, "network": "solana"}
+
+
+@endpoint("/chain/identity", "$0.01",
+          "Identity public key of the Solana RPC node answering. $0.01 USDC per call.",
+          "chain", ["chain", "node", "identity"], "chain-identity")
+async def chain_identity():
+    res = await _rpc("getIdentity", [])
+    if _is_error(res):
+        return res
+    return {"identity": (res or {}).get("identity"), "network": "solana"}
+
+
+@endpoint("/chain/health", "$0.01",
+          "Solana cluster health as reported by the RPC node (getHealth). $0.01 USDC per call.",
+          "chain", ["chain", "health", "node"], "chain-health")
+async def chain_health():
+    h = await _rpc("getHealth", [])
+    if _is_error(h):
+        return h
+    return {"health": h, "network": "solana"}
+
+
+@endpoint("/chain/snapshot-slot", "$0.01",
+          "Highest full and incremental snapshot slots on the Solana RPC node. $0.01 USDC per call.",
+          "chain", ["chain", "snapshot", "node"], "chain-snapshot-slot")
+async def chain_snapshot_slot():
+    res = await _rpc("getHighestSnapshotSlot", [])
+    if _is_error(res):
+        return res
+    return {"full": (res or {}).get("full"),
+            "incremental": (res or {}).get("incremental"), "network": "solana"}
+
+
+@endpoint("/chain/transaction-count", "$0.01",
+          "Total transaction count processed by the Solana cluster. $0.01 USDC per call.",
+          "chain", ["chain", "transactions", "count"], "chain-transaction-count")
+async def chain_transaction_count():
+    n = await _rpc("getTransactionCount", [])
+    if _is_error(n):
+        return n
+    return {"transaction_count": n, "network": "solana"}
+
+
+@endpoint("/chain/stake-activation/{address}", "$0.01",
+          "Activation state of one Solana stake account, computed from its on-chain delegation epochs (the legacy getStakeActivation RPC was removed). $0.01 USDC per call.",
+          "chain", ["chain", "stake", "activation"], "chain-stake-activation")
+async def chain_stake_activation(address: str):
+    if not _is_sol_address(address):
+        return _err_addr("stake account")
+    res = await _rpc("getAccountInfo", [address, {"encoding": "jsonParsed"}])
+    if _is_error(res):
+        return res
+    value = (res or {}).get("value")
+    if not value:
+        return {"error": "account not found", "address": address}
+    if value.get("owner") != STAKE_PROGRAM:
+        return {"error": "account is not a stake account", "address": address,
+                "owner_program": value.get("owner")}
+    parsed = ((value.get("data") or {}).get("parsed") or {})
+    info = parsed.get("info") or {}
+    stake = info.get("stake")
+    epoch_info = await _rpc("getEpochInfo", [])
+    epoch = epoch_info.get("epoch") if isinstance(epoch_info, dict) else None
+    if not stake:
+        return {"address": address, "state": "initialized",
+                "note": "stake account exists but has no delegation",
+                "lamports": value.get("lamports"), "network": "solana"}
+    delegation = stake.get("delegation") or {}
+    act_epoch = delegation.get("activationEpoch")
+    deact_epoch = delegation.get("deactivationEpoch")
+    stake_lamports = delegation.get("stake")
+    if deact_epoch is not None and deact_epoch != U64_MAX:
+        state = "deactivating" if (epoch is not None and deact_epoch > epoch) else "inactive"
+    elif act_epoch is not None and epoch is not None:
+        if act_epoch < epoch:
+            state = "active"
+        elif act_epoch == epoch:
+            state = "activating"
+        else:
+            state = "inactive"
+    else:
+        state = "unknown"
+    return {
+        "address": address,
+        "state": state,
+        "current_epoch": epoch,
+        "activation_epoch": act_epoch,
+        "deactivation_epoch": None if deact_epoch == U64_MAX else deact_epoch,
+        "delegated_stake_lamports": stake_lamports,
+        "delegated_stake_sol": _round(_sol(stake_lamports), 6),
+        "voter_pubkey": delegation.get("voterPubkey"),
+        "account_lamports": value.get("lamports"),
+        "network": "solana",
+    }
+
+
+@endpoint("/chain/rent/{size}", "$0.01",
+          "Minimum balance for rent exemption for a Solana account of the given data size in bytes. $0.01 USDC per call.",
+          "chain", ["chain", "rent", "lamports"], "chain-rent")
+async def chain_rent(size: int):
+    lamports = await _rpc("getMinimumBalanceForRentExemption", [size])
+    if _is_error(lamports):
+        return lamports
+    return {"data_bytes": size, "lamports": lamports,
+            "sol": _round(_sol(lamports), 9), "network": "solana"}
+
+
+# ===== TOKENS (SPL mints + Jupiter + Dexscreener + GeckoTerminal) =====
+
+@endpoint("/tokens/{mint}/supply", "$0.01",
+          "Live SPL token supply for one Solana mint (getTokenSupply): raw amount, decimals, formatted supply. $0.01 USDC per call.",
+          "token", ["token", "supply", "spl"], "token-supply")
+async def token_supply(mint: str):
+    if not _is_sol_address(mint):
+        return _err_addr("mint")
+    res = await _rpc("getTokenSupply", [mint])
+    if _is_error(res):
+        return res
+    value = (res or {}).get("value") or {}
+    return {
+        "mint": mint,
+        "amount_raw": value.get("amount"),
+        "decimals": value.get("decimals"),
+        "supply": value.get("uiAmount"),
+        "supply_string": value.get("uiAmountString"),
+        "network": "solana",
+    }
+
+
+@endpoint("/tokens/{mint}/info", "$0.01",
+          "SPL mint account info: decimals, supply, mint authority, freeze authority, token program. $0.01 USDC per call.",
+          "token", ["token", "mint", "spl"], "token-info")
+async def token_info(mint: str):
+    if not _is_sol_address(mint):
+        return _err_addr("mint")
+    res = await _mint_info(mint)
+    if _is_error(res):
+        return res
+    info = res["info"]
+    supply_raw = _fnum(info.get("supply"))
+    decimals = info.get("decimals")
+    supply_ui = supply_raw / (10 ** decimals) if supply_raw is not None and decimals is not None else None
+    return {
+        "mint": mint,
+        "decimals": decimals,
+        "supply_raw": info.get("supply"),
+        "supply": supply_ui,
+        "mint_authority": info.get("mintAuthority"),
+        "freeze_authority": info.get("freezeAuthority"),
+        "is_initialized": info.get("isInitialized"),
+        "token_program": res.get("owner_program"),
+        "network": "solana",
+    }
+
+
+@endpoint("/tokens/{mint}/decimals", "$0.01",
+          "Decimals and initialization state of one SPL mint. $0.01 USDC per call.",
+          "token", ["token", "decimals", "spl"], "token-decimals")
+async def token_decimals(mint: str):
+    if not _is_sol_address(mint):
+        return _err_addr("mint")
+    res = await _mint_info(mint)
+    if _is_error(res):
+        return res
+    return {"mint": mint, "decimals": res["info"].get("decimals"),
+            "is_initialized": res["info"].get("isInitialized"), "network": "solana"}
+
+
+@endpoint("/tokens/{mint}/authorities", "$0.01",
+          "Mint and freeze authorities of one SPL token (null means the authority is revoked). $0.01 USDC per call.",
+          "token", ["token", "authority", "spl"], "token-authorities")
+async def token_authorities(mint: str):
+    if not _is_sol_address(mint):
+        return _err_addr("mint")
+    res = await _mint_info(mint)
+    if _is_error(res):
+        return res
+    info = res["info"]
+    return {
+        "mint": mint,
+        "mint_authority": info.get("mintAuthority"),
+        "mint_authority_revoked": info.get("mintAuthority") is None,
+        "freeze_authority": info.get("freezeAuthority"),
+        "freeze_authority_revoked": info.get("freezeAuthority") is None,
+        "network": "solana",
+    }
+
+
+@endpoint("/tokens/{mint}/largest-accounts", "$0.01",
+          "Largest accounts holding one SPL token (getTokenLargestAccounts): top 20 token accounts with balances and share of supply. $0.01 USDC per call.",
+          "token", ["token", "holders", "spl"], "token-largest-accounts")
+async def token_largest_accounts(mint: str):
+    if not _is_sol_address(mint):
+        return _err_addr("mint")
+    res = await _rpc("getTokenLargestAccounts", [mint])
+    if _is_error(res):
+        return res
+    value = (res or {}).get("value") or []
+    supply_res = await _rpc("getTokenSupply", [mint])
+    supply_raw = None
+    if not _is_error(supply_res):
+        supply_raw = _fnum(((supply_res or {}).get("value") or {}).get("amount"))
+    rows = []
+    for a in value:
+        raw = _fnum(a.get("amount"))
+        rows.append({
+            "account": a.get("address"),
+            "amount": a.get("uiAmount"),
+            "amount_raw": a.get("amount"),
+            "decimals": a.get("decimals"),
+            "share_percent": round(100.0 * raw / supply_raw, 4) if raw is not None and supply_raw else None,
+        })
+    return {"mint": mint, "accounts": rows, "count": len(rows), "network": "solana"}
+
+
+@endpoint("/tokens/{mint}/holders/concentration", "$0.02",
+          "Holder concentration of one SPL token: share of supply held by the top 1, 5, 10 and 20 accounts. $0.02 USDC per call.",
+          "token", ["token", "holders", "concentration"], "token-holder-concentration")
+async def token_holder_concentration(mint: str):
+    if not _is_sol_address(mint):
+        return _err_addr("mint")
+    res = await _rpc("getTokenLargestAccounts", [mint])
+    if _is_error(res):
+        return res
+    value = (res or {}).get("value") or []
+    supply_res = await _rpc("getTokenSupply", [mint])
+    if _is_error(supply_res):
+        return supply_res
+    svalue = (supply_res or {}).get("value") or {}
+    supply_raw = _fnum(svalue.get("amount"))
+    amounts = [_fnum(a.get("amount")) or 0 for a in value]
+    def share(n):
+        if not supply_raw:
+            return None
+        return round(100.0 * sum(amounts[:n]) / supply_raw, 4)
+    return {
+        "mint": mint,
+        "supply": svalue.get("uiAmount"),
+        "decimals": svalue.get("decimals"),
+        "accounts_sampled": len(amounts),
+        "top_1_share_percent": share(1),
+        "top_5_share_percent": share(5),
+        "top_10_share_percent": share(10),
+        "top_20_share_percent": share(20),
+        "network": "solana",
+    }
+
+
+@endpoint("/tokens/{mint}/price", "$0.01",
+          "Live USD price of one Solana token from Jupiter price v3, with 24h change and Jupiter-side liquidity. $0.01 USDC per call.",
+          "token", ["token", "price", "jupiter"], "token-price")
+async def token_price(mint: str):
+    if not _is_sol_address(mint):
+        return _err_addr("mint")
+    data = await _jupiter_prices([mint])
+    if _is_error(data):
+        return data
+    entry = data.get(mint)
+    if not entry:
+        return {"error": "Jupiter has no price for this mint", "mint": mint}
+    return {
+        "mint": mint,
+        "price_usd": _round(_fnum(entry.get("usdPrice")), 10),
+        "price_change_24h_percent": _round(_fnum(entry.get("priceChange24h")), 4),
+        "liquidity_usd": _round(_fnum(entry.get("liquidity")), 2),
+        "decimals": entry.get("decimals"),
+        "source": "jupiter",
+        "network": "solana",
+    }
+
+
+@endpoint("/tokens/{mint}/price/dexscreener", "$0.01",
+          "USD price of one Solana token from its deepest Dexscreener pair (token as base asset). $0.01 USDC per call.",
+          "token", ["token", "price", "dexscreener"], "token-price-dexscreener")
+async def token_price_dexscreener(mint: str):
+    if not _is_sol_address(mint):
+        return _err_addr("mint")
+    pairs = await _ds_base_pairs(mint)
+    if _is_error(pairs):
         return pairs
     best = _best_pair(pairs)
+    if not best:
+        return {"error": "token is not the base asset of any Solana pair", "mint": mint}
     return {
-        "token": _checksum(address),
+        "mint": mint,
         "price_usd": best.get("priceUsd"),
         "price_native": best.get("priceNative"),
         "pair": best.get("pairAddress"),
         "dex": best.get("dexId"),
-        "chain": best.get("chainId"),
-        "url": best.get("url"),
-        "price_change": best.get("priceChange"),
-        "network": "base",
-    }
-
-
-@endpoint("/tokens/{address}/pairs", "$0.01",
-          "All DEX pairs for a Base token, with liquidity and volume. $0.01 USDC per call.",
-          "token", ["token", "dex", "pairs"], "token-pairs")
-async def token_pairs(address: str):
-    pairs = await _dex_pairs_for_token(_checksum(address))
-    if isinstance(pairs, dict):
-        return pairs
-    return {
-        "token": _checksum(address),
-        "pair_count": len(pairs),
-        "pairs": [_trim_pair(p) for p in pairs[:20]],
-        "network": "base",
-    }
-
-
-@endpoint("/tokens/{address}/market", "$0.01",
-          "Market cap, FDV, 24h volume and liquidity for a Base token. $0.01 USDC per call.",
-          "token", ["token", "market", "mcap"], "token-market")
-async def token_market(address: str):
-    pairs = await _dex_pairs_for_token(_checksum(address))
-    if isinstance(pairs, dict):
-        return pairs
-    best = _best_pair(pairs)
-    return {
-        "token": _checksum(address),
-        "symbol": (best.get("baseToken") or {}).get("symbol"),
-        "price_usd": best.get("priceUsd"),
-        "market_cap": best.get("marketCap"),
-        "fdv": best.get("fdv"),
         "liquidity_usd": (best.get("liquidity") or {}).get("usd"),
-        "volume_24h": (best.get("volume") or {}).get("h24"),
-        "volume_6h": (best.get("volume") or {}).get("h6"),
-        "volume_1h": (best.get("volume") or {}).get("h1"),
-        "pair": best.get("pairAddress"),
-        "dex": best.get("dexId"),
-        "network": "base",
+        "source": "dexscreener",
+        "network": "solana",
     }
 
 
-@endpoint("/tokens/{address}/txns", "$0.01",
-          "Buy/sell counts for a Base token across 5m, 1h, 6h and 24h. $0.01 USDC per call.",
-          "token", ["token", "transactions", "dex"], "token-txns")
-async def token_txns(address: str):
-    pairs = await _dex_pairs_for_token(_checksum(address))
-    if isinstance(pairs, dict):
+@endpoint("/tokens/{mint}/pairs", "$0.01",
+          "All Solana DEX pairs where the token is the BASE asset, deepest first (Dexscreener, quote-side pairs excluded). $0.01 USDC per call.",
+          "token", ["token", "dex", "pairs"], "token-pairs")
+async def token_pairs(mint: str):
+    if not _is_sol_address(mint):
+        return _err_addr("mint")
+    pairs = await _ds_base_pairs(mint)
+    if _is_error(pairs):
         return pairs
-    best = _best_pair(pairs)
-    return {
-        "token": _checksum(address),
-        "pair": best.get("pairAddress"),
-        "dex": best.get("dexId"),
-        "txns": best.get("txns"),
-        "volume": best.get("volume"),
-        "network": "base",
-    }
-
-
-@endpoint("/tokens/{address}/liquidity", "$0.01",
-          "Liquidity per DEX pair for a Base token. $0.01 USDC per call.",
-          "token", ["token", "liquidity", "dex"], "token-liquidity")
-async def token_liquidity(address: str):
-    pairs = await _dex_pairs_for_token(_checksum(address))
-    if isinstance(pairs, dict):
-        return pairs
-    return {
-        "token": _checksum(address),
-        "pairs": [
-            {
-                "pair": p.get("pairAddress"),
-                "dex": p.get("dexId"),
-                "liquidity_usd": (p.get("liquidity") or {}).get("usd"),
-                "liquidity_base": (p.get("liquidity") or {}).get("base"),
-                "liquidity_quote": (p.get("liquidity") or {}).get("quote"),
-            }
-            for p in pairs[:20]
-        ],
-        "network": "base",
-    }
-
-
-@endpoint("/tokens/{address}/info", "$0.01",
-          "On-chain ERC20 metadata: name, symbol, decimals, total supply. $0.01 USDC per call.",
-          "token", ["token", "erc20", "metadata"], "token-info")
-async def token_info(address: str):
-    token = _checksum(address)
-    code = w3.eth.get_code(token)
-    if len(code) == 0:
-        return {"error": "Not a contract address", "token": token}
-    meta = _token_meta(token)
-    try:
-        supply = _erc20_uint(token, SEL_TOTAL_SUPPLY)
-    except Exception:
-        supply = None
-    return {
-        "token": token,
-        "name": meta["name"],
-        "symbol": meta["symbol"],
-        "decimals": meta["decimals"],
-        "total_supply_raw": supply,
-        "total_supply": (supply / (10 ** meta["decimals"])) if (supply is not None and meta["decimals"] is not None) else None,
-        "code_size": len(code),
-        "network": "base",
-    }
-
-
-@endpoint("/tokens/{address}/supply", "$0.01",
-          "ERC20 total supply for a Base token. $0.01 USDC per call.",
-          "token", ["token", "supply", "erc20"], "token-supply")
-async def token_supply(address: str):
-    token = _checksum(address)
-    try:
-        supply = _erc20_uint(token, SEL_TOTAL_SUPPLY)
-        meta = _token_meta(token)
-        dec = meta["decimals"]
-        return {
-            "token": token,
-            "symbol": meta["symbol"],
-            "decimals": dec,
-            "total_supply_raw": supply,
-            "total_supply": (supply / (10 ** dec)) if dec is not None else None,
-            "network": "base",
-        }
-    except Exception as e:
-        return {"error": str(e)[:200], "token": token}
-
-
-@endpoint("/tokens/{address}/name", "$0.01",
-          "ERC20 name for a Base token. $0.01 USDC per call.",
-          "token", ["token", "erc20"], "token-name")
-async def token_name(address: str):
-    token = _checksum(address)
-    try:
-        return {"token": token, "name": _erc20_str(token, SEL_NAME), "network": "base"}
-    except Exception as e:
-        return {"error": str(e)[:200], "token": token}
-
-
-@endpoint("/tokens/{address}/symbol", "$0.01",
-          "ERC20 symbol for a Base token. $0.01 USDC per call.",
-          "token", ["token", "erc20"], "token-symbol")
-async def token_symbol(address: str):
-    token = _checksum(address)
-    try:
-        return {"token": token, "symbol": _erc20_str(token, SEL_SYMBOL), "network": "base"}
-    except Exception as e:
-        return {"error": str(e)[:200], "token": token}
-
-
-@endpoint("/tokens/{address}/decimals", "$0.01",
-          "ERC20 decimals for a Base token. $0.01 USDC per call.",
-          "token", ["token", "erc20"], "token-decimals")
-async def token_decimals(address: str):
-    token = _checksum(address)
-    try:
-        return {"token": token, "decimals": _erc20_uint(token, SEL_DECIMALS), "network": "base"}
-    except Exception as e:
-        return {"error": str(e)[:200], "token": token}
-
-
-@endpoint("/tokens/{address}/balance/{wallet}", "$0.01",
-          "ERC20 balance of a wallet for a Base token. $0.01 USDC per call.",
-          "token", ["token", "balance", "wallet"], "token-balance")
-async def token_balance(address: str, wallet: str):
-    token = _checksum(address)
-    w = _checksum(wallet)
-    try:
-        raw = _erc20_balance(token, w)
-        meta = _token_meta(token)
-        dec = meta["decimals"]
-        return {
-            "token": token,
-            "symbol": meta["symbol"],
-            "wallet": w,
-            "balance_raw": raw,
-            "balance": (raw / (10 ** dec)) if dec is not None else None,
-            "decimals": dec,
-            "network": "base",
-        }
-    except Exception as e:
-        return {"error": str(e)[:200], "token": token, "wallet": w}
-
-
-@endpoint("/tokens/{address}/allowance/{owner}/{spender}", "$0.01",
-          "ERC20 allowance a wallet granted to a spender. $0.01 USDC per call.",
-          "token", ["token", "allowance", "erc20"], "token-allowance")
-async def token_allowance(address: str, owner: str, spender: str):
-    token = _checksum(address)
-    o = _checksum(owner)
-    s = _checksum(spender)
-    try:
-        args = _addr32(o) + _addr32(s)
-        raw = _erc20_uint(token, SEL_ALLOWANCE, args)
-        meta = _token_meta(token)
-        dec = meta["decimals"]
-        return {
-            "token": token,
-            "symbol": meta["symbol"],
-            "owner": o,
-            "spender": s,
-            "allowance_raw": raw,
-            "allowance": (raw / (10 ** dec)) if dec is not None else None,
-            "decimals": dec,
-            "network": "base",
-        }
-    except Exception as e:
-        return {"error": str(e)[:200], "token": token}
-
-
-@endpoint("/tokens/{address}/price-change", "$0.01",
-          "Price change for a Base token over 5m, 1h, 6h and 24h. $0.01 USDC per call.",
-          "token", ["token", "price", "change"], "token-price-change")
-async def token_price_change(address: str):
-    pairs = await _dex_pairs_for_token(_checksum(address))
-    if isinstance(pairs, dict):
-        return pairs
-    best = _best_pair(pairs)
-    return {
-        "token": _checksum(address),
-        "price_usd": best.get("priceUsd"),
-        "price_change": best.get("priceChange"),
-        "pair": best.get("pairAddress"),
-        "dex": best.get("dexId"),
-        "network": "base",
-    }
-
-
-@endpoint("/tokens/{address}/coingecko", "$0.01",
-          "CoinGecko USD price for a Base token contract. $0.01 USDC per call.",
-          "token", ["token", "price", "coingecko"], "token-coingecko")
-async def token_coingecko(address: str):
-    token = _checksum(address)
-    data = await _get_json(
-        f"{COINGECKO}/simple/token_price/base",
-        params={"contract_addresses": token, "vs_currencies": "usd"},
-    )
-    if isinstance(data, dict) and "error" in data:
-        return data
-    entry = (data or {}).get(token.lower()) or (data or {}).get(token)
-    if not entry:
-        return {"error": "CoinGecko has no price for this contract", "token": token}
-    return {"token": token, "price_usd": entry.get("usd"), "source": "coingecko", "network": "base"}
-
-
-@endpoint("/tokens/search/{query}", "$0.01",
-          "Search DEX pairs by token name, symbol or address. $0.01 USDC per call.",
-          "token", ["token", "search", "dex"], "token-search")
-async def token_search(query: str):
-    data = await _get_json(f"{DEXSCREENER}/latest/dex/search", params={"q": query})
-    if isinstance(data, dict) and "error" in data:
-        return data
-    pairs = (data or {}).get("pairs") or []
-    return {"query": query, "pair_count": len(pairs), "pairs": [_trim_pair(p) for p in pairs[:20]]}
-
-
-@endpoint("/tokens/trending", "$0.01",
-          "Top boosted tokens on Dexscreener right now. $0.01 USDC per call.",
-          "token", ["token", "trending", "dex"], "token-trending")
-async def token_trending():
-    data = await _get_json(f"{DEXSCREENER}/token-boosts/top/v1")
-    if isinstance(data, dict) and "error" in data:
-        return data
-    items = data if isinstance(data, list) else []
-    return {"count": len(items), "tokens": items[:20]}
-
-
-@endpoint("/tokens/new", "$0.01",
-          "Newest token profiles on Dexscreener. $0.01 USDC per call.",
-          "token", ["token", "new", "dex"], "token-new")
-async def token_new():
-    data = await _get_json(f"{DEXSCREENER}/token-profiles/latest/v1")
-    if isinstance(data, dict) and "error" in data:
-        return data
-    items = data if isinstance(data, list) else []
-    return {"count": len(items), "tokens": items[:20]}
-
-
-@endpoint("/tokens/boosts", "$0.01",
-          "Latest boosted tokens on Dexscreener. $0.01 USDC per call.",
-          "token", ["token", "boosts", "dex"], "token-boosts")
-async def token_boosts():
-    data = await _get_json(f"{DEXSCREENER}/token-boosts/latest/v1")
-    if isinstance(data, dict) and "error" in data:
-        return data
-    items = data if isinstance(data, list) else []
-    return {"count": len(items), "tokens": items[:20]}
-
-
-# ===== WALLET ANALYTICS (on-chain + Dexscreener) =====
-
-@endpoint("/wallets/{address}/balance", "$0.01",
-          "ETH balance of a Base wallet. $0.01 USDC per call.",
-          "wallet", ["wallet", "balance", "base"], "wallet-balance")
-async def wallet_balance(address: str):
-    addr = _checksum(address)
-    bal = w3.eth.get_balance(addr)
-    return {
-        "address": addr,
-        "eth_balance": float(Web3.from_wei(bal, "ether")),
-        "eth_balance_wei": bal,
-        "network": "base",
-    }
-
-
-@endpoint("/wallets/{address}/nonce", "$0.01",
-          "Transaction count (nonce) of a Base wallet. $0.01 USDC per call.",
-          "wallet", ["wallet", "nonce", "base"], "wallet-nonce")
-async def wallet_nonce(address: str):
-    addr = _checksum(address)
-    return {
-        "address": addr,
-        "tx_count": w3.eth.get_transaction_count(addr),
-        "network": "base",
-    }
-
-
-@endpoint("/wallets/{address}/is-contract", "$0.01",
-          "Whether a Base address is a smart contract. $0.01 USDC per call.",
-          "wallet", ["wallet", "contract", "base"], "wallet-is-contract")
-async def wallet_is_contract(address: str):
-    addr = _checksum(address)
-    code = w3.eth.get_code(addr)
-    return {"address": addr, "is_contract": len(code) > 0, "code_size": len(code), "network": "base"}
-
-
-@endpoint("/wallets/{address}/code", "$0.01",
-          "Bytecode size and hash for a Base address. $0.01 USDC per call.",
-          "wallet", ["wallet", "code", "base"], "wallet-code")
-async def wallet_code(address: str):
-    addr = _checksum(address)
-    code = w3.eth.get_code(addr)
-    return {
-        "address": addr,
-        "code_size": len(code),
-        "code_keccak": Web3.keccak(bytes(code)).hex() if len(code) > 0 else None,
-        "is_contract": len(code) > 0,
-        "network": "base",
-    }
-
-
-@endpoint("/wallets/{address}/tokens", "$0.02",
-          "Balances of the top Base tokens for a wallet. $0.02 USDC per call.",
-          "wallet", ["wallet", "tokens", "portfolio"], "wallet-tokens")
-async def wallet_tokens(address: str):
-    addr = _checksum(address)
-    out = []
-    for t in CURATED_TOKENS:
-        try:
-            raw = _erc20_balance(t["address"], addr)
-        except Exception:
-            continue
-        out.append({
-            "token": t["address"],
-            "symbol": t["symbol"],
-            "name": t["name"],
-            "decimals": t["decimals"],
-            "balance_raw": raw,
-            "balance": raw / (10 ** t["decimals"]),
-        })
-    return {"address": addr, "tokens": out, "token_count": len(out), "network": "base"}
-
-
-@endpoint("/wallets/{address}/portfolio", "$0.02",
-          "USD portfolio value of a Base wallet (ETH + top tokens). $0.02 USDC per call.",
-          "wallet", ["wallet", "portfolio", "usd"], "wallet-portfolio")
-async def wallet_portfolio(address: str):
-    addr = _checksum(address)
-    eth_bal = float(Web3.from_wei(w3.eth.get_balance(addr), "ether"))
-    eth_price = await _eth_price_usd()
-    holdings = []
-    total_usd = (eth_bal * eth_price) if eth_price else 0.0
-    holdings.append({
-        "token": "ETH", "symbol": "ETH", "balance": eth_bal,
-        "price_usd": eth_price, "value_usd": (eth_bal * eth_price) if eth_price else None,
-    })
-    # Prices for the curated tokens, fetched concurrently.
-    async def _price_for(t):
-        pairs = await _dex_pairs_for_token(t["address"])
-        if isinstance(pairs, dict):
-            return t, None
-        best = _best_pair(pairs)
-        try:
-            return t, float(best.get("priceUsd"))
-        except Exception:
-            return t, None
-    priced = await asyncio.gather(*[_price_for(t) for t in CURATED_TOKENS])
-    for t, price in priced:
-        try:
-            raw = _erc20_balance(t["address"], addr)
-        except Exception:
-            continue
-        bal = raw / (10 ** t["decimals"])
-        value = (bal * price) if (price is not None) else None
-        if value:
-            total_usd += value
-        holdings.append({
-            "token": t["address"], "symbol": t["symbol"], "balance": bal,
-            "price_usd": price, "value_usd": value,
-        })
-    return {
-        "address": addr,
-        "eth_price_usd": eth_price,
-        "total_value_usd": round(total_usd, 2),
-        "holdings": holdings,
-        "network": "base",
-    }
-
-
-@endpoint("/wallets/{address}/ens", "$0.01",
-          "Reverse ENS name for a Base wallet address. $0.01 USDC per call.",
-          "wallet", ["wallet", "ens", "name"], "wallet-ens")
-async def wallet_ens(address: str):
-    addr = _checksum(address)
-    data = await _get_json(f"{ENSDATA}/{addr}")
-    if isinstance(data, dict) and "upstream HTTP 404" in str(data.get("error", "")):
-        # No ENS name for this address: a valid answer, not an error.
-        return {"address": addr, "ens_name": None, "avatar": None, "network": "base"}
-    if isinstance(data, dict) and "error" in data:
-        return data
-    name = (data or {}).get("name") or (data or {}).get("ens") or (data or {}).get("displayName")
-    return {"address": addr, "ens_name": name, "avatar": (data or {}).get("avatar"), "network": "base"}
-
-
-@endpoint("/wallets/{address}/eth-value", "$0.01",
-          "USD value of a Base wallet's ETH balance. $0.01 USDC per call.",
-          "wallet", ["wallet", "eth", "usd"], "wallet-eth-value")
-async def wallet_eth_value(address: str):
-    addr = _checksum(address)
-    eth_bal = float(Web3.from_wei(w3.eth.get_balance(addr), "ether"))
-    eth_price = await _eth_price_usd()
-    return {
-        "address": addr,
-        "eth_balance": eth_bal,
-        "eth_price_usd": eth_price,
-        "value_usd": (round(eth_bal * eth_price, 2) if eth_price else None),
-        "network": "base",
-    }
-
-
-@endpoint("/wallets/{address}/token-count", "$0.01",
-          "How many of the top Base tokens a wallet holds. $0.01 USDC per call.",
-          "wallet", ["wallet", "tokens", "count"], "wallet-token-count")
-async def wallet_token_count(address: str):
-    addr = _checksum(address)
-    held = []
-    for t in CURATED_TOKENS:
-        try:
-            raw = _erc20_balance(t["address"], addr)
-        except Exception:
-            continue
-        if raw > 0:
-            held.append(t["symbol"])
-    return {"address": addr, "tokens_held": len(held), "symbols": held, "network": "base"}
-
-
-@endpoint("/wallets/{address}/usdc-balance", "$0.01",
-          "USDC balance of a Base wallet. $0.01 USDC per call.",
-          "wallet", ["wallet", "usdc", "balance"], "wallet-usdc-balance")
-async def wallet_usdc_balance(address: str):
-    addr = _checksum(address)
-    raw = _erc20_balance(USDC, addr)
-    return {"address": addr, "symbol": "USDC", "balance": raw / 1e6, "balance_raw": raw, "network": "base"}
-
-
-@endpoint("/wallets/{address}/weth-balance", "$0.01",
-          "WETH balance of a Base wallet. $0.01 USDC per call.",
-          "wallet", ["wallet", "weth", "balance"], "wallet-weth-balance")
-async def wallet_weth_balance(address: str):
-    addr = _checksum(address)
-    raw = _erc20_balance(WETH, addr)
-    return {"address": addr, "symbol": "WETH", "balance": raw / 1e18, "balance_raw": raw, "network": "base"}
-
-
-@endpoint("/wallets/{address}/aero-balance", "$0.01",
-          "AERO balance of a Base wallet. $0.01 USDC per call.",
-          "wallet", ["wallet", "aero", "balance"], "wallet-aero-balance")
-async def wallet_aero_balance(address: str):
-    addr = _checksum(address)
-    raw = _erc20_balance(AERO, addr)
-    return {"address": addr, "symbol": "AERO", "balance": raw / 1e18, "balance_raw": raw, "network": "base"}
-
-# ===== DEX DATA (Dexscreener + Uniswap V3 on-chain + DeFiLlama) =====
-
-@endpoint("/dex/pairs/{chain}/{pair}", "$0.01",
-          "Detail for one DEX pair by chain and pair address. $0.01 USDC per call.",
-          "dex", ["dex", "pair"], "dex-pair")
-async def dex_pair(chain: str, pair: str):
-    data = await _get_json(f"{DEXSCREENER}/latest/dex/pairs/{chain}/{_checksum(pair)}")
-    if isinstance(data, dict) and "error" in data:
-        return data
-    pairs = (data or {}).get("pairs") or []
-    if not pairs:
-        return {"error": "pair not found", "chain": chain, "pair": pair}
-    return {"chain": chain, "pair": _trim_pair(pairs[0]), "network": "base"}
-
-
-@endpoint("/dex/search/{query}", "$0.01",
-          "Search DEX pairs by token name, symbol or address. $0.01 USDC per call.",
-          "dex", ["dex", "search", "pairs"], "dex-search")
-async def dex_search(query: str):
-    data = await _get_json(f"{DEXSCREENER}/latest/dex/search", params={"q": query})
-    if isinstance(data, dict) and "error" in data:
-        return data
-    pairs = (data or {}).get("pairs") or []
-    return {"query": query, "pair_count": len(pairs), "pairs": [_trim_pair(p) for p in pairs[:20]]}
-
-
-@endpoint("/dex/trending", "$0.01",
-          "Top boosted DEX pairs right now. $0.01 USDC per call.",
-          "dex", ["dex", "trending"], "dex-trending")
-async def dex_trending():
-    data = await _get_json(f"{DEXSCREENER}/token-boosts/top/v1")
-    if isinstance(data, dict) and "error" in data:
-        return data
-    items = data if isinstance(data, list) else []
-    return {"count": len(items), "tokens": items[:20]}
-
-
-@endpoint("/dex/latest-profiles", "$0.01",
-          "Newest token profiles on Dexscreener. $0.01 USDC per call.",
-          "dex", ["dex", "profiles", "new"], "dex-latest-profiles")
-async def dex_latest_profiles():
-    data = await _get_json(f"{DEXSCREENER}/token-profiles/latest/v1")
-    if isinstance(data, dict) and "error" in data:
-        return data
-    items = data if isinstance(data, list) else []
-    return {"count": len(items), "tokens": items[:20]}
-
-
-@endpoint("/dex/latest-boosts", "$0.01",
-          "Latest boosted tokens on Dexscreener. $0.01 USDC per call.",
-          "dex", ["dex", "boosts"], "dex-latest-boosts")
-async def dex_latest_boosts():
-    data = await _get_json(f"{DEXSCREENER}/token-boosts/latest/v1")
-    if isinstance(data, dict) and "error" in data:
-        return data
-    items = data if isinstance(data, list) else []
-    return {"count": len(items), "tokens": items[:20]}
-
-
-_UNI_POOL_ABI = [
-    {"inputs": [], "name": "slot0", "outputs": [
-        {"name": "sqrtPriceX96", "type": "uint160"}, {"name": "tick", "type": "int24"},
-        {"name": "observationIndex", "type": "uint16"}, {"name": "observationCardinality", "type": "uint16"},
-        {"name": "observationCardinalityNext", "type": "uint16"}, {"name": "feeProtocol", "type": "uint8"},
-        {"name": "unlocked", "type": "bool"}], "stateMutability": "view", "type": "function"},
-    {"inputs": [], "name": "liquidity", "outputs": [{"name": "", "type": "uint128"}], "stateMutability": "view", "type": "function"},
-    {"inputs": [], "name": "token0", "outputs": [{"name": "", "type": "address"}], "stateMutability": "view", "type": "function"},
-    {"inputs": [], "name": "token1", "outputs": [{"name": "", "type": "address"}], "stateMutability": "view", "type": "function"},
-    {"inputs": [], "name": "fee", "outputs": [{"name": "", "type": "uint24"}], "stateMutability": "view", "type": "function"},
-]
-
-
-def _uni_pool_contract(pool: str):
-    return w3.eth.contract(address=_checksum(pool), abi=_UNI_POOL_ABI)
-
-
-@endpoint("/dex/pool/{pool}/info", "$0.01",
-          "Uniswap V3 pool state: tokens, fee, liquidity, tick. $0.01 USDC per call.",
-          "dex", ["dex", "uniswap", "pool"], "dex-pool-info")
-async def dex_pool_info(pool: str):
-    p = _uni_pool_contract(pool)
-    try:
-        slot0 = p.functions.slot0().call()
-        liq = p.functions.liquidity().call()
-        t0 = p.functions.token0().call()
-        t1 = p.functions.token1().call()
-        fee = p.functions.fee().call()
-        m0 = _token_meta(t0)
-        m1 = _token_meta(t1)
-        return {
-            "pool": _checksum(pool),
-            "token0": {"address": t0, "symbol": m0["symbol"], "decimals": m0["decimals"]},
-            "token1": {"address": t1, "symbol": m1["symbol"], "decimals": m1["decimals"]},
-            "fee": fee,
-            "fee_percent": fee / 10000,
-            "liquidity": liq,
-            "tick": slot0[1],
-            "sqrt_price_x96": str(slot0[0]),
-            "unlocked": slot0[6],
-            "network": "base",
-        }
-    except Exception as e:
-        return {"error": str(e)[:200], "pool": pool}
-
-
-@endpoint("/dex/pool/{pool}/price", "$0.01",
-          "Implied price from a Uniswap V3 pool, both directions. $0.01 USDC per call.",
-          "dex", ["dex", "uniswap", "price"], "dex-pool-price")
-async def dex_pool_price(pool: str):
-    p = _uni_pool_contract(pool)
-    try:
-        slot0 = p.functions.slot0().call()
-        t0 = p.functions.token0().call()
-        t1 = p.functions.token1().call()
-        m0 = _token_meta(t0)
-        m1 = _token_meta(t1)
-        d0 = m0["decimals"] if m0["decimals"] is not None else 18
-        d1 = m1["decimals"] if m1["decimals"] is not None else 18
-        ratio = (slot0[0] / 2**96) ** 2
-        price0_in_1 = ratio * 10 ** (d0 - d1)
-        price1_in_0 = (1.0 / price0_in_1) if price0_in_1 else None
-        return {
-            "pool": _checksum(pool),
-            "token0": {"address": t0, "symbol": m0["symbol"], "decimals": d0},
-            "token1": {"address": t1, "symbol": m1["symbol"], "decimals": d1},
-            "tick": slot0[1],
-            "price_token0_in_token1": price0_in_1,
-            "price_token1_in_token0": price1_in_0,
-            "network": "base",
-        }
-    except Exception as e:
-        return {"error": str(e)[:200], "pool": pool}
-
-
-@endpoint("/dex/volume", "$0.01",
-          "24h trading volume across tracked DEXs. $0.01 USDC per call.",
-          "dex", ["dex", "volume"], "dex-volume")
-async def dex_volume():
-    data = await _get_json(f"{LLAMA}/overview/dexs")
-    if isinstance(data, dict) and "error" in data:
-        return data
-    protocols = (data or {}).get("protocols") or []
-    top = sorted(protocols, key=lambda x: float(x.get("total24h") or 0), reverse=True)[:10]
-    total = sum(float(x.get("total24h") or 0) for x in protocols)
-    return {
-        "total_24h_usd": total,
-        "top_dexs": [
-            {"name": x.get("name"), "volume_24h_usd": x.get("total24h"), "volume_7d_usd": x.get("total7d")}
-            for x in top
-        ],
-    }
-
-
-@endpoint("/dex/volume/base", "$0.01",
-          "24h DEX trading volume on Base. $0.01 USDC per call.",
-          "dex", ["dex", "volume", "base"], "dex-volume-base")
-async def dex_volume_base():
-    data = await _get_json(f"{LLAMA}/overview/dexs", params={"chain": "Base"})
-    if isinstance(data, dict) and "error" in data:
-        return data
-    protocols = (data or {}).get("protocols") or []
-    top = sorted(protocols, key=lambda x: float(x.get("total24h") or 0), reverse=True)[:10]
-    total = sum(float(x.get("total24h") or 0) for x in protocols)
-    return {
-        "chain": "Base",
-        "total_24h_usd": total,
-        "top_dexs": [
-            {"name": x.get("name"), "volume_24h_usd": x.get("total24h"), "volume_7d_usd": x.get("total7d")}
-            for x in top
-        ],
-    }
-
-
-@endpoint("/dex/volume/{protocol}", "$0.01",
-          "Volume summary for one DEX protocol. $0.01 USDC per call.",
-          "dex", ["dex", "volume", "protocol"], "dex-volume-protocol")
-async def dex_volume_protocol(protocol: str):
-    data = await _get_json(f"{LLAMA}/summary/dexs/{protocol}")
-    if isinstance(data, dict) and "error" in data:
-        return data
-    if not isinstance(data, dict) or not data:
-        return {"error": "protocol not found", "protocol": protocol}
-    return {
-        "protocol": protocol,
-        "name": data.get("name"),
-        "volume_24h_usd": data.get("total24h"),
-        "volume_7d_usd": data.get("total7d"),
-        "volume_30d_usd": data.get("total30d"),
-        "chains": data.get("chains"),
-    }
-
-
-@endpoint("/dex/fees/{protocol}", "$0.01",
-          "Fee and revenue summary for one protocol. $0.01 USDC per call.",
-          "dex", ["dex", "fees", "protocol"], "dex-fees-protocol")
-async def dex_fees_protocol(protocol: str):
-    data = await _get_json(f"{LLAMA}/summary/fees/{protocol}")
-    if isinstance(data, dict) and "error" in data:
-        return data
-    if not isinstance(data, dict) or not data:
-        return {"error": "protocol not found", "protocol": protocol}
-    return {
-        "protocol": protocol,
-        "name": data.get("name"),
-        "fees_24h_usd": data.get("total24h"),
-        "fees_7d_usd": data.get("total7d"),
-        "revenue_24h_usd": data.get("totalRevenue24h"),
-        "chains": data.get("chains"),
-    }
-
-
-@endpoint("/dex/top", "$0.01",
-          "Top 10 DEXs by 24h volume. $0.01 USDC per call.",
-          "dex", ["dex", "top", "volume"], "dex-top")
-async def dex_top():
-    data = await _get_json(f"{LLAMA}/overview/dexs")
-    if isinstance(data, dict) and "error" in data:
-        return data
-    protocols = (data or {}).get("protocols") or []
-    top = sorted(protocols, key=lambda x: float(x.get("total24h") or 0), reverse=True)[:10]
-    return {
-        "top_dexs": [
-            {"rank": i + 1, "name": x.get("name"), "volume_24h_usd": x.get("total24h")}
-            for i, x in enumerate(top)
-        ],
-    }
-
-
-# ===== CHAIN / BLOCKS / TRANSACTIONS / GAS =====
-
-def _block_dict(block):
-    return {
-        "number": block.number,
-        "hash": block.hash.hex(),
-        "parent_hash": block.parentHash.hex(),
-        "timestamp": block.timestamp,
-        "miner": block.miner,
-        "gas_used": block.gasUsed,
-        "gas_limit": block.gasLimit,
-        "base_fee_per_gas": block.get("baseFeePerGas"),
-        "tx_count": len(block.transactions),
-        "size": block.get("size"),
-    }
-
-
-@endpoint("/chain/block/latest", "$0.01",
-          "Latest Base block with gas and transaction count. $0.01 USDC per call.",
-          "chain", ["chain", "block", "latest"], "chain-block-latest")
-async def chain_block_latest():
-    return _block_dict(w3.eth.get_block("latest"))
-
-
-@endpoint("/chain/block/{number}", "$0.01",
-          "Base block by number. $0.01 USDC per call.",
-          "chain", ["chain", "block"], "chain-block")
-async def chain_block(number: str):
-    try:
-        n = int(number)
-    except ValueError:
-        return {"error": "block number must be an integer", "number": number}
-    try:
-        return _block_dict(w3.eth.get_block(n))
-    except Exception as e:
-        return {"error": str(e)[:200], "number": n}
-
-
-@endpoint("/chain/block/{number}/transactions", "$0.01",
-          "Transaction hashes in a Base block. $0.01 USDC per call.",
-          "chain", ["chain", "block", "transactions"], "chain-block-txs")
-async def chain_block_txs(number: str):
-    try:
-        n = int(number)
-    except ValueError:
-        return {"error": "block number must be an integer", "number": number}
-    try:
-        block = w3.eth.get_block(n, full_transactions=False)
-        txs = [t.hex() if hasattr(t, "hex") else str(t) for t in block.transactions]
-        return {"block": n, "tx_count": len(txs), "transactions": txs[:100]}
-    except Exception as e:
-        return {"error": str(e)[:200], "number": n}
-
-
-def _tx_dict(tx):
-    return {
-        "hash": tx.hash.hex(),
-        "from": tx["from"],
-        "to": tx.get("to"),
-        "value_eth": float(Web3.from_wei(tx.value, "ether")),
-        "value_wei": tx.value,
-        "gas": tx.gas,
-        "gas_price_gwei": round(Web3.from_wei(tx.gasPrice, "gwei"), 4) if tx.get("gasPrice") else None,
-        "nonce": tx.nonce,
-        "block_number": tx.get("blockNumber"),
-        "transaction_index": tx.get("transactionIndex"),
-        "input_length_bytes": (len(tx.input) - 2) // 2 if tx.get("input") else 0,
-    }
-
-
-@endpoint("/chain/transaction/{hash}", "$0.01",
-          "Detail for a Base transaction. $0.01 USDC per call.",
-          "chain", ["chain", "transaction"], "chain-transaction")
-async def chain_transaction(hash: str):
-    try:
-        return _tx_dict(w3.eth.get_transaction(hash))
-    except Exception as e:
-        return {"error": str(e)[:200], "hash": hash}
-
-
-@endpoint("/chain/transaction/{hash}/receipt", "$0.01",
-          "Receipt for a Base transaction: status, gas used, logs. $0.01 USDC per call.",
-          "chain", ["chain", "transaction", "receipt"], "chain-tx-receipt")
-async def chain_tx_receipt(hash: str):
-    try:
-        r = w3.eth.get_transaction_receipt(hash)
-        return {
-            "hash": r.transactionHash.hex(),
-            "block_number": r.blockNumber,
-            "status": r.status,
-            "gas_used": r.gasUsed,
-            "contract_address": r.get("contractAddress"),
-            "log_count": len(r.logs),
-            "logs": [
-                {
-                    "address": l.address,
-                    "topics": [t.hex() for t in l.topics],
-                    "data": l.data.hex() if hasattr(l.data, "hex") else str(l.data),
-                    "log_index": l.logIndex,
-                }
-                for l in r.logs[:20]
-            ],
-        }
-    except Exception as e:
-        return {"error": str(e)[:200], "hash": hash}
-
-
-@endpoint("/chain/transaction/{hash}/logs", "$0.01",
-          "Event logs for a Base transaction (from its receipt). $0.01 USDC per call.",
-          "chain", ["chain", "transaction", "logs"], "chain-tx-logs")
-async def chain_tx_logs(hash: str):
-    try:
-        r = w3.eth.get_transaction_receipt(hash)
-        return {
-            "hash": hash,
-            "log_count": len(r.logs),
-            "logs": [
-                {
-                    "address": l.address,
-                    "topics": [t.hex() for t in l.topics],
-                    "data": l.data.hex() if hasattr(l.data, "hex") else str(l.data),
-                    "block_number": l.blockNumber,
-                    "log_index": l.logIndex,
-                }
-                for l in r.logs
-            ],
-        }
-    except Exception as e:
-        return {"error": str(e)[:200], "hash": hash}
-
-
-@endpoint("/chain/transaction/{hash}/input", "$0.01",
-          "Decoded input data for a Base transaction. $0.01 USDC per call.",
-          "chain", ["chain", "transaction", "input"], "chain-tx-input")
-async def chain_tx_input(hash: str):
-    try:
-        tx = w3.eth.get_transaction(hash)
-        data = tx.input.hex() if hasattr(tx.input, "hex") else str(tx.input)
-        return {
-            "hash": hash,
-            "function_selector": data[:10] if len(data) >= 10 else None,
-            "input": data,
-            "input_length_bytes": (len(data) - 2) // 2 if data.startswith("0x") else len(data) // 2,
-            "value_eth": float(Web3.from_wei(tx.value, "ether")),
-            "from": tx["from"],
-            "to": tx.get("to"),
-        }
-    except Exception as e:
-        return {"error": str(e)[:200], "hash": hash}
-
-
-@endpoint("/chain/gas/fee-history", "$0.01",
-          "Base fee history for the last 10 blocks. $0.01 USDC per call.",
-          "chain", ["chain", "gas", "fees"], "chain-fee-history")
-async def chain_fee_history():
-    fh = w3.eth.fee_history(10, "latest", [25, 50, 75])
-    return {
-        "oldest_block": fh["oldestBlock"],
-        "base_fee_per_gas_gwei": [round(Web3.from_wei(int(x), "gwei"), 4) for x in fh["baseFeePerGas"]],
-        "gas_used_ratio": fh.get("gasUsedRatio"),
-        "reward_gwei": [
-            [round(Web3.from_wei(int(v), "gwei"), 4) for v in row]
-            for row in (fh.get("reward") or [])
-        ],
-    }
-
-
-@endpoint("/chain/gas/priority-fee", "$0.01",
-          "Current max priority fee on Base. $0.01 USDC per call.",
-          "chain", ["chain", "gas", "priority"], "chain-priority-fee")
-async def chain_priority_fee():
-    fee = w3.eth.max_priority_fee
-    return {
-        "max_priority_fee_wei": fee,
-        "max_priority_fee_gwei": round(Web3.from_wei(fee, "gwei"), 4),
-        "network": "base",
-    }
-
-
-@endpoint("/chain/gas/estimate-transfer/{to}", "$0.01",
-          "Estimated gas for a plain ETH transfer on Base. $0.01 USDC per call.",
-          "chain", ["chain", "gas", "estimate"], "chain-estimate-transfer")
-async def chain_estimate_transfer(to: str):
-    dest = _checksum(to)
-    try:
-        # Value 0: gas for a plain transfer is 21000 regardless of value,
-        # and 0 keeps the estimate independent of the sender's balance.
-        gas = w3.eth.estimate_gas({
-            "from": _checksum(WALLET_ADDRESS),
-            "to": dest,
-            "value": 0,
-        })
-        gas_price = w3.eth.gas_price
-        return {
-            "to": dest,
-            "value_eth": 0,
-            "estimated_gas": gas,
-            "gas_price_gwei": round(Web3.from_wei(gas_price, "gwei"), 4),
-            "estimated_cost_eth": float(Web3.from_wei(gas * gas_price, "ether")),
-            "note": "Live estimate for this recipient; a plain transfer to an EOA is 21000 gas, a contract wallet costs more.",
-            "network": "base",
-        }
-    except Exception as e:
-        return {"error": str(e)[:200], "to": dest}
-
-
-@endpoint("/chain/gas/oracle", "$0.01",
-          "Combined gas oracle: gas price, priority fee, fee history. $0.01 USDC per call.",
-          "chain", ["chain", "gas", "oracle"], "chain-gas-oracle")
-async def chain_gas_oracle():
-    gas_price = w3.eth.gas_price
-    priority = w3.eth.max_priority_fee
-    fh = w3.eth.fee_history(5, "latest", [50])
-    return {
-        "gas_price_gwei": round(Web3.from_wei(gas_price, "gwei"), 4),
-        "max_priority_fee_gwei": round(Web3.from_wei(priority, "gwei"), 4),
-        "base_fee_gwei": round(Web3.from_wei(int(fh["baseFeePerGas"][-1]), "gwei"), 4),
-        "block_number": w3.eth.block_number,
-        "network": "base",
-    }
-
-
-def _sync_status():
-    """Whether the node is at the chain head, inferred from latest block age.
-    The public RPC filters eth_syncing, so block recency is the live signal:
-    Base produces a block every ~2s, so a block older than 60s means the
-    node is behind."""
-    import time
-    block = w3.eth.get_block("latest")
-    age = int(time.time()) - int(block.timestamp)
-    return {"syncing": age > 60, "latest_block": block.number, "block_age_seconds": age}
-
-
-@endpoint("/chain/stats", "$0.01",
-          "Live Base chain stats: block, gas, chain id, client. $0.01 USDC per call.",
-          "chain", ["chain", "stats"], "chain-stats")
-async def chain_stats():
-    sync = _sync_status()
-    return {
-        "chain_id": w3.eth.chain_id,
-        "block_number": sync["latest_block"],
-        "block_age_seconds": sync["block_age_seconds"],
-        "gas_price_gwei": round(Web3.from_wei(w3.eth.gas_price, "gwei"), 4),
-        "client_version": w3.client_version,
-        "syncing": sync["syncing"],
-        "network": "base",
-    }
-
-
-@endpoint("/chain/syncing", "$0.01",
-          "Whether the Base node is syncing (from latest block age). $0.01 USDC per call.",
-          "chain", ["chain", "syncing"], "chain-syncing")
-async def chain_syncing():
-    sync = _sync_status()
-    return {
-        "syncing": sync["syncing"],
-        "latest_block": sync["latest_block"],
-        "block_age_seconds": sync["block_age_seconds"],
-        "note": "eth_syncing is filtered by the public RPC; sync state is inferred from block recency (Base makes a block every ~2s).",
-        "network": "base",
-    }
-
-
-@endpoint("/chain/client", "$0.01",
-          "Client version of the Base RPC node. $0.01 USDC per call.",
-          "chain", ["chain", "client"], "chain-client")
-async def chain_client():
-    return {"client_version": w3.client_version, "network": "base"}
-
-
-@endpoint("/chain/network", "$0.01",
-          "Chain id and latest block for Base. $0.01 USDC per call.",
-          "chain", ["chain", "network"], "chain-network")
-async def chain_network():
-    return {"chain_id": w3.eth.chain_id, "network": "base", "block_number": w3.eth.block_number}
-
-
-@endpoint("/chain/address/{address}/code", "$0.01",
-          "Bytecode for a Base address, with size and hash. $0.01 USDC per call.",
-          "chain", ["chain", "address", "code"], "chain-address-code")
-async def chain_address_code(address: str):
-    addr = _checksum(address)
-    code = w3.eth.get_code(addr)
-    return {
-        "address": addr,
-        "code_size": len(code),
-        "code_keccak": Web3.keccak(bytes(code)).hex() if len(code) > 0 else None,
-        "is_contract": len(code) > 0,
-        "network": "base",
-    }
-
-# ===== NFT DATA (on-chain ERC721) =====
-
-def _ipfs_to_http(uri: str):
-    """Convert an ipfs:// URI to a public gateway URL."""
-    if uri.startswith("ipfs://"):
-        cid = uri[len("ipfs://"):]
-        return f"https://ipfs.io/ipfs/{cid}"
-    return uri
-
-
-async def _fetch_nft_metadata(uri: str):
-    """Fetch NFT metadata JSON from an http(s) or ipfs:// tokenURI."""
-    url = _ipfs_to_http(uri)
-    if not url.startswith("http"):
-        return None
-    try:
-        r = await http_client.get(url, timeout=8.0)
-        if r.status_code == 200:
-            return r.json()
-    except Exception:
-        pass
-    # Fallback gateway for ipfs URIs.
-    if uri.startswith("ipfs://"):
-        try:
-            r = await http_client.get(
-                f"https://cloudflare-ipfs.com/ipfs/{uri[len('ipfs://'):]}", timeout=8.0
-            )
-            if r.status_code == 200:
-                return r.json()
-        except Exception:
-            pass
-    return None
-
-
-@endpoint("/nfts/{collection}/info", "$0.01",
-          "ERC721 collection name and symbol. $0.01 USDC per call.",
-          "nft", ["nft", "collection", "erc721"], "nft-info")
-async def nft_info(collection: str):
-    c = _checksum(collection)
-    code = w3.eth.get_code(c)
-    if len(code) == 0:
-        return {"error": "Not a contract address", "collection": c}
-    meta = _token_meta(c)
-    return {
-        "collection": c,
-        "name": meta["name"],
-        "symbol": meta["symbol"],
-        "code_size": len(code),
-        "network": "base",
-    }
-
-
-@endpoint("/nfts/{collection}/owner/{tokenId}", "$0.01",
-          "Owner of one NFT by token id. $0.01 USDC per call.",
-          "nft", ["nft", "owner", "erc721"], "nft-owner")
-async def nft_owner(collection: str, tokenId: str):
-    c = _checksum(collection)
-    try:
-        tid = int(tokenId)
-    except ValueError:
-        return {"error": "tokenId must be an integer", "collection": c}
-    try:
-        raw = _eth_call(c, "0x" + SEL_OWNER_OF + int(tid).to_bytes(32, "big").hex())
-        owner = "0x" + raw[-20:].hex()
-        return {"collection": c, "token_id": tid, "owner": Web3.to_checksum_address(owner), "network": "base"}
-    except Exception as e:
-        return {"error": str(e)[:200], "collection": c, "token_id": tid}
-
-
-@endpoint("/nfts/{collection}/token/{tokenId}", "$0.01",
-          "NFT tokenURI plus fetched metadata. $0.01 USDC per call.",
-          "nft", ["nft", "metadata", "tokenuri"], "nft-token")
-async def nft_token(collection: str, tokenId: str):
-    c = _checksum(collection)
-    try:
-        tid = int(tokenId)
-    except ValueError:
-        return {"error": "tokenId must be an integer", "collection": c}
-    try:
-        raw = _eth_call(c, "0x" + SEL_TOKEN_URI + int(tid).to_bytes(32, "big").hex())
-        uri = _decode_string(raw)
-    except Exception as e:
-        return {"error": str(e)[:200], "collection": c, "token_id": tid}
-    metadata = await _fetch_nft_metadata(uri) if uri else None
-    return {
-        "collection": c,
-        "token_id": tid,
-        "token_uri": uri,
-        "metadata": metadata,
-        "network": "base",
-    }
-
-
-@endpoint("/nfts/{collection}/balance/{wallet}", "$0.01",
-          "How many NFTs of a collection a wallet holds. $0.01 USDC per call.",
-          "nft", ["nft", "balance", "wallet"], "nft-balance")
-async def nft_balance(collection: str, wallet: str):
-    c = _checksum(collection)
-    w = _checksum(wallet)
-    try:
-        bal = _erc20_balance(c, w)
-        return {"collection": c, "wallet": w, "balance": bal, "network": "base"}
-    except Exception as e:
-        return {"error": str(e)[:200], "collection": c, "wallet": w}
-
-
-@endpoint("/nfts/{collection}/interfaces", "$0.01",
-          "Which token standards an NFT contract supports (ERC721/1155/Enumerable). $0.01 USDC per call.",
-          "nft", ["nft", "erc165", "standards"], "nft-interfaces")
-async def nft_interfaces(collection: str):
-    c = _checksum(collection)
-    # ERC165 interface ids.
-    interfaces = {
-        "ERC165": "0x01ffc9a7",
-        "ERC721": "0x80ac58cd",
-        "ERC721Metadata": "0x5b5e139f",
-        "ERC721Enumerable": "0x780e9d63",
-        "ERC1155": "0xd9b67a26",
-    }
-    out = {}
-    for name, iid in interfaces.items():
-        try:
-            # supportsInterface(bytes4): 4-byte id left-aligned in a 32-byte word.
-            data = "0x" + SEL_SUPPORTS_INTERFACE + iid[2:] + "00" * 28
-            raw = _eth_call(c, data)
-            out[name] = _decode_bool(raw)
-        except Exception:
-            out[name] = None
-    return {"collection": c, "interfaces": out, "network": "base"}
-
-
-@endpoint("/nfts/{collection}/supply", "$0.01",
-          "Total supply of an enumerable NFT collection. $0.01 USDC per call.",
-          "nft", ["nft", "supply", "erc721"], "nft-supply")
-async def nft_supply(collection: str):
-    c = _checksum(collection)
-    try:
-        supply = _erc20_uint(c, SEL_TOTAL_SUPPLY)
-        return {"collection": c, "total_supply": supply, "enumerable": True, "network": "base"}
-    except Exception:
-        return {
-            "collection": c,
-            "total_supply": None,
-            "enumerable": False,
-            "note": "Contract does not expose totalSupply (not ERC721Enumerable)",
-            "network": "base",
-        }
-
-
-@endpoint("/nfts/{collection}/exists/{tokenId}", "$0.01",
-          "Whether an NFT token id exists. $0.01 USDC per call.",
-          "nft", ["nft", "exists", "erc721"], "nft-exists")
-async def nft_exists(collection: str, tokenId: str):
-    c = _checksum(collection)
-    try:
-        tid = int(tokenId)
-    except ValueError:
-        return {"error": "tokenId must be an integer", "collection": c}
-    try:
-        raw = _eth_call(c, "0x" + SEL_OWNER_OF + int(tid).to_bytes(32, "big").hex())
-        owner = "0x" + raw[-20:].hex()
-        exists = owner != "0x0000000000000000000000000000000000000000"
-        return {"collection": c, "token_id": tid, "exists": exists, "owner": Web3.to_checksum_address(owner) if exists else None, "network": "base"}
-    except Exception:
-        return {"collection": c, "token_id": tid, "exists": False, "network": "base"}
-
-
-# ===== DEFI (DeFiLlama + Aave on-chain) =====
-
-@endpoint("/defi/tvl", "$0.01",
-          "Total value locked on Base. $0.01 USDC per call.",
-          "defi", ["defi", "tvl", "base"], "defi-tvl")
-async def defi_tvl():
-    data = await _get_json(f"{LLAMA}/v2/chains")
-    if isinstance(data, dict) and "error" in data:
-        return data
-    chains = data if isinstance(data, list) else []
-    base = next((c for c in chains if str(c.get("name", "")).lower() == "base"), None)
-    if not base:
-        return {"error": "Base chain not found in DeFiLlama response"}
-    return {"chain": "Base", "tvl_usd": base.get("tvl"), "network": "base"}
-
-
-@endpoint("/defi/tvl/{protocol}", "$0.01",
-          "Total value locked for one protocol. $0.01 USDC per call.",
-          "defi", ["defi", "tvl", "protocol"], "defi-tvl-protocol")
-async def defi_tvl_protocol(protocol: str):
-    try:
-        r = await http_client.get(f"{LLAMA}/tvl/{protocol}")
-        if r.status_code != 200:
-            return {"error": f"upstream HTTP {r.status_code}", "protocol": protocol}
-        try:
-            tvl = r.json()
-        except Exception:
-            return {"error": "protocol not found", "protocol": protocol}
-        if not isinstance(tvl, (int, float)):
-            return {"error": "protocol not found", "protocol": protocol}
-        return {"protocol": protocol, "tvl_usd": tvl}
-    except Exception as e:
-        return {"error": str(e)[:200], "protocol": protocol}
-
-
-@endpoint("/defi/protocols", "$0.01",
-          "Top protocols by TVL. $0.01 USDC per call.",
-          "defi", ["defi", "protocols", "tvl"], "defi-protocols")
-async def defi_protocols():
-    data = await _get_json(f"{LLAMA}/protocols")
-    if isinstance(data, dict) and "error" in data:
-        return data
-    protos = data if isinstance(data, list) else []
-    top = sorted(protos, key=lambda x: float(x.get("tvl") or 0), reverse=True)[:20]
-    return {
-        "count": len(top),
-        "protocols": [
-            {"name": x.get("name"), "symbol": x.get("symbol"), "tvl_usd": x.get("tvl"),
-             "chains": x.get("chains"), "url": x.get("url")}
-            for x in top
-        ],
-    }
-
-
-@endpoint("/defi/protocols/base", "$0.01",
-          "Top protocols on Base by TVL. $0.01 USDC per call.",
-          "defi", ["defi", "protocols", "base"], "defi-protocols-base")
-async def defi_protocols_base():
-    data = await _get_json(f"{LLAMA}/protocols")
-    if isinstance(data, dict) and "error" in data:
-        return data
-    protos = data if isinstance(data, list) else []
-    on_base = [x for x in protos if "Base" in (x.get("chains") or [])]
-    top = sorted(on_base, key=lambda x: float(x.get("tvl") or 0), reverse=True)[:20]
-    return {
-        "chain": "Base",
-        "count": len(top),
-        "protocols": [
-            {"name": x.get("name"), "symbol": x.get("symbol"), "tvl_usd": x.get("tvl"), "url": x.get("url")}
-            for x in top
-        ],
-    }
-
-
-def _trim_pool(p):
-    return {
-        "pool": p.get("pool"),
-        "chain": p.get("chain"),
-        "project": p.get("project"),
-        "symbol": p.get("symbol"),
-        "tvl_usd": p.get("tvlUsd"),
-        "apy": p.get("apy"),
-        "apy_base": p.get("apyBase"),
-        "apy_reward": p.get("apyReward"),
-        "reward_tokens": p.get("rewardTokens"),
-    }
-
-
-async def _yields_pools():
-    data = await _get_json(f"{YIELDS}/pools")
-    if isinstance(data, dict) and "error" in data:
-        return data
-    pools = (data or {}).get("data") or []
-    return pools
-
-
-@endpoint("/defi/yields/top", "$0.01",
-          "Highest-APY yield pools across chains. $0.01 USDC per call.",
-          "defi", ["defi", "yields", "apy"], "defi-yields-top")
-async def defi_yields_top():
-    pools = await _yields_pools()
-    if isinstance(pools, dict):
-        return pools
-    top = sorted(pools, key=lambda x: float(x.get("apy") or 0), reverse=True)[:10]
-    return {"count": len(top), "pools": [_trim_pool(p) for p in top]}
-
-
-@endpoint("/defi/yields/base", "$0.01",
-          "Highest-APY yield pools on Base. $0.01 USDC per call.",
-          "defi", ["defi", "yields", "base"], "defi-yields-base")
-async def defi_yields_base():
-    pools = await _yields_pools()
-    if isinstance(pools, dict):
-        return pools
-    on_base = [p for p in pools if p.get("chain") == "Base"]
-    top = sorted(on_base, key=lambda x: float(x.get("apy") or 0), reverse=True)[:10]
-    return {"chain": "Base", "count": len(top), "pools": [_trim_pool(p) for p in top]}
-
-
-@endpoint("/defi/yields/stable", "$0.01",
-          "Highest-APY stablecoin yield pools. $0.01 USDC per call.",
-          "defi", ["defi", "yields", "stablecoin"], "defi-yields-stable")
-async def defi_yields_stable():
-    pools = await _yields_pools()
-    if isinstance(pools, dict):
-        return pools
-    stables = [p for p in pools if (p.get("stablecoin") is True)]
-    top = sorted(stables, key=lambda x: float(x.get("apy") or 0), reverse=True)[:10]
-    return {"count": len(top), "pools": [_trim_pool(p) for p in top]}
-
-
-@endpoint("/defi/yields/pool/{pool}", "$0.01",
-          "Yield details for one pool by id. $0.01 USDC per call.",
-          "defi", ["defi", "yields", "pool"], "defi-yields-pool")
-async def defi_yields_pool(pool: str):
-    pools = await _yields_pools()
-    if isinstance(pools, dict):
-        return pools
-    match = next((p for p in pools if p.get("pool") == pool), None)
-    if not match:
-        return {"error": "pool not found", "pool": pool}
-    return _trim_pool(match)
-
-
-@endpoint("/defi/stablecoins", "$0.01",
-          "Largest stablecoins by circulating supply. $0.01 USDC per call.",
-          "defi", ["defi", "stablecoins"], "defi-stablecoins")
-async def defi_stablecoins():
-    data = await _get_json(f"{STABLECOINS}/stablecoins")
-    if isinstance(data, dict) and "error" in data:
-        return data
-    assets = (data or {}).get("peggedAssets") or []
-    top = sorted(
-        assets,
-        key=lambda x: float(((x.get("circulating") or {}).get("peggedUSD")) or 0),
-        reverse=True,
-    )[:15]
-    return {
-        "count": len(top),
-        "stablecoins": [
-            {
-                "name": x.get("name"), "symbol": x.get("symbol"),
-                "peg_type": x.get("pegType"), "peg_mechanism": x.get("pegMechanism"),
-                "circulating_usd": (x.get("circulating") or {}).get("peggedUSD"),
-            }
-            for x in top
-        ],
-    }
-
-
-_AAVE_ABI = [
-    {"inputs": [], "name": "getReservesList", "outputs": [{"name": "", "type": "address[]"}],
-     "stateMutability": "view", "type": "function"},
-]
-
-
-@endpoint("/defi/aave/reserves", "$0.01",
-          "Aave V3 reserve assets on Base. $0.01 USDC per call.",
-          "defi", ["defi", "aave", "lending"], "defi-aave-reserves")
-async def defi_aave_reserves():
-    aave = w3.eth.contract(address=_checksum(AAVE_POOL), abi=_AAVE_ABI)
-    try:
-        reserves = aave.functions.getReservesList().call()
-    except Exception as e:
-        return {"error": str(e)[:200], "pool": AAVE_POOL}
-    out = []
-    for r in reserves:
-        meta = _token_meta(r)
-        out.append({"address": r, "symbol": meta["symbol"], "name": meta["name"]})
-    return {"pool": AAVE_POOL, "count": len(out), "reserves": out, "network": "base"}
-
-
-# ===== NAMING / ENS =====
-
-@endpoint("/ens/resolve/{name}", "$0.01",
-          "Resolve an ENS name to its address. $0.01 USDC per call.",
-          "naming", ["ens", "resolve"], "ens-resolve")
-async def ens_resolve(name: str):
-    data = await _get_json(f"{ENSIDEAS}/ens/resolve/{name}")
-    if isinstance(data, dict) and "error" in data:
-        return data
-    if not isinstance(data, dict) or not data.get("address"):
-        return {"error": "ENS name not found", "name": name}
-    return {
-        "name": name,
-        "address": data.get("address"),
-        "display_name": data.get("displayName"),
-        "avatar": data.get("avatar"),
-    }
-
-
-@endpoint("/ens/reverse/{address}", "$0.01",
-          "Reverse-resolve a wallet address to its ENS name. $0.01 USDC per call.",
-          "naming", ["ens", "reverse"], "ens-reverse")
-async def ens_reverse(address: str):
-    addr = _checksum(address)
-    data = await _get_json(f"{ENSDATA}/{addr}")
-    if isinstance(data, dict) and "upstream HTTP 404" in str(data.get("error", "")):
-        # No ENS name for this address: a valid answer, not an error.
-        return {"address": addr, "ens_name": None, "avatar": None}
-    if isinstance(data, dict) and "error" in data:
-        return data
-    name = (data or {}).get("name") or (data or {}).get("ens") or (data or {}).get("displayName")
-    return {"address": addr, "ens_name": name, "avatar": (data or {}).get("avatar")}
-
-
-@endpoint("/ens/avatar/{name}", "$0.01",
-          "Avatar URL for an ENS name. $0.01 USDC per call.",
-          "naming", ["ens", "avatar"], "ens-avatar")
-async def ens_avatar(name: str):
-    data = await _get_json(f"{ENSIDEAS}/ens/resolve/{name}")
-    if isinstance(data, dict) and "error" in data:
-        return data
-    if not isinstance(data, dict) or not data.get("address"):
-        return {"error": "ENS name not found", "name": name}
-    return {"name": name, "address": data.get("address"), "avatar": data.get("avatar")}
-
-
-@endpoint("/ens/profile/{name}", "$0.01",
-          "Full public profile for an ENS name. $0.01 USDC per call.",
-          "naming", ["ens", "profile"], "ens-profile")
-async def ens_profile(name: str):
-    data = await _get_json(f"{ENSDATA}/{name}")
-    if isinstance(data, dict) and "error" in data:
-        return data
-    if not isinstance(data, dict) or not data.get("address"):
-        return {"error": "ENS name not found", "name": name}
-    return {
-        "name": name,
-        "address": data.get("address"),
-        "avatar": data.get("avatar"),
-        "description": data.get("description"),
-        "url": data.get("url"),
-        "socials": {k: v for k, v in (data or {}).items() if k in ("twitter", "github", "discord", "telegram")},
-    }
-
-
-# ===== UTILITIES =====
-
-@endpoint("/utils/eth-usd", "$0.01",
-          "Live ETH price in USD. $0.01 USDC per call.",
-          "utils", ["utils", "eth", "price"], "utils-eth-usd")
-async def utils_eth_usd():
-    price = await _eth_price_usd()
-    if price is None:
-        return {"error": "could not fetch ETH price"}
-    return {"asset": "ETH", "price_usd": price}
-
-
-@endpoint("/utils/convert/eth-usd/{amount}", "$0.01",
-          "Convert an ETH amount to USD at the live price. $0.01 USDC per call.",
-          "utils", ["utils", "convert", "eth"], "utils-convert-eth-usd")
-async def utils_convert_eth_usd(amount: str):
-    try:
-        eth = float(amount)
-    except ValueError:
-        return {"error": "amount must be a number", "amount": amount}
-    price = await _eth_price_usd()
-    if price is None:
-        return {"error": "could not fetch ETH price"}
-    return {"eth": eth, "eth_price_usd": price, "usd": round(eth * price, 2)}
-
-
-@endpoint("/utils/convert/usd-eth/{amount}", "$0.01",
-          "Convert a USD amount to ETH at the live price. $0.01 USDC per call.",
-          "utils", ["utils", "convert", "usd"], "utils-convert-usd-eth")
-async def utils_convert_usd_eth(amount: str):
-    try:
-        usd = float(amount)
-    except ValueError:
-        return {"error": "amount must be a number", "amount": amount}
-    price = await _eth_price_usd()
-    if price is None:
-        return {"error": "could not fetch ETH price"}
-    return {"usd": usd, "eth_price_usd": price, "eth": round(usd / price, 6) if price else None}
-
-
-@endpoint("/utils/convert/wei/{amount}", "$0.01",
-          "Convert wei to ether and gwei. $0.01 USDC per call.",
-          "utils", ["utils", "convert", "wei"], "utils-convert-wei")
-async def utils_convert_wei(amount: str):
-    try:
-        wei = int(amount)
-    except ValueError:
-        return {"error": "amount must be an integer number of wei", "amount": amount}
-    return {
-        "wei": wei,
-        "ether": float(Web3.from_wei(wei, "ether")),
-        "gwei": float(Web3.from_wei(wei, "gwei")),
-    }
-
-
-@endpoint("/utils/convert/ether-wei/{amount}", "$0.01",
-          "Convert ether to wei. $0.01 USDC per call.",
-          "utils", ["utils", "convert", "ether"], "utils-convert-ether-wei")
-async def utils_convert_ether_wei(amount: str):
-    try:
-        eth = float(amount)
-    except ValueError:
-        return {"error": "amount must be a number", "amount": amount}
-    return {"ether": eth, "wei": Web3.to_wei(eth, "ether")}
-
-
-@endpoint("/utils/address/validate/{address}", "$0.01",
-          "Validate an Ethereum address and return its checksum form. $0.01 USDC per call.",
-          "utils", ["utils", "address", "validate"], "utils-address-validate")
-async def utils_address_validate(address: str):
-    valid = Web3.is_address(address)
-    result = {"address": address, "is_valid": valid}
-    if valid:
-        result["checksum_address"] = Web3.to_checksum_address(address)
-        result["is_checksum"] = (address == result["checksum_address"])
-    return result
-
-
-@endpoint("/utils/address/keccak/{text}", "$0.01",
-          "Keccak-256 hash of text. $0.01 USDC per call.",
-          "utils", ["utils", "hash", "keccak"], "utils-keccak")
-async def utils_keccak(text: str):
-    return {"input": text, "keccak256": Web3.keccak(text=text).hex()}
-
-
-@endpoint("/utils/gas-cost/{gwei}/{gas}", "$0.01",
-          "Cost of a transaction in ETH and USD at the live ETH price. $0.01 USDC per call.",
-          "utils", ["utils", "gas", "cost"], "utils-gas-cost")
-async def utils_gas_cost(gwei: str, gas: str):
-    try:
-        g = float(gwei)
-        units = int(gas)
-    except ValueError:
-        return {"error": "gwei and gas must be numbers", "gwei": gwei, "gas": gas}
-    cost_eth = (g * units) / 1e9
-    price = await _eth_price_usd()
-    return {
-        "gas_price_gwei": g,
-        "gas_units": units,
-        "cost_eth": cost_eth,
-        "eth_price_usd": price,
-        "cost_usd": (round(cost_eth * price, 4) if price else None),
-    }
-
-
-@endpoint("/utils/coin-price/{coin}", "$0.01",
-          "Live USD price for a coin by CoinGecko id. $0.01 USDC per call.",
-          "utils", ["utils", "coin", "price"], "utils-coin-price")
-async def utils_coin_price(coin: str):
-    data = await _get_json(
-        f"{COINGECKO}/simple/price", params={"ids": coin, "vs_currencies": "usd"}
-    )
-    if isinstance(data, dict) and "error" in data:
-        return data
-    entry = (data or {}).get(coin)
-    if not entry:
-        return {"error": "coin not found on CoinGecko", "coin": coin}
-    return {"coin": coin, "price_usd": entry.get("usd"), "source": "coingecko"}
-
-
-@endpoint("/utils/market/global", "$0.01",
-          "Global crypto market stats from CoinGecko. $0.01 USDC per call.",
-          "utils", ["utils", "market", "global"], "utils-market-global")
-async def utils_market_global():
-    data = await _get_json(f"{COINGECKO}/global")
-    if isinstance(data, dict) and "error" in data:
-        return data
-    d = (data or {}).get("data") or {}
-    return {
-        "active_cryptocurrencies": d.get("active_cryptocurrencies"),
-        "markets": d.get("markets"),
-        "total_market_cap_usd": (d.get("total_market_cap") or {}).get("usd"),
-        "total_volume_24h_usd": (d.get("total_volume") or {}).get("usd"),
-        "btc_dominance_pct": (d.get("market_cap_percentage") or {}).get("btc"),
-        "eth_dominance_pct": (d.get("market_cap_percentage") or {}).get("eth"),
-        "market_cap_change_24h_pct": d.get("market_cap_change_percentage_24h_usd"),
-    }
-
-
-@endpoint("/utils/market/trending", "$0.01",
-          "Trending coins on CoinGecko. $0.01 USDC per call.",
-          "utils", ["utils", "market", "trending"], "utils-market-trending")
-async def utils_market_trending():
-    data = await _get_json(f"{COINGECKO}/search/trending")
-    if isinstance(data, dict) and "error" in data:
-        return data
-    coins = (data or {}).get("coins") or []
-    return {
-        "coins": [
-            {
-                "id": c.get("item", {}).get("id"),
-                "name": c.get("item", {}).get("name"),
-                "symbol": c.get("item", {}).get("symbol"),
-                "market_cap_rank": c.get("item", {}).get("market_cap_rank"),
-                "price_btc": c.get("item", {}).get("price_btc"),
-            }
-            for c in coins[:10]
-        ],
-    }
-
-
-@endpoint("/utils/market/top", "$0.01",
-          "Top 10 cryptocurrencies by market cap. $0.01 USDC per call.",
-          "utils", ["utils", "market", "top"], "utils-market-top")
-async def utils_market_top():
-    data = await _get_json(
-        f"{COINGECKO}/coins/markets",
-        params={"vs_currency": "usd", "order": "market_cap_desc", "per_page": 10, "page": 1},
-    )
-    if isinstance(data, dict) and "error" in data:
-        return data
-    coins = data if isinstance(data, list) else []
-    return {
-        "coins": [
-            {
-                "rank": c.get("market_cap_rank"), "id": c.get("id"), "symbol": c.get("symbol"),
-                "name": c.get("name"), "price_usd": c.get("current_price"),
-                "market_cap_usd": c.get("market_cap"), "volume_24h_usd": c.get("total_volume"),
-                "change_24h_pct": c.get("price_change_percentage_24h"),
-            }
-            for c in coins
-        ],
-    }
-
-
-@endpoint("/utils/fear-greed", "$0.01",
-          "Crypto Fear & Greed Index. $0.01 USDC per call.",
-          "utils", ["utils", "fear-greed", "sentiment"], "utils-fear-greed")
-async def utils_fear_greed():
-    data = await _get_json(f"{FNG}/fng/", params={"limit": 1})
-    if isinstance(data, dict) and "error" in data:
-        return data
-    items = (data or {}).get("data") or []
-    if not items:
-        return {"error": "no Fear & Greed data returned"}
-    it = items[0]
-    return {
-        "value": it.get("value"),
-        "classification": it.get("value_classification"),
-        "timestamp": it.get("timestamp"),
-        "time_until_update": it.get("time_until_update"),
-    }
-
-
-@endpoint("/utils/coin/{coin}", "$0.01",
-          "Detail for a coin by CoinGecko id. $0.01 USDC per call.",
-          "utils", ["utils", "coin", "detail"], "utils-coin")
-async def utils_coin(coin: str):
-    data = await _get_json(f"{COINGECKO}/coins/{coin}")
-    if isinstance(data, dict) and "error" in data:
-        return data
-    if not isinstance(data, dict) or not data.get("id"):
-        return {"error": "coin not found on CoinGecko", "coin": coin}
-    md = data.get("market_data") or {}
-    return {
-        "id": data.get("id"),
-        "symbol": data.get("symbol"),
-        "name": data.get("name"),
-        "price_usd": (md.get("current_price") or {}).get("usd"),
-        "market_cap_usd": (md.get("market_cap") or {}).get("usd"),
-        "market_cap_rank": data.get("market_cap_rank"),
-        "volume_24h_usd": (md.get("total_volume") or {}).get("usd"),
-        "change_24h_pct": (md.get("price_change_percentage_24h") or {}),
-        "change_7d_pct": (md.get("price_change_percentage_7d") or {}),
-        "circulating_supply": md.get("circulating_supply"),
-        "total_supply": md.get("total_supply"),
-        "max_supply": md.get("max_supply"),
-        "homepage": (data.get("links") or {}).get("homepage", [None])[0],
-    }
-
-# ===== v5 ADDITIONS (100 new paid endpoints) =====
-# New data sources — all free, no keys, verified reachable from this VM
-# Nov 21, 2026:
-#   - DeFiLlama stablecoins API (stablecoins.llama.fi): /stablecoins list,
-#     /stablecoinchains, /stablecoinprices. NOTE: there is NO per-asset
-#     path — /stablecoins/{id} 404s, so per-asset handlers filter the
-#     full list client-side.
-#   - DeFiLlama yields /chart/{pool}: per-pool history of tvl/apy.
-#   - GoPlus Security API (api.gopluslabs.io, no key): token_security/8453
-#     returns holder counts, top holders, audit flags (honeypot, mintable,
-#     taxes, proxy, owner/creator).
-#   - Polymarket Gamma API (gamma-api.polymarket.com, no key): /markets,
-#     /events, /markets/{slug}.
-#   - Polymarket CLOB price API (clob.polymarket.com) is DEAD for our use:
-#     it rejects every Gamma clobTokenId as "Invalid token id" (verified
-#     Nov 21, 2026 across /price, /book, /midpoint, /prices) — do not use.
-#   - Snapshot Hub GraphQL (hub.snapshot.org/graphql, no key): spaces,
-#     proposals, votes.
-# Dead ends (verified Nov 21, 2026 — do NOT use):
-#   - bridges.llama.fi returns 402 (paid plan required).
-#   - DeFiLlama /summary/revenue/* returns 500.
-#   - Farcaster hub is unreachable from this environment.
-#   - eth_blobBaseFee is filtered by the public Base RPC (401).
-#   - Compound V3 Comet getSupplyRate/getBorrowRate revert on Base;
-#     use DeFiLlama yields for Compound APYs instead.
-#   - DeFiLlama /protocol/{slug} returns ~30MB and truncates; use
-#     /protocols for protocol detail instead.
-#   - DeFiLlama /overview/dexs?chain=X IGNORES the chain param (returns
-#     global totals for every chain); use the path form /overview/dexs/{chain}.
-#   - Public IPFS gateways are all blocked from this VM (ipfs.io 403,
-#     cloudflare-ipfs.com unreachable, dweb.link 403, w3s.link blocked,
-#     pinata unreachable, nftstorage 403); NFT metadata handlers decode
-#     data: URIs locally and treat gateway fetches as best-effort.
-#   - Compound V3 Comet on Base has no totalSupply(uint256) per-token
-#     supply for ERC1155s in Zora1155 either; those handlers return an
-#     explicit "not supported" note (same pattern as v4 nft-supply).
-
-GOPLUS = "https://api.gopluslabs.io"
-SNAPSHOT = "https://hub.snapshot.org/graphql"
-GAMMA = "https://gamma-api.polymarket.com"
-
-# Chainlink price feeds on Base (verified on-chain Nov 21, 2026 — all
-# 8-decimal aggregators; prices at verification: ETH $1680.44,
-# BTC $60152.69, USDC $0.99987).
-CHAINLINK_FEEDS = {
-    "eth": {"pair": "ETH / USD", "address": "0x71041dddad3595F9CEd3DcCFBe3D1F4b0a16Bb70"},
-    "btc": {"pair": "BTC / USD", "address": "0x64c911996D3c6aC71f9b455B1E8E7266BcbD848F"},
-    "usdc": {"pair": "USDC / USD", "address": "0x7e860098F58bBFC8648a4311b374B1D669a2bc6B"},
-}
-
-# Compound V3 Comet USDC market on Base (verified on-chain Nov 21, 2026:
-# utilization 85.45%, totalSupply/totalBorrow/balanceOf/borrowBalanceOf
-# work; getSupplyRate/getBorrowRate revert).
-COMET_USDC = "0xb125E6687d4313864e53df431d5425969c15Eb2F"
-
-# Token spenders queried by the wallet-approvals endpoints (verified
-# on-chain Nov 21, 2026).
-SPENDERS = [
-    {"name": "Permit2", "address": "0x000000000022D473030F116dDEE9F6B43aC78BA3"},
-    {"name": "Uniswap SwapRouter02", "address": "0x2626664c2603336E57B271c5C0b26F421741e481"},
-    {"name": "Aave V3 Pool", "address": AAVE_POOL},
-    {"name": "Aerodrome Router", "address": "0x9Ee35Bf1bd69a03c6F0393582030fCe8Bb93D418"},
-]
-
-_CHAINLINK_ABI = [
-    {"name": "latestAnswer", "outputs": [{"type": "int256"}], "inputs": [], "stateMutability": "view", "type": "function"},
-    {"name": "decimals", "outputs": [{"type": "uint8"}], "inputs": [], "stateMutability": "view", "type": "function"},
-    {"name": "description", "outputs": [{"type": "string"}], "inputs": [], "stateMutability": "view", "type": "function"},
-]
-
-_AAVE_RESERVE_ABI = [
-    {"name": "getReservesList", "outputs": [{"type": "address[]"}], "inputs": [], "stateMutability": "view", "type": "function"},
-    {"name": "getReserveData", "outputs": [{"type": "tuple", "components": [
-        {"name": "configuration", "type": "tuple", "components": [{"name": "data", "type": "uint256"}]},
-        {"name": "liquidityIndex", "type": "uint128"},
-        {"name": "currentLiquidityRate", "type": "uint128"},
-        {"name": "variableBorrowIndex", "type": "uint128"},
-        {"name": "currentVariableBorrowRate", "type": "uint128"},
-        {"name": "currentStableBorrowRate", "type": "uint128"},
-        {"name": "lastUpdateTimestamp", "type": "uint40"},
-        {"name": "id", "type": "uint16"},
-        {"name": "aTokenAddress", "type": "address"},
-        {"name": "stableDebtTokenAddress", "type": "address"},
-        {"name": "variableDebtTokenAddress", "type": "address"},
-        {"name": "interestRateStrategyAddress", "type": "address"},
-        {"name": "accruedToTreasury", "type": "uint128"},
-        {"name": "unbacked", "type": "uint128"},
-        {"name": "isolationModeTotalDebt", "type": "uint128"},
-    ]}], "inputs": [{"name": "asset", "type": "address"}], "stateMutability": "view", "type": "function"},
-    {"name": "getUserAccountData", "outputs": [
-        {"type": "uint256"}, {"type": "uint256"}, {"type": "uint256"},
-        {"type": "uint256"}, {"type": "uint256"}, {"type": "uint256"},
-    ], "inputs": [{"name": "user", "type": "address"}], "stateMutability": "view", "type": "function"},
-]
-
-_COMET_ABI = [
-    {"name": "getUtilization", "outputs": [{"type": "uint256"}], "inputs": [], "stateMutability": "view", "type": "function"},
-    {"name": "totalSupply", "outputs": [{"type": "uint256"}], "inputs": [], "stateMutability": "view", "type": "function"},
-    {"name": "totalBorrow", "outputs": [{"type": "uint256"}], "inputs": [], "stateMutability": "view", "type": "function"},
-    {"name": "balanceOf", "outputs": [{"type": "uint256"}], "inputs": [{"name": "account", "type": "address"}], "stateMutability": "view", "type": "function"},
-    {"name": "borrowBalanceOf", "outputs": [{"type": "uint256"}], "inputs": [{"name": "account", "type": "address"}], "stateMutability": "view", "type": "function"},
-    {"name": "baseToken", "outputs": [{"type": "address"}], "inputs": [], "stateMutability": "view", "type": "function"},
-]
-
-# ERC1155 selectors (balanceOf(address,uint256)=0x00fdd58e,
-# uri(uint256)=0x0e89341c, totalSupply(uint256)=0xbd85b039).
-SEL_BALANCE_1155 = "00fdd58e"
-SEL_URI_1155 = "0e89341c"
-SEL_TOTALSUPPLY_1155 = "bd85b039"
-
-
-async def _post_json(url, payload):
-    """POST a JSON body to a public API. Returns parsed body or error dict."""
-    try:
-        r = await http_client.post(url, json=payload)
-        if r.status_code != 200:
-            return {"error": f"upstream HTTP {r.status_code}", "url": url}
-        try:
-            return r.json()
-        except Exception:
-            return {"error": "upstream returned non-JSON", "url": url}
-    except Exception as e:
-        return {"error": str(e)[:200], "url": url}
-
-
-def _ray_to_pct(ray):
-    """Aave RAY (1e27) rate -> percent per year."""
-    return round((ray / 1e27) * 100, 4)
-
-
-def _chainlink_read(feed_addr):
-    """Read a Chainlink aggregator: price, decimals, description."""
-    try:
-        c = w3.eth.contract(address=_checksum(feed_addr), abi=_CHAINLINK_ABI)
-        dec = c.functions.decimals().call()
-        ans = c.functions.latestAnswer().call()
-        desc = c.functions.description().call()
-        return {"feed": _checksum(feed_addr), "pair": desc, "decimals": dec,
-                "price": ans / (10 ** dec), "answer_raw": ans,
-                "source": "chainlink", "network": "base"}
-    except Exception as e:
-        return {"error": str(e)[:200], "feed": feed_addr}
-
-
-def _aave_reserve_data(asset):
-    """Aave V3 getReserveData for one asset (rates + token addresses)."""
-    aave = w3.eth.contract(address=_checksum(AAVE_POOL), abi=_AAVE_RESERVE_ABI)
-    rd = aave.functions.getReserveData(_checksum(asset)).call()
-    return {
-        "liquidity_index": rd[1],
-        "supply_rate_ray": rd[2],
-        "supply_apy_pct": _ray_to_pct(rd[2]),
-        "variable_borrow_index": rd[3],
-        "variable_borrow_rate_ray": rd[4],
-        "variable_borrow_apy_pct": _ray_to_pct(rd[4]),
-        "stable_borrow_rate_ray": rd[5],
-        "stable_borrow_apy_pct": _ray_to_pct(rd[5]),
-        "last_update": rd[6],
-        "a_token": rd[8],
-        "stable_debt_token": rd[9],
-        "variable_debt_token": rd[10],
-    }
-
-
-async def _stablecoin_list():
-    data = await _get_json(f"{STABLECOINS}/stablecoins")
-    if isinstance(data, dict) and "error" in data:
-        return data
-    return (data or {}).get("peggedAssets") or []
-
-
-def _stablecoin_find(assets, asset):
-    """Find one stablecoin by id, symbol, or gecko_id (case-insensitive)."""
-    key = asset.lower()
-    for a in assets:
-        for field in ("id", "symbol", "gecko_id"):
-            if str(a.get(field, "")).lower() == key:
-                return a
-    return None
-
-
-async def _yields_by_project(project, chain=None):
-    """Yield pools for one project (optionally one chain), from /pools."""
-    pools = await _yields_pools()
-    if isinstance(pools, dict):
-        return pools
-    out = [p for p in pools if str(p.get("project", "")).lower() == project.lower()]
-    if chain:
-        out = [p for p in out if str(p.get("chain", "")).lower() == chain.lower()]
-    return out
-
-
-async def _goplus_token(addr):
-    """GoPlus token_security entry for one Base token, or error dict."""
-    data = await _get_json(f"{GOPLUS}/api/v1/token_security/8453",
-                           params={"contract_addresses": _checksum(addr)})
-    if isinstance(data, dict) and "error" in data:
-        return data
-    result = (data or {}).get("result") or {}
-    entry = result.get(_checksum(addr).lower()) or result.get(_checksum(addr))
-    if not entry:
-        return {"error": "GoPlus has no data for this token", "token": _checksum(addr)}
-    return entry
-
-
-async def _snapshot(query, variables=None):
-    """Run a Snapshot Hub GraphQL query. Returns data dict or error dict."""
-    payload = {"query": query}
-    if variables:
-        payload["variables"] = variables
-    data = await _post_json(SNAPSHOT, payload)
-    if isinstance(data, dict) and "error" in data:
-        return data
-    if isinstance(data, dict) and data.get("errors"):
-        return {"error": str(data["errors"])[:300]}
-    return (data or {}).get("data") or {}
-
-
-def _trim_market(m):
-    return {
-        "id": m.get("id"), "slug": m.get("slug"), "question": m.get("question"),
-        "liquidity": m.get("liquidity"), "volume_24h": m.get("volume24hr"),
-        "volume": m.get("volume"), "end_date": m.get("endDate"),
-        "active": m.get("active"), "closed": m.get("closed"),
-        "outcomes": m.get("outcomes"), "outcome_prices": m.get("outcomePrices"),
-        "url": f"https://polymarket.com/event/{m.get('slug')}" if m.get("slug") else None,
-    }
-
-
-def _trim_stable(a):
-    return {
-        "name": a.get("name"), "symbol": a.get("symbol"), "id": a.get("id"),
-        "peg_type": a.get("pegType"), "peg_mechanism": a.get("pegMechanism"),
-        "price": a.get("price"),
-        "circulating_usd": (a.get("circulating") or {}).get("peggedUSD"),
-        "chains": list((a.get("chainCirculating") or {}).keys()),
-    }
-
-
-def _decode_data_uri(uri):
-    """Decode a data:application/json;base64,... token URI to a dict, or None.
-    Uniswap V3 position NFTs (and other fully on-chain collections) embed
-    their metadata this way — no gateway needed, so it works even where
-    public IPFS gateways are blocked (as they are from this VM)."""
-    if not uri or not uri.startswith("data:application/json;base64,"):
-        return None
-    try:
-        return json.loads(base64.b64decode(uri.split(",", 1)[1]))
-    except Exception:
-        return None
-
-
-async def _coin_price(coin):
-    """CoinGecko simple price for one coin id. Returns {"usd": ...} or error dict."""
-    data = await _get_json(f"{COINGECKO}/simple/price", params={"ids": coin, "vs_currencies": "usd"})
-    if isinstance(data, dict) and "error" in data:
-        return data
-    entry = (data or {}).get(coin)
-    if not entry:
-        return {"error": "coin not found on CoinGecko", "coin": coin}
-    return {"usd": entry.get("usd")}
-
-
-async def _ens_lookup(name):
-    """Full public ENS profile for one name (ensdata.net)."""
-    return await _get_json(f"{ENSDATA}/{name}")
-
-
-def _curated(symbol):
-    """Curated Base token entry by symbol (case-insensitive), or None."""
-    for t in CURATED_TOKENS:
-        if t["symbol"].lower() == symbol.lower():
-            return t
-    return None
-
-
-def _allowance(token, owner, spender):
-    """ERC20 allowance a wallet granted to a spender (raw + human)."""
-    raw = _erc20_uint(token, SEL_ALLOWANCE, _addr32(owner) + _addr32(spender))
-    meta = _token_meta(token)
-    dec = meta["decimals"]
-    return {"allowance_raw": raw,
-            "allowance": (raw / (10 ** dec)) if dec is not None else None,
-            "decimals": dec}
-
-
-# Meme tokens used by /memes/trending (addresses verified on Dexscreener
-# Nov 21, 2026; DEGEN corrected — the widely-quoted address ending
-# "Ef58" returns no pairs, the live one ends "Efefed").
-MEME_TOKENS = [
-    {"symbol": "DEGEN", "address": "0x4ed4E862860beD51a9570b96d89aF5E1B0Efefed"},
-    {"symbol": "BRETT", "address": "0x532f27101965dd16442E59d40670FaF5eBB142E4"},
-    {"symbol": "TOSHI", "address": "0xAC1Bd2486aAf3B5C0fc3Fd868558b082a531B2b4"},
-]
-
-# ---------- v5 LENDING (14) ----------
-
-async def lending_aave_markets():
-    """All Aave V3 markets on Base with on-chain supply/borrow APY."""
-    try:
-        aave = w3.eth.contract(address=_checksum(AAVE_POOL), abi=_AAVE_RESERVE_ABI)
-        reserves = aave.functions.getReservesList().call()
-        markets = []
-        for r in reserves:
-            try:
-                meta = _token_meta(r)
-            except Exception:
-                meta = {"symbol": None, "name": None, "decimals": None}
-            try:
-                rd = _aave_reserve_data(r)
-            except Exception as e:
-                rd = {"error": str(e)[:200]}
-            markets.append({"asset": _checksum(r), "symbol": meta.get("symbol"),
-                            "name": meta.get("name"), "decimals": meta.get("decimals"), **rd})
-        return {"network": "base", "protocol": "aave-v3", "pool": AAVE_POOL,
-                "count": len(markets), "markets": markets}
-    except Exception as e:
-        return {"error": str(e)[:200]}
-
-
-async def lending_aave_market_asset(asset: str):
-    """Aave V3 market for one asset: on-chain rates + aToken/debt tokens."""
-    try:
-        addr = _checksum(asset)
-    except Exception:
-        return {"error": "invalid address", "asset": asset}
-    try:
-        meta = _token_meta(addr)
-    except Exception:
-        meta = {"symbol": None, "name": None, "decimals": None}
-    try:
-        rd = _aave_reserve_data(addr)
-    except Exception as e:
-        return {"error": str(e)[:200], "asset": addr}
-    return {"network": "base", "protocol": "aave-v3", "asset": addr,
-            "symbol": meta.get("symbol"), "name": meta.get("name"),
-            "decimals": meta.get("decimals"), **rd}
-
-
-async def lending_aave_user(wallet: str):
-    """Aave V3 account data for one wallet: collateral/debt in ETH."""
-    try:
-        addr = _checksum(wallet)
-    except Exception:
-        return {"error": "invalid address", "wallet": wallet}
-    try:
-        aave = w3.eth.contract(address=_checksum(AAVE_POOL), abi=_AAVE_RESERVE_ABI)
-        d = aave.functions.getUserAccountData(addr).call()
-        return {"network": "base", "protocol": "aave-v3", "wallet": addr,
-                "total_collateral_eth": d[0] / 1e18, "total_debt_eth": d[1] / 1e18,
-                "available_borrows_eth": d[2] / 1e18,
-                "current_liquidation_threshold_bps": d[3],
-                "ltv_bps": d[4], "health_factor": d[5] / 1e18 if d[5] < 10 ** 30 else None,
-                "health_factor_raw": d[5]}
-    except Exception as e:
-        return {"error": str(e)[:200], "wallet": addr}
-
-
-async def lending_aave_tvl():
-    """Aave V3 TVL on Base (DeFiLlama /protocols)."""
-    data = await _get_json(f"{LLAMA}/protocols")
-    if isinstance(data, dict) and "error" in data:
-        return data
-    for p in data:
-        if p.get("slug") == "aave-v3":
-            chain_tvls = p.get("chainTvls") or {}
-            return {"protocol": "aave-v3", "name": p.get("name"),
-                    "chain": "Base", "tvl_usd": chain_tvls.get("Base"),
-                    "total_tvl_usd": p.get("tvl"), "url": p.get("url"),
-                    "category": p.get("category")}
-    return {"error": "aave-v3 not found in DeFiLlama protocols"}
-
-
-async def lending_compound_markets():
-    """Compound V3 yield pools on Base, top 10 by TVL."""
-    pools = await _yields_by_project("compound-v3", "Base")
-    if isinstance(pools, dict):
-        return pools
-    pools = sorted(pools, key=lambda p: p.get("tvlUsd") or 0, reverse=True)[:10]
-    return {"protocol": "compound-v3", "chain": "Base", "count": len(pools),
-            "markets": [_trim_pool(p) for p in pools]}
-
-
-async def lending_compound_usdc():
-    """Compound V3 Comet USDC market on Base: utilization, totals, APY."""
-    try:
-        comet = w3.eth.contract(address=_checksum(COMET_USDC), abi=_COMET_ABI)
-        util = comet.functions.getUtilization().call()
-        total_supply = comet.functions.totalSupply().call()
-        total_borrow = comet.functions.totalBorrow().call()
-        base_token = comet.functions.baseToken().call()
-        apy = None
-        pools = await _yields_by_project("compound-v3", "Base")
-        if isinstance(pools, list):
-            usdc = [p for p in pools if "USDC" in str(p.get("symbol", "")).upper()]
-            if usdc:
-                usdc = sorted(usdc, key=lambda p: p.get("tvlUsd") or 0, reverse=True)[0]
-                apy = {"apy_pct": usdc.get("apy"), "apy_base_pct": usdc.get("apyBase"),
-                       "apy_reward_pct": usdc.get("apyReward"), "pool": usdc.get("pool")}
-        return {"network": "base", "protocol": "compound-v3", "market": COMET_USDC,
-                "base_token": base_token, "base_token_decimals": 6,
-                "utilization_pct": round(util / 1e18 * 100, 2),
-                "total_supplied_usdc": total_supply / 1e6,
-                "total_borrowed_usdc": total_borrow / 1e6, "apy": apy}
-    except Exception as e:
-        return {"error": str(e)[:200]}
-
-
-async def lending_compound_user(wallet: str):
-    """Compound V3 Comet USDC position for one wallet: supplied/borrowed."""
-    try:
-        addr = _checksum(wallet)
-    except Exception:
-        return {"error": "invalid address", "wallet": wallet}
-    try:
-        comet = w3.eth.contract(address=_checksum(COMET_USDC), abi=_COMET_ABI)
-        supplied = comet.functions.balanceOf(addr).call()
-        borrowed = comet.functions.borrowBalanceOf(addr).call()
-        return {"network": "base", "protocol": "compound-v3", "market": COMET_USDC,
-                "wallet": addr, "supplied_usdc": supplied / 1e6,
-                "borrowed_usdc": borrowed / 1e6}
-    except Exception as e:
-        return {"error": str(e)[:200], "wallet": addr}
-
-
-async def lending_morpho_pools():
-    """Morpho Blue yield pools on Base, top 10 by TVL."""
-    pools = await _yields_by_project("morpho-blue", "Base")
-    if isinstance(pools, dict):
-        return pools
-    pools = sorted(pools, key=lambda p: p.get("tvlUsd") or 0, reverse=True)[:10]
-    return {"protocol": "morpho-blue", "chain": "Base", "count": len(pools),
-            "markets": [_trim_pool(p) for p in pools]}
-
-
-async def lending_morpho_stable():
-    """Highest-APY Morpho Blue stablecoin pools on Base."""
-    pools = await _yields_by_project("morpho-blue", "Base")
-    if isinstance(pools, dict):
-        return pools
-    pools = [p for p in pools if p.get("stablecoin")]
-    pools = sorted(pools, key=lambda p: p.get("apy") or 0, reverse=True)[:10]
-    return {"protocol": "morpho-blue", "chain": "Base", "count": len(pools),
-            "markets": [_trim_pool(p) for p in pools]}
-
-
-async def lending_rates(asset: str):
-    """Lending rates for one asset: Aave on-chain + yield pools (Aave/Morpho/Compound)."""
-    try:
-        meta = _token_meta(asset)
-    except Exception:
-        return {"error": "invalid address or token", "asset": asset}
-    addr = _checksum(asset)
-    aave = None
-    try:
-        aave = _aave_reserve_data(addr)
-    except Exception as e:
-        aave = {"error": str(e)[:200]}
-    pools = await _yields_pools()
-    if isinstance(pools, dict):
-        return pools
-    sym = str(meta.get("symbol") or "").upper()
-    mine = [p for p in pools if p.get("chain") == "Base"
-            and str(p.get("project", "")).lower() in ("aave-v3", "morpho-blue", "compound-v3")
-            and sym and sym in str(p.get("symbol", "")).upper()]
-    mine = sorted(mine, key=lambda p: p.get("apy") or 0, reverse=True)[:5]
-    return {"asset": addr, "symbol": meta.get("symbol"), "name": meta.get("name"),
-            "aave_on_chain": aave,
-            "yield_pools": [_trim_pool(p) for p in mine]}
-
-
-async def lending_top_apy():
-    """Top 10 lending APY pools on Base (all lending projects)."""
-    pools = await _yields_pools()
-    if isinstance(pools, dict):
-        return pools
-    lending = {"aave-v3", "morpho-blue", "compound-v3", "aave-v2", "spark",
-               "moonwell", "seamless-protocol", "fluid-lending", "maple"}
-    mine = [p for p in pools if p.get("chain") == "Base"
-            and str(p.get("project", "")).lower() in lending]
-    mine = sorted(mine, key=lambda p: p.get("apy") or 0, reverse=True)[:10]
-    return {"chain": "Base", "count": len(mine),
-            "pools": [_trim_pool(p) for p in mine]}
-
-
-async def lending_stablecoin_rates():
-    """Aave V3 supply/borrow APY for USDC, DAI and USDbC on Base."""
-    out = []
-    for sym in ("USDC", "DAI", "USDBC"):
-        entry = _curated(sym)
-        if not entry:
-            continue
-        addr = entry["address"]
-        try:
-            rd = _aave_reserve_data(addr)
-        except Exception as e:
-            rd = {"error": str(e)[:200]}
-        out.append({"symbol": sym, "asset": addr, **rd})
-    return {"network": "base", "protocol": "aave-v3", "markets": out}
-
-
-async def lending_usdc_rate():
-    """Aave V3 USDC market rates on Base."""
-    addr = USDC
-    try:
-        rd = _aave_reserve_data(addr)
-    except Exception as e:
-        return {"error": str(e)[:200]}
-    return {"network": "base", "protocol": "aave-v3", "asset": addr,
-            "symbol": "USDC", **rd}
-
-
-async def lending_weth_rate():
-    """Aave V3 WETH market rates on Base."""
-    addr = WETH
-    try:
-        rd = _aave_reserve_data(addr)
-    except Exception as e:
-        return {"error": str(e)[:200]}
-    return {"network": "base", "protocol": "aave-v3", "asset": addr,
-            "symbol": "WETH", **rd}
-
-# ---------- v5 STABLECOINS (6) ----------
-
-async def stablecoins_top():
-    """Top 10 stablecoins by circulating supply (DeFiLlama)."""
-    assets = await _stablecoin_list()
-    if isinstance(assets, dict):
-        return assets
-    assets = sorted(assets, key=lambda a: (a.get("circulating") or {}).get("peggedUSD") or 0, reverse=True)[:10]
-    return {"count": len(assets), "stablecoins": [_trim_stable(a) for a in assets]}
-
-
-async def stablecoins_asset(asset: str):
-    """One stablecoin by id, symbol, or gecko_id, with per-chain supply."""
-    assets = await _stablecoin_list()
-    if isinstance(assets, dict):
-        return assets
-    a = _stablecoin_find(assets, asset)
-    if not a:
-        return {"error": f"stablecoin not found: {asset}"}
-    chains = {}
-    cc = a.get("chainCirculating") or {}
-    for ch, v in cc.items():
-        cur = (v or {}).get("current") or {}
-        chains[ch] = cur.get("peggedUSD")
-    return {"id": a.get("id"), "name": a.get("name"), "symbol": a.get("symbol"),
-            "gecko_id": a.get("gecko_id"), "peg_type": a.get("pegType"),
-            "peg_mechanism": a.get("pegMechanism"), "price": a.get("price"),
-            "circulating_usd": (a.get("circulating") or {}).get("peggedUSD"),
-            "chains": chains, "price_source": a.get("priceSource")}
-
-
-async def stablecoins_chains():
-    """Stablecoin supply by chain, top 15."""
-    data = await _get_json(f"{STABLECOINS}/stablecoinchains")
-    if isinstance(data, dict) and "error" in data:
-        return data
-    rows = data if isinstance(data, list) else []
-    def _amt(r):
-        for k in ("totalCirculatingUSD", "totalCirculating", "circulating"):
-            v = r.get(k)
-            if isinstance(v, (int, float)):
-                return v
-        return 0
-    rows = sorted(rows, key=_amt, reverse=True)[:15]
-    return {"count": len(rows), "chains": [
-        {"chain": r.get("name"), "total_circulating_usd": _amt(r),
-         "stablecoin_count": r.get("stablecoinCount")} for r in rows]}
-
-
-async def stablecoins_pegs():
-    """Stablecoins furthest from their $1 peg right now, top 15."""
-    data = await _get_json(f"{STABLECOINS}/stablecoinprices")
-    if isinstance(data, dict) and "error" in data:
-        return data
-    # Shape: [{"date": 0, "prices": {stablecoin_id: price, ...}}] — keyed
-    # by stablecoin id, not by contract address.
-    prices = {}
-    for r in (data if isinstance(data, list) else []):
-        if isinstance(r, dict) and isinstance(r.get("prices"), dict):
-            prices = r["prices"]
-            break
-    out = []
-    for k, v in prices.items():
-        if isinstance(v, (int, float)):
-            out.append({"id": k, "price": v,
-                        "deviation_pct": round((v - 1) * 100, 3)})
-    out = sorted(out, key=lambda x: abs(x["deviation_pct"]), reverse=True)[:15]
-    return {"count": len(out), "pegs": out}
-
-
-async def stablecoins_chain(chain: str):
-    """Top 15 stablecoins by circulating supply on one chain."""
-    assets = await _stablecoin_list()
-    if isinstance(assets, dict):
-        return assets
-    out = []
-    for a in assets:
-        cc = a.get("chainCirculating") or {}
-        for ch, v in cc.items():
-            if ch.lower() == chain.lower():
-                cur = (v or {}).get("current") or {}
-                out.append({"symbol": a.get("symbol"), "id": a.get("id"),
-                            "name": a.get("name"),
-                            "circulating_usd": cur.get("peggedUSD")})
-    out = sorted(out, key=lambda x: x.get("circulating_usd") or 0, reverse=True)[:15]
-    return {"chain": chain, "count": len(out), "stablecoins": out}
-
-
-async def stablecoins_total():
-    """Total circulating supply of all stablecoins (DeFiLlama)."""
-    assets = await _stablecoin_list()
-    if isinstance(assets, dict):
-        return assets
-    total = sum((a.get("circulating") or {}).get("peggedUSD") or 0 for a in assets)
-    return {"total_circulating_usd": round(total, 2), "stablecoin_count": len(assets)}
-
-
-# ---------- v5 ORACLES (6) ----------
-
-async def oracles_feeds():
-    """Chainlink price feeds on Base: ETH/USD, BTC/USD, USDC/USD."""
-    feeds = []
-    for key, f in CHAINLINK_FEEDS.items():
-        r = _chainlink_read(f["address"])
-        r["key"] = key
-        feeds.append(r)
-    return {"network": "base", "source": "chainlink", "feeds": feeds}
-
-
-async def oracles_price(symbol: str):
-    """Chainlink price for one symbol (eth, btc, usdc)."""
-    f = CHAINLINK_FEEDS.get(symbol.lower())
-    if not f:
-        return {"error": f"no Chainlink feed for symbol: {symbol}",
-                "available": list(CHAINLINK_FEEDS.keys())}
-    return _chainlink_read(f["address"])
-
-
-async def oracles_eth():
-    """Chainlink ETH/USD on Base."""
-    return _chainlink_read(CHAINLINK_FEEDS["eth"]["address"])
-
-
-async def oracles_btc():
-    """Chainlink BTC/USD on Base."""
-    return _chainlink_read(CHAINLINK_FEEDS["btc"]["address"])
-
-
-async def oracles_usdc():
-    """Chainlink USDC/USD on Base."""
-    return _chainlink_read(CHAINLINK_FEEDS["usdc"]["address"])
-
-
-async def oracles_vs_coingecko():
-    """Chainlink ETH/USD vs CoinGecko ETH price (oracle deviation check)."""
-    chainlink = _chainlink_read(CHAINLINK_FEEDS["eth"]["address"])
-    cg = await _coin_price("ethereum")
-    if isinstance(cg, dict) and "error" in cg:
-        return {"chainlink": chainlink, "coingecko": cg}
-    cg_price = (cg or {}).get("usd")
-    out = {"chainlink": chainlink, "coingecko_usd": cg_price}
-    if "price" in chainlink and isinstance(cg_price, (int, float)) and cg_price:
-        out["deviation_pct"] = round((chainlink["price"] - cg_price) / cg_price * 100, 3)
-    return out
-
-
-# ---------- v5 GOVERNANCE (5) ----------
-
-_GOV_PROPOSALS_Q = """
-query { proposals(first: 10, orderBy: "created", orderDirection: desc) {
-  id title choices scores scores_total state start end
-  space { id name } author } }
-"""
-
-_GOV_SPACE_PROPOSALS_Q = """
-query($space: String!) { proposals(first: 10, where: {space: $space},
-  orderBy: "created", orderDirection: desc) {
-  id title choices scores scores_total state start end
-  space { id name } author } }
-"""
-
-_GOV_PROPOSAL_Q = """
-query($id: String!) { proposal(id: $id) {
-  id title body choices scores scores_total scores_state state start end
-  space { id name } author } }
-"""
-
-_GOV_VOTES_Q = """
-query($id: String!) { votes(first: 20, where: {proposal: $id},
-  orderBy: "vp", orderDirection: desc) { voter choice vp created } }
-"""
-
-_GOV_SPACE_Q = """
-query($id: String!) { space(id: $id) {
-  id name about proposalsCount followersCount } }
-"""
-
-
-async def gov_proposals():
-    """Latest 10 Snapshot proposals across all DAOs."""
-    data = await _snapshot(_GOV_PROPOSALS_Q)
-    if isinstance(data, dict) and "error" in data:
-        return data
-    return {"count": len(data.get("proposals") or []),
-            "proposals": data.get("proposals") or []}
-
-
-async def gov_space_proposals(space: str):
-    """Latest 10 Snapshot proposals for one space (e.g. 'aave.eth')."""
-    data = await _snapshot(_GOV_SPACE_PROPOSALS_Q, {"space": space})
-    if isinstance(data, dict) and "error" in data:
-        return data
-    return {"space": space, "count": len(data.get("proposals") or []),
-            "proposals": data.get("proposals") or []}
-
-
-async def gov_proposal(proposal_id: str):
-    """One Snapshot proposal by id, with scores."""
-    data = await _snapshot(_GOV_PROPOSAL_Q, {"id": proposal_id})
-    if isinstance(data, dict) and "error" in data:
-        return data
-    p = data.get("proposal")
-    if not p:
-        return {"error": f"proposal not found: {proposal_id}"}
-    return p
-
-
-async def gov_votes(proposal_id: str):
-    """Top 20 votes on one Snapshot proposal, by voting power."""
-    data = await _snapshot(_GOV_VOTES_Q, {"id": proposal_id})
-    if isinstance(data, dict) and "error" in data:
-        return data
-    return {"proposal": proposal_id, "count": len(data.get("votes") or []),
-            "votes": data.get("votes") or []}
-
-
-async def gov_space(space: str):
-    """One Snapshot space: name, about, proposal/follower counts."""
-    data = await _snapshot(_GOV_SPACE_Q, {"id": space})
-    if isinstance(data, dict) and "error" in data:
-        return data
-    s = data.get("space")
-    if not s:
-        return {"error": f"space not found: {space}"}
-    return s
-
-# ---------- v5 GAS (5) ----------
-
-async def chain_gas_base_fee():
-    """Current base fee + predicted next-block base fee (EIP-1559 formula)."""
-    blk = w3.eth.get_block("latest")
-    base = blk["baseFeePerGas"]
-    gas_used = blk["gasUsed"]
-    gas_limit = blk["gasLimit"]
-    target = gas_limit // 2
-    if gas_used > target:
-        nxt = base * (1 + 0.125 * (gas_used - target) / target)
-    else:
-        nxt = base * (1 - 0.125 * (target - gas_used) / target)
-    return {"network": "base", "block": blk["number"],
-            "base_fee_gwei": base / 1e9,
-            "predicted_next_base_fee_gwei": round(nxt / 1e9, 4),
-            "gas_used": gas_used, "gas_limit": gas_limit,
-            "gas_used_pct": round(gas_used / gas_limit * 100, 2)}
-
-
-async def chain_gas_fee_history(blocks: int):
-    """Fee history for the last N blocks (1-20): base fee + priority percentiles."""
-    if blocks < 1 or blocks > 20:
-        return {"error": "blocks must be 1-20", "blocks": blocks}
-    fh = w3.eth.fee_history(blocks, "latest", [50])
-    return {"network": "base", "blocks": blocks,
-            "oldest_block": fh["oldestBlock"],
-            "base_fee_per_gas_gwei": [round(b / 1e9, 4) for b in fh["baseFeePerGas"]],
-            "gas_used_ratio": [round(r, 3) for r in fh["gasUsedRatio"]],
-            "priority_fee_p50_gwei": [[round(v / 1e9, 4) for v in r] for r in fh["reward"]]}
-
-
-async def chain_gas_transfer_cost():
-    """Cost of a plain 21,000-gas ETH transfer on Base right now."""
-    gp = w3.eth.gas_price
-    cost_wei = gp * 21000
-    return {"network": "base", "gas_price_gwei": gp / 1e9,
-            "gas_limit": 21000, "cost_wei": cost_wei,
-            "cost_eth": cost_wei / 1e18}
-
-
-async def chain_gas_transfer_cost_usd():
-    """Cost of a plain ETH transfer on Base in USD."""
-    gp = w3.eth.gas_price
-    cost_eth = gp * 21000 / 1e18
-    eth = await _coin_price("ethereum")
-    if isinstance(eth, dict) and "error" in eth:
-        return {"network": "base", "gas_price_gwei": gp / 1e9, "cost_eth": cost_eth,
-                "cost_usd": None, "error": eth["error"]}
-    return {"network": "base", "gas_price_gwei": gp / 1e9,
-            "cost_eth": cost_eth, "eth_usd": eth.get("usd"),
-            "cost_usd": round(cost_eth * eth["usd"], 6)}
-
-
-async def chain_gas_max_fee():
-    """Current base fee + max priority fee (fast-lane fee estimate)."""
-    try:
-        mp = w3.eth.max_priority_fee
-    except Exception:
-        mp = None
-    base = w3.eth.get_block("latest")["baseFeePerGas"]
-    return {"network": "base", "base_fee_gwei": base / 1e9,
-            "max_priority_fee_gwei": (mp / 1e9) if mp is not None else None,
-            "max_fee_gwei": ((base + mp) / 1e9) if mp is not None else None}
-
-
-# ---------- v5 NFTS (6) ----------
-
-async def nft_token_uri(collection: str, token_id: str):
-    """Raw tokenURI for one NFT token."""
-    try:
-        c = _checksum(collection)
-    except Exception:
-        return {"error": "invalid collection address", "collection": collection}
-    try:
-        tid = int(token_id)
-    except ValueError:
-        return {"error": "token_id must be an integer", "collection": c}
-    try:
-        raw = _eth_call(c, "0x" + SEL_TOKEN_URI + int(tid).to_bytes(32, "big").hex())
-        uri = _decode_string(raw)
-        return {"collection": c, "token_id": tid, "token_uri": uri, "network": "base"}
-    except Exception as e:
-        return {"error": str(e)[:200], "collection": c, "token_id": tid}
-
-
-async def nft_token_image(collection: str, token_id: str):
-    """Image URL from one NFT token's metadata."""
-    try:
-        c = _checksum(collection)
-    except Exception:
-        return {"error": "invalid collection address", "collection": collection}
-    try:
-        tid = int(token_id)
-    except ValueError:
-        return {"error": "token_id must be an integer", "collection": c}
-    try:
-        raw = _eth_call(c, "0x" + SEL_TOKEN_URI + int(tid).to_bytes(32, "big").hex())
-        uri = _decode_string(raw)
-    except Exception as e:
-        return {"error": str(e)[:200], "collection": c, "token_id": tid}
-    meta = _decode_data_uri(uri)
-    if meta is None:
-        meta = await _fetch_nft_metadata(uri) if uri else None
-    if not meta:
-        return {"collection": c, "token_id": tid, "token_uri": uri,
-                "image": None, "error": "could not fetch metadata"}
-    return {"collection": c, "token_id": tid, "token_uri": uri,
-            "name": meta.get("name"),
-            "image": _ipfs_to_http(meta.get("image")) if meta.get("image") else None,
-            "network": "base"}
-
-
-async def nft_token_attributes(collection: str, token_id: str):
-    """Traits/attributes from one NFT token's metadata."""
-    try:
-        c = _checksum(collection)
-    except Exception:
-        return {"error": "invalid collection address", "collection": collection}
-    try:
-        tid = int(token_id)
-    except ValueError:
-        return {"error": "token_id must be an integer", "collection": c}
-    try:
-        raw = _eth_call(c, "0x" + SEL_TOKEN_URI + int(tid).to_bytes(32, "big").hex())
-        uri = _decode_string(raw)
-    except Exception as e:
-        return {"error": str(e)[:200], "collection": c, "token_id": tid}
-    meta = _decode_data_uri(uri)
-    if meta is None:
-        meta = await _fetch_nft_metadata(uri) if uri else None
-    if not meta:
-        return {"collection": c, "token_id": tid, "token_uri": uri,
-                "attributes": None, "error": "could not fetch metadata"}
-    return {"collection": c, "token_id": tid, "token_uri": uri,
-            "name": meta.get("name"),
-            "attributes": meta.get("attributes") or meta.get("traits") or [],
-            "network": "base"}
-
-
-async def nft1155_balance(collection: str, wallet: str, token_id: str):
-    """ERC1155 balance of one wallet for one token id."""
-    try:
-        addr = _checksum(collection)
-        holder = _checksum(wallet)
-    except Exception:
-        return {"error": "invalid address", "collection": collection, "wallet": wallet}
-    try:
-        tid = int(token_id)
-    except ValueError:
-        return {"error": "token_id must be an integer", "collection": addr, "wallet": holder}
-    try:
-        data = "0x" + SEL_BALANCE_1155 + (b"\x00" * 12 + bytes.fromhex(holder[2:])).hex() + int(tid).to_bytes(32, "big").hex()
-        raw = _eth_call(addr, data)
-        return {"collection": addr, "wallet": holder, "token_id": tid,
-                "balance": int.from_bytes(raw, "big"), "standard": "erc1155", "network": "base"}
-    except Exception as e:
-        return {"error": str(e)[:200], "collection": addr, "wallet": holder,
-                "token_id": tid}
-
-
-async def nft1155_uri(collection: str, token_id: str):
-    """ERC1155 metadata URI for one token id."""
-    try:
-        addr = _checksum(collection)
-    except Exception:
-        return {"error": "invalid collection address", "collection": collection}
-    try:
-        tid = int(token_id)
-    except ValueError:
-        return {"error": "token_id must be an integer", "collection": addr}
-    try:
-        data = "0x" + SEL_URI_1155 + int(tid).to_bytes(32, "big").hex()
-        raw = _eth_call(addr, data)
-        uri = _decode_string(raw)
-        return {"collection": addr, "token_id": tid, "uri": uri,
-                "standard": "erc1155", "network": "base"}
-    except Exception as e:
-        return {"error": str(e)[:200], "collection": addr, "token_id": tid}
-
-
-async def nft1155_supply(collection: str, token_id: str):
-    """ERC1155 total supply for one token id (if the contract tracks it)."""
-    try:
-        addr = _checksum(collection)
-    except Exception:
-        return {"error": "invalid collection address", "collection": collection}
-    try:
-        tid = int(token_id)
-    except ValueError:
-        return {"error": "token_id must be an integer", "collection": addr}
-    try:
-        data = "0x" + SEL_TOTALSUPPLY_1155 + int(tid).to_bytes(32, "big").hex()
-        raw = _eth_call(addr, data)
-        return {"collection": addr, "token_id": tid,
-                "total_supply": int.from_bytes(raw, "big"), "standard": "erc1155",
-                "network": "base"}
-    except Exception:
-        # Many ERC1155s (incl. Zora1155) do not implement totalSupply(uint256).
-        return {"collection": addr, "token_id": tid, "total_supply": None,
-                "enumerable": False,
-                "note": "contract does not implement ERC1155Supply totalSupply(uint256)"}
-
-
-# ---------- v5 DEFI (12) ----------
-
-async def defi_protocol(slug: str):
-    """One protocol's TVL detail by slug (DeFiLlama /protocols)."""
-    data = await _get_json(f"{LLAMA}/protocols")
-    if isinstance(data, dict) and "error" in data:
-        return data
-    for p in data:
-        if str(p.get("slug", "")).lower() == slug.lower():
-            chain_tvls = p.get("chainTvls") or {}
-            return {"slug": p.get("slug"), "name": p.get("name"),
-                    "category": p.get("category"), "tvl_usd": p.get("tvl"),
-                    "chains": p.get("chains"), "chain_tvls": chain_tvls,
-                    "base_tvl_usd": chain_tvls.get("Base"),
-                    "url": p.get("url"), "description": p.get("description")}
-    return {"error": f"protocol not found: {slug}"}
-
-
-async def defi_chains():
-    """TVL by chain, top 20."""
-    data = await _get_json(f"{LLAMA}/v2/chains")
-    if isinstance(data, dict) and "error" in data:
-        return data
-    rows = sorted(data, key=lambda x: x.get("tvl") or 0, reverse=True)[:20]
-    return {"count": len(rows), "chains": [
-        {"chain": r.get("name"), "tvl_usd": r.get("tvl"),
-         "token_symbol": r.get("tokenSymbol")} for r in rows]}
-
-
-async def defi_chain(chain: str):
-    """TVL for one chain."""
-    data = await _get_json(f"{LLAMA}/v2/chains")
-    if isinstance(data, dict) and "error" in data:
-        return data
-    for r in data:
-        if str(r.get("name", "")).lower() == chain.lower():
-            return {"chain": r.get("name"), "tvl_usd": r.get("tvl"),
-                    "token_symbol": r.get("tokenSymbol")}
-    return {"error": f"chain not found: {chain}"}
-
-
-async def defi_chain_history(chain: str):
-    """TVL history for one chain: first, latest, change over 30 days."""
-    data = await _get_json(f"{LLAMA}/v2/historicalChainTvl/{chain}")
-    if isinstance(data, dict) and "error" in data:
-        return data
-    pts = data if isinstance(data, list) else []
-    if not pts:
-        return {"error": f"no TVL history for chain: {chain}"}
-    last30 = pts[-30:]
-    first, last = pts[0], pts[-1]
-    return {"chain": chain, "points": len(pts),
-            "first": first, "latest": last,
-            "change_30d_pct": round((last30[-1]["tvl"] - last30[0]["tvl"]) / last30[0]["tvl"] * 100, 2) if len(last30) > 1 and last30[0].get("tvl") else None,
-            "last_30_days": last30}
-
-
-async def defi_fees_overview():
-    """Top 10 protocols by 24h fees (all chains)."""
-    data = await _get_json(f"{LLAMA}/overview/fees")
-    if isinstance(data, dict) and "error" in data:
-        return data
-    protos = (data or {}).get("protocols") or []
-    protos = sorted(protos, key=lambda p: p.get("total24h") or 0, reverse=True)[:10]
-    return {"total_24h_usd": (data or {}).get("total24h"),
-            "count": len(protos),
-            "protocols": [{"name": p.get("name"), "slug": p.get("slug"),
-                           "fees_24h_usd": p.get("total24h"),
-                           "fees_7d_usd": p.get("total7d")} for p in protos]}
-
-
-async def defi_yields_chart(pool: str):
-    """TVL/APY history for one yield pool (last 30 points)."""
-    data = await _get_json(f"{YIELDS}/chart/{pool}")
-    if isinstance(data, dict) and "error" in data:
-        return data
-    pts = (data or {}).get("data") or []
-    if not pts:
-        return {"error": f"no chart data for pool: {pool}", "pool": pool}
-    return {"pool": pool, "points": len(pts),
-            "latest": pts[-1], "last_30": pts[-30:]}
-
-
-async def defi_yields_il(pool: str):
-    """Impermanent-loss risk + APY for one yield pool."""
-    pools = await _yields_pools()
-    if isinstance(pools, dict):
-        return pools
-    for p in pools:
-        if p.get("pool") == pool:
-            return {"pool": pool, "symbol": p.get("symbol"),
-                    "project": p.get("project"), "chain": p.get("chain"),
-                    "apy_pct": p.get("apy"), "apy_base_pct": p.get("apyBase"),
-                    "apy_reward_pct": p.get("apyReward"),
-                    "tvl_usd": p.get("tvlUsd"),
-                    "il_7d_pct": p.get("il7d"), "il_risk": p.get("ilRisk"),
-                    "stablecoin": p.get("stablecoin")}
-    return {"error": f"pool not found: {pool}"}
-
-
-async def defi_yields_project(project: str):
-    """Top 10 yield pools for one project, by APY."""
-    pools = await _yields_pools()
-    if isinstance(pools, dict):
-        return pools
-    mine = [p for p in pools if str(p.get("project", "")).lower() == project.lower()]
-    mine = sorted(mine, key=lambda p: p.get("apy") or 0, reverse=True)[:10]
-    return {"project": project, "count": len(mine),
-            "pools": [_trim_pool(p) for p in mine]}
-
-
-async def defi_yields_token(symbol: str):
-    """Top 10 yield pools for one token symbol, by APY (all chains)."""
-    pools = await _yields_pools()
-    if isinstance(pools, dict):
-        return pools
-    key = symbol.upper()
-    mine = [p for p in pools if key in str(p.get("symbol", "")).upper()]
-    mine = sorted(mine, key=lambda p: p.get("apy") or 0, reverse=True)[:10]
-    return {"symbol": symbol, "count": len(mine),
-            "pools": [_trim_pool(p) for p in mine]}
-
-
-async def defi_yields_stable(chain: str):
-    """Top 10 stablecoin yield pools on one chain, by APY."""
-    pools = await _yields_pools()
-    if isinstance(pools, dict):
-        return pools
-    mine = [p for p in pools if p.get("stablecoin")
-            and str(p.get("chain", "")).lower() == chain.lower()]
-    mine = sorted(mine, key=lambda p: p.get("apy") or 0, reverse=True)[:10]
-    return {"chain": chain, "count": len(mine),
-            "pools": [_trim_pool(p) for p in mine]}
-
-
-async def defi_dex_volume_7d():
-    """Total DEX volume, last 7 days (all chains)."""
-    data = await _get_json(f"{LLAMA}/overview/dexs")
-    if isinstance(data, dict) and "error" in data:
-        return data
-    protos = (data or {}).get("protocols") or []
-    return {"total_7d_usd": (data or {}).get("total7d"),
-            "total_24h_usd": (data or {}).get("total24h"),
-            "dex_count": len(protos)}
-
-
-async def defi_dex_volume_base_7d():
-    """Total DEX volume on Base, last 7 days."""
-    data = await _get_json(f"{LLAMA}/overview/dexs/Base")
-    if isinstance(data, dict) and "error" in data:
-        return data
-    protos = (data or {}).get("protocols") or []
-    return {"chain": "Base", "total_7d_usd": (data or {}).get("total7d"),
-            "total_24h_usd": (data or {}).get("total24h"),
-            "dex_count": len(protos)}
-
-# ---------- v5 DEX (8) ----------
-
-async def dex_top_volume(n: int):
-    """Top N DEXs by 24h volume (1-25, all chains)."""
-    if n < 1 or n > 25:
-        return {"error": "n must be 1-25", "n": n}
-    data = await _get_json(f"{LLAMA}/overview/dexs")
-    if isinstance(data, dict) and "error" in data:
-        return data
-    protos = (data or {}).get("protocols") or []
-    protos = sorted(protos, key=lambda p: p.get("total24h") or 0, reverse=True)[:n]
-    return {"count": len(protos), "dexs": [
-        {"name": p.get("name"), "slug": p.get("slug"),
-         "volume_24h_usd": p.get("total24h"), "volume_7d_usd": p.get("total7d"),
-         "chains": p.get("chains")} for p in protos]}
-
-
-async def dex_volume_chain(chain: str):
-    """Total DEX volume for one chain (24h + 7d)."""
-    data = await _get_json(f"{LLAMA}/overview/dexs/{chain}")
-    if isinstance(data, dict) and "error" in data:
-        return data
-    protos = (data or {}).get("protocols") or []
-    return {"chain": chain, "total_24h_usd": (data or {}).get("total24h"),
-            "total_7d_usd": (data or {}).get("total7d"),
-            "dex_count": len(protos)}
-
-
-async def dex_chains():
-    """DEX volume by chain for the major chains."""
-    chains = ["Base", "Ethereum", "Arbitrum", "Solana", "BSC", "Polygon",
-              "Optimism", "Avalanche"]
-    out = []
-    for ch in chains:
-        data = await _get_json(f"{LLAMA}/overview/dexs/{ch}")
-        if isinstance(data, dict) and "error" in data:
-            out.append({"chain": ch, "error": data["error"]})
-        else:
-            out.append({"chain": ch, "total_24h_usd": (data or {}).get("total24h"),
-                        "total_7d_usd": (data or {}).get("total7d")})
-    out = sorted(out, key=lambda x: x.get("total_24h_usd") or 0, reverse=True)
-    return {"count": len(out), "chains": out}
-
-
-async def dex_top_fees():
-    """Top 10 DEXs by 24h fees."""
-    data = await _get_json(f"{LLAMA}/overview/fees")
-    if isinstance(data, dict) and "error" in data:
-        return data
-    protos = (data or {}).get("protocols") or []
-    dexs = [p for p in protos if str(p.get("category", "")).lower() in ("dexes", "dex")]
-    if not dexs:
-        dexs = protos
-    dexs = sorted(dexs, key=lambda p: p.get("total24h") or 0, reverse=True)[:10]
-    return {"count": len(dexs), "dexs": [
-        {"name": p.get("name"), "slug": p.get("slug"),
-         "fees_24h_usd": p.get("total24h"), "fees_7d_usd": p.get("total7d")}
-        for p in dexs]}
-
-
-async def dex_fees_chains(protocol: str):
-    """Fee breakdown by chain for one protocol (DeFiLlama fees summary)."""
-    data = await _get_json(f"{LLAMA}/summary/fees/{protocol}")
-    if isinstance(data, dict) and "error" in data:
-        return data
-    return {"protocol": protocol,
-            "total_24h_usd": (data or {}).get("total24h"),
-            "total_7d_usd": (data or {}).get("total7d"),
-            "total_all_time_usd": (data or {}).get("totalAllTime"),
-            "chains": (data or {}).get("chains"),
-            "breakdown_24h": (data or {}).get("breakdown24h")}
-
-
-async def dex_pair_txns(chain: str, pair: str):
-    """Transactions + volume for one DEX pair."""
-    data = await _get_json(f"{DEXSCREENER}/latest/dex/pairs/{chain}/{pair}")
-    if isinstance(data, dict) and "error" in data:
-        return data
-    pairs = (data or {}).get("pairs") or []
-    if not pairs:
-        return {"error": f"pair not found: {chain}/{pair}"}
-    p = pairs[0]
-    return {"chain": chain, "pair": pair, "dex": p.get("dexId"),
-            "base_token": p.get("baseToken"), "quote_token": p.get("quoteToken"),
-            "price_usd": p.get("priceUsd"), "liquidity_usd": (p.get("liquidity") or {}).get("usd"),
-            "volume_24h_usd": (p.get("volume") or {}).get("h24"),
-            "txns": p.get("txns"), "url": p.get("url")}
-
-
-async def dex_pairs_token(token: str):
-    """Top 10 DEX pairs for one token, by liquidity."""
-    try:
-        addr = _checksum(token)
-    except Exception:
-        return {"error": "invalid address", "token": token}
-    pairs = await _dex_pairs_for_token(addr)
-    if isinstance(pairs, dict):
-        return pairs
-    pairs = sorted(pairs, key=lambda p: (p.get("liquidity") or {}).get("usd") or 0, reverse=True)[:10]
-    return {"token": token, "count": len(pairs),
-            "pairs": [_trim_pair(p) for p in pairs]}
-
-
-async def dex_pair_chain(token: str, chain: str):
-    """Best DEX pair for one token on one chain, by liquidity."""
-    try:
-        addr = _checksum(token)
-    except Exception:
-        return {"error": "invalid address", "token": token}
-    pairs = await _dex_pairs_for_token(addr)
-    if isinstance(pairs, dict):
-        return pairs
-    mine = [p for p in pairs if str(p.get("chainId", "")).lower() == chain.lower()]
-    if not mine:
-        return {"error": f"no pair for {token} on chain {chain}"}
-    mine = sorted(mine, key=lambda p: (p.get("liquidity") or {}).get("usd") or 0, reverse=True)
-    return {"token": token, "chain": chain, "pair": _trim_pair(mine[0])}
-
-
-# ---------- v5 WALLETS (7) ----------
-
-async def wallet_approvals(address: str):
-    """Token allowances a wallet has granted to Permit2, routers, Aave."""
-    try:
-        holder = _checksum(address)
-    except Exception:
-        return {"error": "invalid address", "address": address}
-    out = []
-    for sym in ("USDC", "WETH"):
-        entry = _curated(sym)
-        for sp in SPENDERS:
-            try:
-                al = _allowance(entry["address"], holder, sp["address"])
-            except Exception as e:
-                al = {"error": str(e)[:200]}
-            out.append({"token": sym, "spender": sp["name"],
-                        "spender_address": sp["address"], **al})
-    return {"wallet": holder, "approvals": out}
-
-
-async def wallet_approvals_token(address: str, token: str):
-    """Allowances one wallet granted for one token (by address or symbol)."""
-    try:
-        holder = _checksum(address)
-    except Exception:
-        return {"error": "invalid address", "address": address}
-    try:
-        taddr = _checksum(token)
-    except Exception:
-        t = _curated(token)
-        if not t:
-            return {"error": f"token not found: {token}"}
-        taddr = t["address"]
-    out = []
-    for sp in SPENDERS:
-        try:
-            al = _allowance(taddr, holder, sp["address"])
-        except Exception as e:
-            al = {"error": str(e)[:200]}
-        out.append({"spender": sp["name"], "spender_address": sp["address"], **al})
-    return {"wallet": holder, "token": taddr, "approvals": out}
-
-
-async def wallet_token_value(address: str, token: str):
-    """One wallet's balance of one token + USD value."""
-    try:
-        holder = _checksum(address)
-    except Exception:
-        return {"error": "invalid address", "address": address}
-    try:
-        taddr = _checksum(token)
-    except Exception:
-        t = _curated(token)
-        if not t:
-            return {"error": f"token not found: {token}"}
-        taddr = t["address"]
-    try:
-        meta = _token_meta(taddr)
-    except Exception as e:
-        return {"error": str(e)[:200], "token": taddr}
-    raw = _erc20_balance(taddr, holder)
-    bal = raw / (10 ** meta["decimals"])
-    price = None
-    pairs = await _dex_pairs_for_token(taddr)
-    if isinstance(pairs, list) and pairs:
-        best = _best_pair(pairs)
-        if best:
-            try:
-                price = float(best.get("priceUsd"))
-            except Exception:
-                price = None
-    out = {"wallet": holder, "token": taddr, "symbol": meta.get("symbol"),
-           "name": meta.get("name"), "decimals": meta["decimals"],
-           "balance": bal, "price_usd": price}
-    if price is not None:
-        out["value_usd"] = round(bal * price, 2)
-    return out
-
-
-async def wallet_cbeth_balance(address: str):
-    """Wallet cbETH balance."""
-    try:
-        holder = _checksum(address)
-    except Exception:
-        return {"error": "invalid address", "address": address}
-    meta = _curated("cbETH")
-    raw = _erc20_balance(meta["address"], holder)
-    return {"wallet": holder, "token": meta["address"], "symbol": "cbETH",
-            "decimals": meta["decimals"], "balance": raw / 10 ** meta["decimals"]}
-
-
-async def wallet_dai_balance(address: str):
-    """Wallet DAI balance."""
-    try:
-        holder = _checksum(address)
-    except Exception:
-        return {"error": "invalid address", "address": address}
-    meta = _curated("DAI")
-    raw = _erc20_balance(meta["address"], holder)
-    return {"wallet": holder, "token": meta["address"], "symbol": "DAI",
-            "decimals": meta["decimals"], "balance": raw / 10 ** meta["decimals"]}
-
-
-async def wallet_usdbc_balance(address: str):
-    """Wallet USDbC (bridged USDC) balance."""
-    try:
-        holder = _checksum(address)
-    except Exception:
-        return {"error": "invalid address", "address": address}
-    meta = _curated("USDbC")
-    raw = _erc20_balance(meta["address"], holder)
-    return {"wallet": holder, "token": meta["address"], "symbol": "USDbC",
-            "decimals": meta["decimals"], "balance": raw / 10 ** meta["decimals"]}
-
-
-async def wallet_higher_balance(address: str):
-    """Wallet HIGHER balance."""
-    try:
-        holder = _checksum(address)
-    except Exception:
-        return {"error": "invalid address", "address": address}
-    meta = _curated("HIGHER")
-    raw = _erc20_balance(meta["address"], holder)
-    return {"wallet": holder, "token": meta["address"], "symbol": "HIGHER",
-            "decimals": meta["decimals"], "balance": raw / 10 ** meta["decimals"]}
-
-
-# ---------- v5 MEMECOINS (5) ----------
-
-async def memes_new_pairs():
-    """Newest Base pairs on Dexscreener (latest token profiles)."""
-    data = await _get_json(f"{DEXSCREENER}/token-profiles/latest/v1")
-    if isinstance(data, dict) and "error" in data:
-        return data
-    rows = [r for r in (data if isinstance(data, list) else [])
-            if str(r.get("chainId", "")).lower() == "base"]
-    return {"chain": "base", "count": len(rows[:20]),
-            "pairs": [{"token_address": r.get("tokenAddress"),
-                       "chain_id": r.get("chainId"),
-                       "url": r.get("url"), "description": r.get("description")}
-                      for r in rows[:20]]}
-
-
-async def memes_trending():
-    """Top 15 Base pairs by 24h volume across the main Base tokens."""
-    seen = {}
-    addrs = []
-    for sym in ("USDC", "WETH", "CBETH", "HIGHER"):
-        t = _curated(sym)
-        if t:
-            addrs.append(t["address"])
-    addrs += [m["address"] for m in MEME_TOKENS]
-    for addr in addrs:
-        data = await _get_json(f"{DEXSCREENER}/latest/dex/tokens/{addr}")
-        if isinstance(data, dict) and "error" in data:
-            continue
-        for p in (data or {}).get("pairs") or []:
-            if str(p.get("chainId", "")).lower() != "base":
-                continue
-            seen[p.get("pairAddress")] = p
-    pairs = sorted(seen.values(),
-                   key=lambda p: (p.get("volume") or {}).get("h24") or 0,
-                   reverse=True)[:15]
-    return {"chain": "base", "count": len(pairs),
-            "pairs": [_trim_pair(p) for p in pairs]}
-
-
-async def memes_boosted():
-    """Latest boosted Base tokens on Dexscreener."""
-    data = await _get_json(f"{DEXSCREENER}/token-boosts/latest/v1")
-    if isinstance(data, dict) and "error" in data:
-        return data
-    rows = [r for r in (data if isinstance(data, list) else [])
-            if str(r.get("chainId", "")).lower() == "base"]
-    return {"chain": "base", "count": len(rows[:20]),
-            "boosted": [{"token_address": r.get("tokenAddress"),
-                         "total_amount": r.get("totalAmount"),
-                         "amount": r.get("amount"),
-                         "description": r.get("description"),
-                         "url": r.get("url")} for r in rows[:20]]}
-
-
-async def memes_price_change(token: str):
-    """Price changes (5m/1h/6h/24h) for one token's best pair."""
-    try:
-        addr = _checksum(token)
-    except Exception:
-        t = _curated(token)
-        if not t:
-            return {"error": "token not found", "token": token}
-        addr = t["address"]
-    pairs = await _dex_pairs_for_token(addr)
-    if isinstance(pairs, dict):
-        return pairs
-    if not pairs:
-        return {"error": f"no pairs for token: {token}"}
-    best = sorted(pairs, key=lambda p: (p.get("liquidity") or {}).get("usd") or 0, reverse=True)[0]
-    return {"token": token, "pair": _trim_pair(best),
-            "price_change": best.get("priceChange")}
-
-
-async def memes_holders(token: str):
-    """Holder count + top holders for one token (GoPlus)."""
-    try:
-        addr = _checksum(token)
-    except Exception:
-        t = _curated(token)
-        if not t:
-            return {"error": f"token not found: {token}"}
-        addr = t["address"]
-    entry = await _goplus_token(addr)
-    if isinstance(entry, dict) and "error" in entry:
-        return entry
-    holders = entry.get("holders") or []
-    return {"token": addr, "holder_count": entry.get("holder_count"),
-            "top_holders": holders[:10],
-            "is_honeypot": entry.get("is_honeypot"),
-            "is_mintable": entry.get("is_mintable")}
-
-# ---------- v5 PREDICTION (6) ----------
-
-async def predict_markets():
-    """Top 15 active Polymarket markets by liquidity."""
-    data = await _get_json(f"{GAMMA}/markets", params={"limit": 50, "active": "true"})
-    if isinstance(data, dict) and "error" in data:
-        return data
-    markets = data if isinstance(data, list) else []
-    def _liq(m):
-        try:
-            return float(m.get("liquidity") or 0)
-        except Exception:
-            return 0
-    markets = sorted(markets, key=_liq, reverse=True)[:15]
-    return {"count": len(markets), "markets": [_trim_market(m) for m in markets]}
-
-
-async def predict_trending():
-    """Top 15 active Polymarket markets by 24h volume."""
-    data = await _get_json(f"{GAMMA}/markets", params={"limit": 50, "active": "true"})
-    if isinstance(data, dict) and "error" in data:
-        return data
-    markets = data if isinstance(data, list) else []
-    def _vol(m):
-        try:
-            return float(m.get("volume24hr") or 0)
-        except Exception:
-            return 0
-    markets = sorted(markets, key=_vol, reverse=True)[:15]
-    return {"count": len(markets), "markets": [_trim_market(m) for m in markets]}
-
-
-async def predict_search(query: str):
-    """Search active Polymarket markets by keyword in the question."""
-    data = await _get_json(f"{GAMMA}/markets", params={"limit": 100, "active": "true"})
-    if isinstance(data, dict) and "error" in data:
-        return data
-    markets = data if isinstance(data, list) else []
-    q = query.lower()
-    mine = [m for m in markets if q in str(m.get("question", "")).lower()]
-    mine = sorted(mine, key=lambda m: float(m.get("liquidity") or 0), reverse=True)[:15]
-    return {"query": query, "count": len(mine),
-            "markets": [_trim_market(m) for m in mine]}
-
-
-async def predict_events():
-    """Latest 20 active Polymarket events."""
-    data = await _get_json(f"{GAMMA}/events", params={"limit": 20, "active": "true"})
-    if isinstance(data, dict) and "error" in data:
-        return data
-    events = data if isinstance(data, list) else []
-    return {"count": len(events), "events": [
-        {"id": e.get("id"), "slug": e.get("slug"), "title": e.get("title"),
-         "volume_24h": e.get("volume24hr"), "volume": e.get("volume"),
-         "market_count": len(e.get("markets") or []),
-         "url": f"https://polymarket.com/event/{e.get('slug')}" if e.get("slug") else None}
-        for e in events]}
-
-
-async def predict_market(slug: str):
-    """One Polymarket market by slug, with outcomes and prices."""
-    data = await _get_json(f"{GAMMA}/markets/{slug}")
-    if isinstance(data, dict) and "error" in data:
-        # Fall back to filtering the list endpoint.
-        data2 = await _get_json(f"{GAMMA}/markets", params={"limit": 100, "active": "true"})
-        if isinstance(data2, dict) and "error" in data2:
-            return data
-        for m in (data2 if isinstance(data2, list) else []):
-            if str(m.get("slug", "")).lower() == slug.lower():
-                return _trim_market(m)
-        return {"error": f"market not found: {slug}"}
-    if isinstance(data, dict) and data.get("slug"):
-        return _trim_market(data)
-    return {"error": f"market not found: {slug}"}
-
-
-async def predict_closing():
-    """Active Polymarket markets ending soonest (next 15 by end date)."""
-    data = await _get_json(f"{GAMMA}/markets", params={"limit": 100, "active": "true"})
-    if isinstance(data, dict) and "error" in data:
-        return data
-    markets = data if isinstance(data, list) else []
-    mine = [m for m in markets if m.get("endDate")]
-    mine = sorted(mine, key=lambda m: m.get("endDate") or "")[:15]
-    return {"count": len(mine), "markets": [_trim_market(m) for m in mine]}
-
-
-# ---------- v5 TOKENS (6) ----------
-
-async def token_history(address: str, days: int):
-    """Price history for one Base token (1-365 days, CoinGecko)."""
-    if days < 1 or days > 365:
-        return {"error": "days must be 1-365", "days": days}
-    try:
-        addr = _checksum(address)
-    except Exception:
-        return {"error": "invalid address", "address": address}
-    data = await _get_json(
-        f"{COINGECKO}/coins/base/contract/{addr}/market_chart",
-        params={"vs_currency": "usd", "days": days})
-    if isinstance(data, dict) and "error" in data:
-        return data
-    prices = (data or {}).get("prices") or []
-    return {"token": addr, "days": days, "points": len(prices),
-            "prices": [{"timestamp": p[0], "price_usd": p[1]} for p in prices],
-            "first_price_usd": prices[0][1] if prices else None,
-            "last_price_usd": prices[-1][1] if prices else None}
-
-
-async def token_audit(address: str):
-    """Security audit flags for one Base token (GoPlus)."""
-    try:
-        addr = _checksum(address)
-    except Exception:
-        return {"error": "invalid address", "address": address}
-    entry = await _goplus_token(addr)
-    if isinstance(entry, dict) and "error" in entry:
-        return entry
-    return {"token": addr,
-            "is_honeypot": entry.get("is_honeypot"),
-            "is_mintable": entry.get("is_mintable"),
-            "is_proxy": entry.get("is_proxy"),
-            "is_open_source": entry.get("is_open_source"),
-            "is_in_dex": entry.get("is_in_dex"),
-            "is_anti_whale": entry.get("is_anti_whale"),
-            "buy_tax": entry.get("buy_tax"), "sell_tax": entry.get("sell_tax"),
-            "cannot_buy": entry.get("cannot_buy"),
-            "cannot_sell_all": entry.get("cannot_sell_all"),
-            "hidden_owner": entry.get("hidden_owner"),
-            "owner_address": entry.get("owner_address"),
-            "creator_address": entry.get("creator_address"),
-            "holder_count": entry.get("holder_count"),
-            "trading_cooldown": entry.get("trading_cooldown"),
-            "personal_slippage_modifiable": entry.get("personal_slippage_modifiable")}
-
-
-async def token_holders(address: str):
-    """Holder count + top 10 holders for one Base token (GoPlus)."""
-    try:
-        addr = _checksum(address)
-    except Exception:
-        return {"error": "invalid address", "address": address}
-    entry = await _goplus_token(addr)
-    if isinstance(entry, dict) and "error" in entry:
-        return entry
-    holders = entry.get("holders") or []
-    return {"token": addr, "holder_count": entry.get("holder_count"),
-            "top_holders": holders[:10]}
-
-
-async def token_top_holder(address: str):
-    """Largest holder of one Base token (GoPlus)."""
-    try:
-        addr = _checksum(address)
-    except Exception:
-        return {"error": "invalid address", "address": address}
-    entry = await _goplus_token(addr)
-    if isinstance(entry, dict) and "error" in entry:
-        return entry
-    holders = entry.get("holders") or []
-    if not holders:
-        return {"token": addr, "holder_count": entry.get("holder_count"),
-                "top_holder": None}
-    return {"token": addr, "holder_count": entry.get("holder_count"),
-            "top_holder": holders[0]}
-
-
-async def token_age(address: str):
-    """Age of a token's oldest DEX pair (first listing date)."""
-    try:
-        addr = _checksum(address)
-    except Exception:
-        return {"error": "invalid address", "address": address}
-    pairs = await _dex_pairs_for_token(addr)
-    if isinstance(pairs, dict):
-        return pairs
-    if not pairs:
-        return {"error": f"no pairs for token: {addr}"}
-    created = [p.get("pairCreatedAt") for p in pairs if p.get("pairCreatedAt")]
-    if not created:
-        return {"error": "no pair creation date available", "token": addr}
-    first = min(created)
-    age_days = (time.time() * 1000 - first) / 86400000
-    return {"token": addr, "first_pair_created_at_ms": first,
-            "first_pair_created": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(first / 1000)),
-            "age_days": round(age_days, 1), "pair_count": len(pairs)}
-
-
-async def token_liquidity_usd(address: str):
-    """Total DEX liquidity (USD) across all pairs for one token."""
-    try:
-        addr = _checksum(address)
-    except Exception:
-        return {"error": "invalid address", "address": address}
-    pairs = await _dex_pairs_for_token(addr)
-    if isinstance(pairs, dict):
-        return pairs
-    total = sum((p.get("liquidity") or {}).get("usd") or 0 for p in pairs)
-    return {"token": addr, "pair_count": len(pairs),
-            "total_liquidity_usd": round(total, 2)}
-
-
-# ---------- v5 CHAIN (5) ----------
-
-async def chain_blocks(count: int):
-    """Summaries of the last N blocks (1-10)."""
-    if count < 1 or count > 10:
-        return {"error": "count must be 1-10", "count": count}
-    latest = w3.eth.block_number
-    out = []
-    for n in range(latest, latest - count, -1):
-        b = w3.eth.get_block(n)
-        out.append({"number": b["number"],
-                    "timestamp": b["timestamp"],
-                    "tx_count": len(b["transactions"]),
-                    "gas_used": b["gasUsed"], "gas_limit": b["gasLimit"],
-                    "base_fee_gwei": round(b["baseFeePerGas"] / 1e9, 4)})
-    return {"network": "base", "blocks": out}
-
-
-async def chain_pending_count():
-    """Pending-block transaction count (live mempool snapshot)."""
-    blk = w3.eth.get_block("pending")
-    return {"network": "base", "pending_block_number": blk["number"],
-            "pending_tx_count": len(blk["transactions"])}
-
-
-async def chain_tx_status(tx_hash: str):
-    """Transaction receipt: status + confirmations."""
-    try:
-        receipt = w3.eth.get_transaction_receipt(tx_hash)
-    except Exception:
-        return {"tx_hash": tx_hash, "status": "pending",
-                "confirmations": 0, "note": "not yet mined or unknown hash"}
-    current = w3.eth.block_number
-    return {"tx_hash": tx_hash, "status": "success" if receipt["status"] == 1 else "failed",
-            "block_number": receipt["blockNumber"],
-            "confirmations": current - receipt["blockNumber"],
-            "gas_used": receipt["gasUsed"],
-            "contract_address": receipt.get("contractAddress")}
-
-
-async def chain_tx_cost(tx_hash: str):
-    """Transaction cost in ETH and USD."""
-    try:
-        tx = w3.eth.get_transaction(tx_hash)
-        receipt = w3.eth.get_transaction_receipt(tx_hash)
-    except Exception:
-        return {"tx_hash": tx_hash, "error": "transaction not found or not yet mined"}
-    # NB: explicit None checks, not `or` — deposit (type 126) txs have
-    # gasPrice 0, which is falsy but a real value (cost 0).
-    gas_price = receipt.get("effectiveGasPrice")
-    if gas_price is None:
-        gas_price = tx.get("gasPrice")
-    if gas_price is None:
-        gas_price = tx.get("maxFeePerGas")
-    if gas_price is None:
-        gas_price = 0
-    cost_eth = receipt["gasUsed"] * gas_price / 1e18
-    eth = await _coin_price("ethereum")
-    usd = None
-    if isinstance(eth, dict) and not eth.get("error") and eth.get("usd"):
-        usd = round(cost_eth * eth["usd"], 4)
-    return {"tx_hash": tx_hash, "gas_used": receipt["gasUsed"],
-            "gas_price_gwei": gas_price / 1e9, "cost_eth": cost_eth,
-            "eth_usd": (eth or {}).get("usd"), "cost_usd": usd}
-
-
-async def chain_block_tx_count(number: int):
-    """Transaction count + gas for one block number."""
-    try:
-        b = w3.eth.get_block(number)
-    except Exception as e:
-        return {"error": str(e)[:200], "block": number}
-    return {"network": "base", "block": b["number"],
-            "timestamp": b["timestamp"], "tx_count": len(b["transactions"]),
-            "gas_used": b["gasUsed"], "gas_limit": b["gasLimit"],
-            "base_fee_gwei": round(b["baseFeePerGas"] / 1e9, 4)}
-
-
-# ---------- v5 UTILS (5) ----------
-
-async def utils_coin_history(coin: str, days: int):
-    """Price history for one CoinGecko coin (1-365 days)."""
-    if days < 1 or days > 365:
-        return {"error": "days must be 1-365", "days": days}
-    data = await _get_json(f"{COINGECKO}/coins/{coin}/market_chart",
-                           params={"vs_currency": "usd", "days": days})
-    if isinstance(data, dict) and "error" in data:
-        return data
-    prices = (data or {}).get("prices") or []
-    return {"coin": coin, "days": days, "points": len(prices),
-            "prices": [{"timestamp": p[0], "price_usd": p[1]} for p in prices],
-            "first_price_usd": prices[0][1] if prices else None,
-            "last_price_usd": prices[-1][1] if prices else None}
-
-
-async def utils_convert_usdc_eth(amount: float):
-    """Convert a USDC amount to ETH at the current price."""
-    eth = await _coin_price("ethereum")
-    if isinstance(eth, dict) and "error" in eth:
-        return eth
-    price = eth.get("usd")
-    if not price:
-        return {"error": "no ETH price available"}
-    return {"usdc": amount, "eth_usd": price, "eth": round(amount / price, 6)}
-
-
-async def utils_fear_greed_history():
-    """Fear & Greed index, last 7 days."""
-    data = await _get_json(f"{FNG}/fng/", params={"limit": 7})
-    if isinstance(data, dict) and "error" in data:
-        return data
-    rows = (data or {}).get("data") or []
-    return {"count": len(rows), "history": [
-        {"value": r.get("value"), "classification": r.get("value_classification"),
-         "timestamp": r.get("timestamp")} for r in rows]}
-
-
-async def utils_coin_ath(coin: str):
-    """All-time high/low for one CoinGecko coin (USD)."""
-    data = await _get_json(f"{COINGECKO}/coins/{coin}",
-                           params={"localization": "false", "tickers": "false",
-                                   "market_data": "true", "community_data": "false",
-                                   "developer_data": "false", "sparkline": "false"})
-    if isinstance(data, dict) and "error" in data:
-        return data
-    md = (data or {}).get("market_data") or {}
-    return {"coin": coin, "name": data.get("name"), "symbol": data.get("symbol"),
-            "current_price_usd": (md.get("current_price") or {}).get("usd"),
-            "ath_usd": (md.get("ath") or {}).get("usd"),
-            "ath_date": (md.get("ath_date") or {}).get("usd"),
-            "ath_change_pct": (md.get("ath_change_percentage") or {}).get("usd"),
-            "atl_usd": (md.get("atl") or {}).get("usd"),
-            "atl_date": (md.get("atl_date") or {}).get("usd"),
-            "market_cap_usd": md.get("market_cap", {}).get("usd")}
-
-
-async def utils_convert_gwei_eth(amount: float):
-    """Convert gwei to ETH."""
-    return {"gwei": amount, "eth": amount / 1e9}
-
-
-# ---------- v5 ENS (2) ----------
-
-async def ens_records(name: str):
-    """ENS text records / socials for one name (ensdata.net)."""
-    data = await _ens_lookup(name)
-    if isinstance(data, dict) and "error" in data:
-        return data
-    return {"name": name, "address": data.get("address"),
-            "avatar": data.get("avatar"), "url": data.get("url"),
-            "description": data.get("description"),
-            "twitter": data.get("twitter"), "github": data.get("github"),
-            "discord": data.get("discord"), "telegram": data.get("telegram"),
-            "content_hash": data.get("contentHash"),
-            "header": data.get("header"), "pgp": data.get("pgp")}
-
-
-async def ens_content(name: str):
-    """ENS content hash + avatar for one name (ensdata.net)."""
-    data = await _ens_lookup(name)
-    if isinstance(data, dict) and "error" in data:
-        return data
-    return {"name": name, "address": data.get("address"),
-            "content_hash": data.get("contentHash"),
-            "avatar": data.get("avatar")}
-
-# ---------- v5 TOKENS (extra) ----------
-
-async def token_fdv(address: str):
-    """Fully diluted valuation + market cap for one Base token."""
-    try:
-        addr = _checksum(address)
-    except Exception:
-        return {"error": "invalid address", "address": address}
-    pairs = await _dex_pairs_for_token(addr)
-    if isinstance(pairs, dict):
+    pairs = sorted(pairs, key=lambda p: -(_fnum((p.get("liquidity") or {}).get("usd")) or 0))
+    return {"mint": mint, "pairs": [_trim_pair(p) for p in pairs[:20]],
+            "count": len(pairs), "network": "solana"}
+
+
+@endpoint("/tokens/{mint}/best-pair", "$0.01",
+          "Deepest Solana DEX pair for one token (as base asset): price, liquidity, volume, market cap. $0.01 USDC per call.",
+          "token", ["token", "dex", "pairs"], "token-best-pair")
+async def token_best_pair(mint: str):
+    if not _is_sol_address(mint):
+        return _err_addr("mint")
+    pairs = await _ds_base_pairs(mint)
+    if _is_error(pairs):
         return pairs
     best = _best_pair(pairs)
     if not best:
-        return {"error": "no pairs for token", "token": addr}
-    return {"token": addr, "pair": best.get("pairAddress"), "dex": best.get("dexId"),
-            "chain": best.get("chainId"), "price_usd": best.get("priceUsd"),
-            "fdv": best.get("fdv"), "market_cap": best.get("marketCap"),
-            "liquidity_usd": (best.get("liquidity") or {}).get("usd"),
-            "network": "base"}
+        return {"error": "token is not the base asset of any Solana pair", "mint": mint}
+    out = _trim_pair(best)
+    out["mint"] = mint
+    out["network"] = "solana"
+    return out
 
 
-# ---------- v5 UTILS (extra) ----------
+@endpoint("/tokens/{mint}/liquidity", "$0.01",
+          "Total liquidity across a token's Solana pairs (as base asset), pair count, and the deepest pair. $0.01 USDC per call.",
+          "token", ["token", "liquidity", "dex"], "token-liquidity")
+async def token_liquidity(mint: str):
+    if not _is_sol_address(mint):
+        return _err_addr("mint")
+    pairs = await _ds_base_pairs(mint)
+    if _is_error(pairs):
+        return pairs
+    total = sum(_fnum((p.get("liquidity") or {}).get("usd")) or 0 for p in pairs)
+    best = _best_pair(pairs)
+    return {
+        "mint": mint,
+        "total_liquidity_usd": _round(total, 2),
+        "pair_count": len(pairs),
+        "deepest_pair": _trim_pair(best) if best else None,
+        "network": "solana",
+    }
 
-async def utils_coin_change(coin: str):
-    """Price change (24h/7d/30d/1y) for one CoinGecko coin."""
-    data = await _get_json(f"{COINGECKO}/coins/{coin}",
+
+@endpoint("/tokens/{mint}/volume", "$0.01",
+          "Trading volume of one Solana token: total 24h volume across its base-asset pairs plus the best pair's volume windows. $0.01 USDC per call.",
+          "token", ["token", "volume", "dex"], "token-volume")
+async def token_volume(mint: str):
+    if not _is_sol_address(mint):
+        return _err_addr("mint")
+    pairs = await _ds_base_pairs(mint)
+    if _is_error(pairs):
+        return pairs
+    total24 = sum(_fnum((p.get("volume") or {}).get("h24")) or 0 for p in pairs)
+    best = _best_pair(pairs)
+    return {
+        "mint": mint,
+        "total_volume_24h_usd": _round(total24, 2),
+        "pair_count": len(pairs),
+        "best_pair_volume": (best.get("volume") if best else None),
+        "best_pair": best.get("pairAddress") if best else None,
+        "network": "solana",
+    }
+
+
+@endpoint("/tokens/{mint}/volume/cross-dex", "$0.01",
+          "24h volume of one Solana token broken down by DEX across its base-asset pairs. $0.01 USDC per call.",
+          "token", ["token", "volume", "dex"], "token-volume-cross-dex")
+async def token_volume_cross_dex(mint: str):
+    if not _is_sol_address(mint):
+        return _err_addr("mint")
+    pairs = await _ds_base_pairs(mint)
+    if _is_error(pairs):
+        return pairs
+    by_dex = {}
+    for p in pairs:
+        dex = p.get("dexId") or "unknown"
+        by_dex[dex] = by_dex.get(dex, 0.0) + (_fnum((p.get("volume") or {}).get("h24")) or 0)
+    rows = [{"dex": k, "volume_24h_usd": _round(v, 2)} for k, v in by_dex.items()]
+    rows.sort(key=lambda r: -r["volume_24h_usd"])
+    return {"mint": mint, "by_dex": rows,
+            "total_volume_24h_usd": _round(sum(by_dex.values()), 2), "network": "solana"}
+
+
+@endpoint("/tokens/{mint}/price-change", "$0.01",
+          "Price changes (5m, 1h, 6h, 24h) of one Solana token on its deepest pair. $0.01 USDC per call.",
+          "token", ["token", "price", "change"], "token-price-change")
+async def token_price_change(mint: str):
+    if not _is_sol_address(mint):
+        return _err_addr("mint")
+    pairs = await _ds_base_pairs(mint)
+    if _is_error(pairs):
+        return pairs
+    best = _best_pair(pairs)
+    if not best:
+        return {"error": "token is not the base asset of any Solana pair", "mint": mint}
+    return {
+        "mint": mint,
+        "price_usd": best.get("priceUsd"),
+        "price_change": best.get("priceChange"),
+        "pair": best.get("pairAddress"),
+        "dex": best.get("dexId"),
+        "network": "solana",
+    }
+
+
+@endpoint("/tokens/{mint}/txns", "$0.01",
+          "Buy/sell transaction counts (5m, 1h, 6h, 24h) for one Solana token on its deepest pair. $0.01 USDC per call.",
+          "token", ["token", "transactions", "dex"], "token-txns")
+async def token_txns(mint: str):
+    if not _is_sol_address(mint):
+        return _err_addr("mint")
+    pairs = await _ds_base_pairs(mint)
+    if _is_error(pairs):
+        return pairs
+    best = _best_pair(pairs)
+    if not best:
+        return {"error": "token is not the base asset of any Solana pair", "mint": mint}
+    return {
+        "mint": mint,
+        "txns": best.get("txns"),
+        "pair": best.get("pairAddress"),
+        "dex": best.get("dexId"),
+        "network": "solana",
+    }
+
+
+@endpoint("/tokens/{mint}/fdv", "$0.01",
+          "Fully diluted valuation and market cap of one Solana token from its deepest pair. $0.01 USDC per call.",
+          "token", ["token", "fdv", "market-cap"], "token-fdv")
+async def token_fdv(mint: str):
+    if not _is_sol_address(mint):
+        return _err_addr("mint")
+    pairs = await _ds_base_pairs(mint)
+    if _is_error(pairs):
+        return pairs
+    best = _best_pair(pairs)
+    if not best:
+        return {"error": "token is not the base asset of any Solana pair", "mint": mint}
+    return {
+        "mint": mint,
+        "price_usd": best.get("priceUsd"),
+        "market_cap": best.get("marketCap"),
+        "fdv": best.get("fdv"),
+        "pair": best.get("pairAddress"),
+        "network": "solana",
+    }
+
+
+@endpoint("/tokens/{mint}/market", "$0.02",
+          "Combined market snapshot for one Solana token: Jupiter price, on-chain supply, computed market cap, DEX liquidity, volume and FDV. $0.02 USDC per call.",
+          "token", ["token", "market", "snapshot"], "token-market")
+async def token_market(mint: str):
+    if not _is_sol_address(mint):
+        return _err_addr("mint")
+    prices = await _jupiter_prices([mint])
+    if _is_error(prices):
+        return prices
+    entry = prices.get(mint) or {}
+    price = _fnum(entry.get("usdPrice"))
+    supply_res = await _rpc("getTokenSupply", [mint])
+    supply_ui = None
+    if not _is_error(supply_res):
+        supply_ui = ((supply_res or {}).get("value") or {}).get("uiAmount")
+    pairs = await _ds_base_pairs(mint)
+    total_liq = total_vol = None
+    best = None
+    if not _is_error(pairs):
+        total_liq = _round(sum(_fnum((p.get("liquidity") or {}).get("usd")) or 0 for p in pairs), 2)
+        total_vol = _round(sum(_fnum((p.get("volume") or {}).get("h24")) or 0 for p in pairs), 2)
+        best = _best_pair(pairs)
+    return {
+        "mint": mint,
+        "price_usd": _round(price, 10),
+        "price_change_24h_percent": _round(_fnum(entry.get("priceChange24h")), 4),
+        "supply": supply_ui,
+        "computed_market_cap_usd": _round(price * supply_ui, 2) if price and supply_ui else None,
+        "dex_total_liquidity_usd": total_liq,
+        "dex_total_volume_24h_usd": total_vol,
+        "dex_fdv": best.get("fdv") if best else None,
+        "dex_pair_count": len(pairs) if not _is_error(pairs) else None,
+        "network": "solana",
+    }
+
+
+@endpoint("/tokens/{mint}/links", "$0.01",
+          "Websites and social links for one Solana token from its deepest pair's Dexscreener profile. $0.01 USDC per call.",
+          "token", ["token", "links", "socials"], "token-links")
+async def token_links(mint: str):
+    if not _is_sol_address(mint):
+        return _err_addr("mint")
+    pairs = await _ds_base_pairs(mint)
+    if _is_error(pairs):
+        return pairs
+    best = _best_pair(pairs)
+    if not best:
+        return {"error": "token is not the base asset of any Solana pair", "mint": mint}
+    info = best.get("info") or {}
+    return {
+        "mint": mint,
+        "websites": info.get("websites"),
+        "socials": info.get("socials"),
+        "image_url": info.get("imageUrl"),
+        "pair": best.get("pairAddress"),
+        "network": "solana",
+    }
+
+
+@endpoint("/tokens/{mint}/first-pair", "$0.01",
+          "Earliest known DEX pair for one Solana token: when it first traded, on which DEX. $0.01 USDC per call.",
+          "token", ["token", "dex", "age"], "token-first-pair")
+async def token_first_pair(mint: str):
+    if not _is_sol_address(mint):
+        return _err_addr("mint")
+    pairs = await _ds_base_pairs(mint)
+    if _is_error(pairs):
+        return pairs
+    dated = [p for p in pairs if p.get("pairCreatedAt")]
+    if not dated:
+        return {"error": "no pair creation dates available", "mint": mint}
+    first = min(dated, key=lambda p: p["pairCreatedAt"])
+    return {
+        "mint": mint,
+        "first_pair_created_at_ms": first.get("pairCreatedAt"),
+        "pair": first.get("pairAddress"),
+        "dex": first.get("dexId"),
+        "url": first.get("url"),
+        "network": "solana",
+    }
+
+
+@endpoint("/tokens/{mint}/reserves", "$0.01",
+          "Pool reserves of a token's deepest Solana pair: base and quote amounts held in the pool. $0.01 USDC per call.",
+          "token", ["token", "liquidity", "reserves"], "token-reserves")
+async def token_reserves(mint: str):
+    if not _is_sol_address(mint):
+        return _err_addr("mint")
+    pairs = await _ds_base_pairs(mint)
+    if _is_error(pairs):
+        return pairs
+    best = _best_pair(pairs)
+    if not best:
+        return {"error": "token is not the base asset of any Solana pair", "mint": mint}
+    liq = best.get("liquidity") or {}
+    return {
+        "mint": mint,
+        "pair": best.get("pairAddress"),
+        "dex": best.get("dexId"),
+        "liquidity_usd": liq.get("usd"),
+        "base_reserve": liq.get("base"),
+        "quote_reserve": liq.get("quote"),
+        "base_token": (best.get("baseToken") or {}).get("symbol"),
+        "quote_token": (best.get("quoteToken") or {}).get("symbol"),
+        "network": "solana",
+    }
+
+
+@endpoint("/tokens/{mint}/pools", "$0.01",
+          "GeckoTerminal pools for one Solana token, top 10 by reserve. $0.01 USDC per call.",
+          "token", ["token", "pools", "geckoterminal"], "token-pools-gt")
+async def token_pools_gt(mint: str):
+    if not _is_sol_address(mint):
+        return _err_addr("mint")
+    data = await _gt(f"/networks/solana/tokens/{mint}/pools?page=1")
+    if _is_error(data):
+        return data
+    pools = data.get("data") or []
+    return {"mint": mint, "pools": [_gt_pool_trim(p) for p in pools[:10]],
+            "count": len(pools), "network": "solana"}
+
+
+@endpoint("/tokens/{mint}/info/geckoterminal", "$0.01",
+          "GeckoTerminal token info for one Solana mint: name, symbol, decimals, supply, price, FDV, volume. $0.01 USDC per call.",
+          "token", ["token", "info", "geckoterminal"], "token-info-gt")
+async def token_info_gt(mint: str):
+    if not _is_sol_address(mint):
+        return _err_addr("mint")
+    data = await _gt(f"/tokens/{mint}")
+    if _is_error(data):
+        # GT also exposes a network-scoped token route.
+        data = await _gt(f"/networks/solana/tokens/{mint}")
+        if _is_error(data):
+            return data
+    a = ((data.get("data") or {}).get("attributes")) or {}
+    return {
+        "mint": mint,
+        "name": a.get("name"),
+        "symbol": a.get("symbol"),
+        "decimals": a.get("decimals"),
+        "price_usd": _fnum(a.get("price_usd")),
+        "total_supply": a.get("total_supply"),
+        "fdv_usd": _round(_fnum(a.get("fdv_usd")), 2),
+        "market_cap_usd": _round(_fnum(a.get("market_cap_usd")), 2),
+        "volume_24h_usd": _round(_fnum((a.get("volume_usd") or {}).get("h24")), 2),
+        "gt_score": a.get("gt_score"),
+        "network": "solana",
+    }
+
+
+@endpoint("/tokens/{mint}/info/jupiter", "$0.01",
+          "Jupiter token metadata for one Solana mint: name, tags, holder count, organic score, liquidity, FDV. $0.01 USDC per call.",
+          "token", ["token", "info", "jupiter"], "token-info-jupiter")
+async def token_info_jupiter(mint: str):
+    if not _is_sol_address(mint):
+        return _err_addr("mint")
+    results = await _jupiter_search(mint)
+    if _is_error(results):
+        return results
+    exact = next((t for t in results if t.get("id") == mint), None)
+    if not exact:
+        return {"error": "Jupiter has no metadata for this mint", "mint": mint}
+    out = _jupiter_token_trim(exact)
+    out["network"] = "solana"
+    return out
+
+
+@endpoint("/tokens/{mint}/coingecko", "$0.01",
+          "CoinGecko market data for one Solana token by contract: price, market cap rank, volume, 24h range. $0.01 USDC per call.",
+          "token", ["token", "coingecko", "market"], "token-coingecko")
+async def token_coingecko(mint: str):
+    if not _is_sol_address(mint):
+        return _err_addr("mint")
+    data = await _get_json(f"{COINGECKO}/coins/solana/contract/{mint}",
+                           params={"localization": "false", "tickers": "false",
+                                   "community_data": "false", "developer_data": "false"},
+                           ttl=60)
+    if _is_error(data):
+        return data
+    md = data.get("market_data") or {}
+    return {
+        "mint": mint,
+        "coingecko_id": data.get("id"),
+        "name": data.get("name"),
+        "symbol": (data.get("symbol") or "").upper(),
+        "market_cap_rank": data.get("market_cap_rank"),
+        "price_usd": (md.get("current_price") or {}).get("usd"),
+        "market_cap_usd": (md.get("market_cap") or {}).get("usd"),
+        "total_volume_usd": (md.get("total_volume") or {}).get("usd"),
+        "high_24h_usd": (md.get("high_24h") or {}).get("usd"),
+        "low_24h_usd": (md.get("low_24h") or {}).get("usd"),
+        "price_change_24h_percent": md.get("price_change_percentage_24h"),
+        "network": "solana",
+    }
+
+
+@endpoint("/tokens/{mint}/ath", "$0.01",
+          "All-time high and low for one Solana token from CoinGecko (by contract address). $0.01 USDC per call.",
+          "token", ["token", "ath", "coingecko"], "token-ath")
+async def token_ath(mint: str):
+    if not _is_sol_address(mint):
+        return _err_addr("mint")
+    data = await _get_json(f"{COINGECKO}/coins/solana/contract/{mint}",
+                           params={"localization": "false", "tickers": "false",
+                                   "community_data": "false", "developer_data": "false"},
+                           ttl=60)
+    if _is_error(data):
+        return data
+    md = data.get("market_data") or {}
+    return {
+        "mint": mint,
+        "name": data.get("name"),
+        "ath_usd": (md.get("ath") or {}).get("usd"),
+        "ath_date": (md.get("ath_date") or {}).get("usd"),
+        "ath_change_percent": (md.get("ath_change_percentage") or {}).get("usd"),
+        "atl_usd": (md.get("atl") or {}).get("usd"),
+        "atl_date": (md.get("atl_date") or {}).get("usd"),
+        "current_price_usd": (md.get("current_price") or {}).get("usd"),
+        "network": "solana",
+    }
+
+
+@endpoint("/tokens/{mint}/sentiment", "$0.01",
+          "CoinGecko community sentiment for one Solana token: watchlist count and up/down vote split. $0.01 USDC per call.",
+          "token", ["token", "sentiment", "coingecko"], "token-sentiment")
+async def token_sentiment(mint: str):
+    if not _is_sol_address(mint):
+        return _err_addr("mint")
+    data = await _get_json(f"{COINGECKO}/coins/solana/contract/{mint}",
+                           params={"localization": "false", "tickers": "false",
+                                   "market_data": "false", "developer_data": "false"},
+                           ttl=60)
+    if _is_error(data):
+        return data
+    return {
+        "mint": mint,
+        "name": data.get("name"),
+        "watchlist_portfolio_users": data.get("watchlist_portfolio_users"),
+        "sentiment_votes_up_percent": data.get("sentiment_votes_up_percentage"),
+        "sentiment_votes_down_percent": data.get("sentiment_votes_down_percentage"),
+        "market_cap_rank": data.get("market_cap_rank"),
+        "coingecko_score": data.get("coingecko_score"),
+        "network": "solana",
+    }
+
+
+@endpoint("/tokens/{mint}/ohlcv/{timeframe}", "$0.01",
+          "OHLCV candles for a Solana token's top GeckoTerminal pool (timeframe: day, hour or minute). $0.01 USDC per call.",
+          "token", ["token", "ohlcv", "geckoterminal"], "token-ohlcv")
+async def token_ohlcv(mint: str, timeframe: str):
+    if not _is_sol_address(mint):
+        return _err_addr("mint")
+    if timeframe not in ("day", "hour", "minute"):
+        return {"error": "timeframe must be day, hour or minute"}
+    pools = await _gt(f"/networks/solana/tokens/{mint}/pools?page=1")
+    if _is_error(pools):
+        return pools
+    data_list = pools.get("data") or []
+    if not data_list:
+        return {"error": "no GeckoTerminal pools for token", "mint": mint}
+    pool_addr = (data_list[0].get("attributes") or {}).get("address")
+    data = await _gt(f"/networks/solana/pools/{pool_addr}/ohlcv/{timeframe}?limit=48")
+    if _is_error(data):
+        return data
+    candles = (((data.get("data") or {}).get("attributes") or {}).get("ohlcv_list")) or []
+    return {
+        "mint": mint,
+        "pool": pool_addr,
+        "timeframe": timeframe,
+        "candles": [{"t": c[0], "o": c[1], "h": c[2], "l": c[3], "c": c[4], "v": c[5]}
+                    for c in candles if isinstance(c, list) and len(c) == 6],
+        "network": "solana",
+    }
+
+
+@endpoint("/tokens/{mint}/top-pool/trades", "$0.01",
+          "Recent trades in a Solana token's top GeckoTerminal pool (latest 20). $0.01 USDC per call.",
+          "token", ["token", "trades", "geckoterminal"], "token-top-pool-trades")
+async def token_top_pool_trades(mint: str):
+    if not _is_sol_address(mint):
+        return _err_addr("mint")
+    pools = await _gt(f"/networks/solana/tokens/{mint}/pools?page=1")
+    if _is_error(pools):
+        return pools
+    data_list = pools.get("data") or []
+    if not data_list:
+        return {"error": "no GeckoTerminal pools for token", "mint": mint}
+    pool_addr = (data_list[0].get("attributes") or {}).get("address")
+    data = await _gt(f"/networks/solana/pools/{pool_addr}/trades")
+    if _is_error(data):
+        return data
+    trades = []
+    for t in (data.get("data") or [])[:20]:
+        a = t.get("attributes") or {}
+        trades.append({
+            "kind": a.get("kind"),
+            "block_number": a.get("block_number"),
+            "tx_hash": a.get("tx_hash_from") or a.get("tx_hash"),
+            "from": a.get("from_address"),
+            "to": a.get("to_address"),
+            "volume_usd": _round(_fnum(a.get("volume_in_usd")), 2),
+            "price_from_usd": _fnum(a.get("price_from_in_currency_token")),
+            "price_to_usd": _fnum(a.get("price_to_in_currency_token")),
+            "timestamp": a.get("block_timestamp"),
+        })
+    return {"mint": mint, "pool": pool_addr, "trades": trades, "network": "solana"}
+
+
+@endpoint("/tokens/prices/{mints}", "$0.01",
+          "Batch USD prices for up to 30 Solana mints in one Jupiter call (comma-separated mint list). $0.01 USDC per call.",
+          "token", ["token", "price", "batch"], "token-prices-batch")
+async def token_prices_batch(mints: str):
+    mint_list = [m.strip() for m in mints.split(",") if m.strip()][:30]
+    if not mint_list or not all(_is_sol_address(m) for m in mint_list):
+        return {"error": "expected a comma-separated list of Solana mint addresses"}
+    data = await _jupiter_prices(mint_list)
+    if _is_error(data):
+        return data
+    out = {}
+    for m in mint_list:
+        entry = data.get(m) or {}
+        out[m] = {
+            "price_usd": _round(_fnum(entry.get("usdPrice")), 10),
+            "price_change_24h_percent": _round(_fnum(entry.get("priceChange24h")), 4),
+        }
+    return {"prices": out, "count": len(out), "source": "jupiter", "network": "solana"}
+
+
+@endpoint("/tokens/majors/prices", "$0.01",
+          "USD prices and 24h changes for the Solana majors: SOL, USDC, USDT, JUP, JTO, PYTH, WIF, BONK, RAY (Jupiter). $0.01 USDC per call.",
+          "token", ["token", "price", "majors"], "token-majors-prices")
+async def token_majors_prices():
+    data = await _jupiter_prices(list(MAJOR_MINTS.values()))
+    if _is_error(data):
+        return data
+    out = {}
+    for symbol, mint in MAJOR_MINTS.items():
+        entry = data.get(mint) or {}
+        out[symbol] = {
+            "mint": mint,
+            "price_usd": _round(_fnum(entry.get("usdPrice")), 8),
+            "price_change_24h_percent": _round(_fnum(entry.get("priceChange24h")), 4),
+            "liquidity_usd": _round(_fnum(entry.get("liquidity")), 2),
+        }
+    return {"tokens": out, "source": "jupiter", "network": "solana"}
+
+
+@endpoint("/tokens/search/{query}", "$0.01",
+          "Search Solana DEX pairs by token name or symbol (Dexscreener, Solana only, top 10 by liquidity). $0.01 USDC per call.",
+          "token", ["token", "search", "dex"], "token-search")
+async def token_search(query: str):
+    pairs = await _ds_search(query)
+    if _is_error(pairs):
+        return pairs
+    pairs = sorted(pairs, key=lambda p: -(_fnum((p.get("liquidity") or {}).get("usd")) or 0))
+    return {"query": query, "pairs": [_trim_pair(p) for p in pairs[:10]],
+            "count": len(pairs), "network": "solana"}
+
+
+@endpoint("/tokens/search/jupiter/{query}", "$0.01",
+          "Search Jupiter's Solana token index by name, symbol or mint: metadata, tags, holder counts, scores. $0.01 USDC per call.",
+          "token", ["token", "search", "jupiter"], "token-search-jupiter")
+async def token_search_jupiter(query: str):
+    results = await _jupiter_search(query)
+    if _is_error(results):
+        return results
+    return {"query": query,
+            "tokens": [_jupiter_token_trim(t) for t in results[:10]],
+            "count": len(results), "network": "solana"}
+
+
+@endpoint("/tokens/top/volume", "$0.01",
+          "Solana tokens with the highest 24h volume right now, from GeckoTerminal's top pools. $0.01 USDC per call.",
+          "token", ["token", "volume", "top"], "token-top-volume")
+async def token_top_volume():
+    data = await _gt("/networks/solana/pools?page=1")
+    if _is_error(data):
+        return data
+    pools = data.get("data") or []
+    rows = []
+    for p in pools:
+        a = p.get("attributes") or {}
+        rel = p.get("relationships") or {}
+        rows.append({
+            "token": ((rel.get("base_token") or {}).get("data") or {}).get("id"),
+            "pool_name": a.get("name"),
+            "volume_24h_usd": _round(_fnum((a.get("volume_usd") or {}).get("h24")), 2),
+            "reserve_usd": _round(_fnum(a.get("reserve_in_usd")), 2),
+            "price_usd": _fnum(a.get("base_token_price_usd")),
+        })
+    rows.sort(key=lambda r: -(r["volume_24h_usd"] or 0))
+    return {"tokens": rows[:10], "network": "solana"}
+
+
+# ===== WALLETS =====
+
+async def _wallet_token_accounts(owner):
+    """All SPL token accounts (both token programs) for an owner."""
+    out = []
+    for program in (TOKEN_PROGRAM, TOKEN_2022_PROGRAM):
+        entries = await _token_accounts_by_owner(owner, program=program)
+        if _is_error(entries):
+            return entries
+        out.extend(_trim_token_account(e, program=program) for e in entries)
+    return out
+
+
+@endpoint("/wallets/{address}/balance", "$0.01",
+          "SOL balance of one Solana wallet (lamports and SOL). $0.01 USDC per call.",
+          "wallet", ["wallet", "balance", "sol"], "wallet-balance")
+async def wallet_balance(address: str):
+    if not _is_sol_address(address):
+        return _err_addr()
+    res = await _rpc("getBalance", [address])
+    if _is_error(res):
+        return res
+    lamports = (res or {}).get("value")
+    return {"address": address, "lamports": lamports,
+            "sol": _round(_sol(lamports), 9), "network": "solana"}
+
+
+@endpoint("/wallets/{address}/balance/usd", "$0.01",
+          "SOL balance of one wallet with its current USD value. $0.01 USDC per call.",
+          "wallet", ["wallet", "balance", "usd"], "wallet-balance-usd")
+async def wallet_balance_usd(address: str):
+    if not _is_sol_address(address):
+        return _err_addr()
+    res = await _rpc("getBalance", [address])
+    if _is_error(res):
+        return res
+    lamports = (res or {}).get("value")
+    sol = _sol(lamports)
+    price = await _sol_price_usd()
+    return {
+        "address": address,
+        "sol": _round(sol, 9),
+        "sol_price_usd": _round(price, 4),
+        "value_usd": _round(sol * price, 2) if sol is not None and price else None,
+        "network": "solana",
+    }
+
+
+@endpoint("/wallets/{address}/account", "$0.01",
+          "Raw account info for one Solana address: lamports, owner program, executable flag, data size. $0.01 USDC per call.",
+          "wallet", ["wallet", "account", "info"], "wallet-account")
+async def wallet_account(address: str):
+    if not _is_sol_address(address):
+        return _err_addr()
+    res = await _rpc("getAccountInfo", [address, {"encoding": "base64"}])
+    if _is_error(res):
+        return res
+    value = (res or {}).get("value")
+    if not value:
+        return {"address": address, "exists": False, "network": "solana",
+                "note": "account does not exist on-chain (never funded)"}
+    data = value.get("data") or ["", ""]
+    import base64 as _b64
+    try:
+        data_len = len(_b64.b64decode(data[0])) if data and data[0] else 0
+    except Exception:
+        data_len = None
+    return {
+        "address": address,
+        "exists": True,
+        "lamports": value.get("lamports"),
+        "sol": _round(_sol(value.get("lamports")), 9),
+        "owner_program": value.get("owner"),
+        "executable": value.get("executable"),
+        "rent_epoch": value.get("rentEpoch"),
+        "data_bytes": data_len,
+        "network": "solana",
+    }
+
+
+@endpoint("/wallets/{address}/tokens", "$0.01",
+          "All SPL token accounts of one wallet (both token programs): mint, balance, decimals, state — sorted by balance. $0.01 USDC per call.",
+          "wallet", ["wallet", "tokens", "spl"], "wallet-tokens")
+async def wallet_tokens(address: str):
+    if not _is_sol_address(address):
+        return _err_addr()
+    accounts = await _wallet_token_accounts(address)
+    if _is_error(accounts):
+        return accounts
+    accounts.sort(key=lambda a: -(a.get("amount") or 0))
+    return {"address": address, "token_accounts": accounts,
+            "count": len(accounts), "network": "solana"}
+
+
+@endpoint("/wallets/{address}/tokens/count", "$0.01",
+          "Token account counts for one wallet: total accounts, non-zero balances, split by token program. $0.01 USDC per call.",
+          "wallet", ["wallet", "tokens", "count"], "wallet-tokens-count")
+async def wallet_tokens_count(address: str):
+    if not _is_sol_address(address):
+        return _err_addr()
+    accounts = await _wallet_token_accounts(address)
+    if _is_error(accounts):
+        return accounts
+    return {
+        "address": address,
+        "total_token_accounts": len(accounts),
+        "nonzero_balances": sum(1 for a in accounts if (a.get("amount") or 0) > 0),
+        "token_program_accounts": sum(1 for a in accounts if a.get("program") == TOKEN_PROGRAM),
+        "token_2022_accounts": sum(1 for a in accounts if a.get("program") == TOKEN_2022_PROGRAM),
+        "network": "solana",
+    }
+
+
+@endpoint("/wallets/{address}/token/{mint}", "$0.01",
+          "One wallet's balance of one SPL token, summed across all its token accounts for that mint. $0.01 USDC per call.",
+          "wallet", ["wallet", "token", "balance"], "wallet-token-balance")
+async def wallet_token_balance(address: str, mint: str):
+    if not _is_sol_address(address):
+        return _err_addr()
+    if not _is_sol_address(mint):
+        return _err_addr("mint")
+    total_raw = 0
+    decimals = None
+    accounts = []
+    for program in (TOKEN_PROGRAM, TOKEN_2022_PROGRAM):
+        entries = await _token_accounts_by_owner(address, mint=mint, program=program)
+        if _is_error(entries):
+            return entries
+        for e in entries:
+            t = _trim_token_account(e, program=program)
+            accounts.append(t)
+            try:
+                total_raw += int(t.get("amount_raw") or 0)
+            except (TypeError, ValueError):
+                pass
+            if decimals is None:
+                decimals = t.get("decimals")
+    balance = total_raw / (10 ** decimals) if decimals is not None else None
+    return {
+        "address": address,
+        "mint": mint,
+        "balance": balance,
+        "balance_raw": str(total_raw),
+        "decimals": decimals,
+        "accounts": accounts,
+        "network": "solana",
+    }
+
+
+@endpoint("/wallets/{address}/token/{mint}/accounts", "$0.01",
+          "Every token account one wallet holds for one mint (usually one — more means fragmented holdings). $0.01 USDC per call.",
+          "wallet", ["wallet", "token", "accounts"], "wallet-token-accounts")
+async def wallet_token_accounts(address: str, mint: str):
+    if not _is_sol_address(address):
+        return _err_addr()
+    if not _is_sol_address(mint):
+        return _err_addr("mint")
+    out = []
+    for program in (TOKEN_PROGRAM, TOKEN_2022_PROGRAM):
+        entries = await _token_accounts_by_owner(address, mint=mint, program=program)
+        if _is_error(entries):
+            return entries
+        out.extend(_trim_token_account(e, program=program) for e in entries)
+    return {"address": address, "mint": mint, "accounts": out,
+            "count": len(out), "network": "solana"}
+
+
+@endpoint("/wallets/{address}/token/{mint}/usd", "$0.01",
+          "One wallet's balance of one token with its USD value at the Jupiter price. $0.01 USDC per call.",
+          "wallet", ["wallet", "token", "usd"], "wallet-token-usd")
+async def wallet_token_usd(address: str, mint: str):
+    base = await wallet_token_balance(address, mint)
+    if _is_error(base):
+        return base
+    prices = await _jupiter_prices([mint])
+    entry = prices.get(mint) if isinstance(prices, dict) else None
+    price = _fnum(entry.get("usdPrice")) if isinstance(entry, dict) else None
+    bal = base.get("balance")
+    return {
+        "address": address,
+        "mint": mint,
+        "balance": bal,
+        "price_usd": _round(price, 10),
+        "value_usd": _round(bal * price, 2) if bal is not None and price else None,
+        "network": "solana",
+    }
+
+
+@endpoint("/wallets/{address}/portfolio", "$0.02",
+          "Full wallet portfolio: SOL plus every SPL holding priced in USD via Jupiter, with total portfolio value. $0.02 USDC per call.",
+          "wallet", ["wallet", "portfolio", "usd"], "wallet-portfolio")
+async def wallet_portfolio(address: str):
+    if not _is_sol_address(address):
+        return _err_addr()
+    bal_res = await _rpc("getBalance", [address])
+    if _is_error(bal_res):
+        return bal_res
+    sol_lamports = (bal_res or {}).get("value")
+    sol_amount = _sol(sol_lamports)
+    accounts = await _wallet_token_accounts(address)
+    if _is_error(accounts):
+        return accounts
+    nonzero = [a for a in accounts if (a.get("amount") or 0) > 0]
+    mints = sorted({a["mint"] for a in nonzero if a.get("mint")})
+    prices = {}
+    for i in range(0, len(mints), 30):
+        chunk = await _jupiter_prices(mints[i:i + 30])
+        if isinstance(chunk, dict) and not _is_error(chunk):
+            prices.update(chunk)
+    sol_price = await _sol_price_usd()
+    holdings = []
+    total_tokens_usd = 0.0
+    for a in nonzero:
+        entry = prices.get(a["mint"]) or {}
+        price = _fnum(entry.get("usdPrice"))
+        value = a["amount"] * price if price is not None else None
+        if value is not None:
+            total_tokens_usd += value
+        holdings.append({
+            "mint": a["mint"],
+            "amount": a["amount"],
+            "decimals": a["decimals"],
+            "price_usd": _round(price, 10),
+            "value_usd": _round(value, 2),
+            "program": a["program"],
+        })
+    holdings.sort(key=lambda h: -(h["value_usd"] or 0))
+    sol_value = sol_amount * sol_price if sol_amount is not None and sol_price else None
+    return {
+        "address": address,
+        "sol_balance": _round(sol_amount, 9),
+        "sol_price_usd": _round(sol_price, 4),
+        "sol_value_usd": _round(sol_value, 2),
+        "holdings": holdings,
+        "priced_holdings": sum(1 for h in holdings if h["value_usd"] is not None),
+        "unpriced_holdings": sum(1 for h in holdings if h["value_usd"] is None),
+        "tokens_value_usd": _round(total_tokens_usd, 2),
+        "total_value_usd": _round((sol_value or 0) + total_tokens_usd, 2),
+        "network": "solana",
+    }
+
+
+@endpoint("/wallets/{address}/nfts", "$0.01",
+          "NFT-style holdings of one wallet: token accounts with 0 decimals and a balance of at least 1 (the on-chain NFT shape). $0.01 USDC per call.",
+          "wallet", ["wallet", "nfts", "spl"], "wallet-nfts")
+async def wallet_nfts(address: str):
+    if not _is_sol_address(address):
+        return _err_addr()
+    accounts = await _wallet_token_accounts(address)
+    if _is_error(accounts):
+        return accounts
+    nfts = [a for a in accounts if a.get("decimals") == 0 and (a.get("amount") or 0) >= 1]
+    return {
+        "address": address,
+        "nfts": [{"mint": a["mint"], "amount": a["amount"], "account": a["account"],
+                  "program": a["program"]} for a in nfts],
+        "count": len(nfts),
+        "note": "identified by token shape (0 decimals); metadata lives off-chain",
+        "network": "solana",
+    }
+
+
+@endpoint("/wallets/{address}/signatures", "$0.01",
+          "Latest 25 transaction signatures for one address: slot, time, status, memo. $0.01 USDC per call.",
+          "wallet", ["wallet", "signatures", "history"], "wallet-signatures")
+async def wallet_signatures(address: str):
+    if not _is_sol_address(address):
+        return _err_addr()
+    sigs = await _rpc("getSignaturesForAddress", [address, {"limit": 25}])
+    if _is_error(sigs):
+        return sigs
+    return {"address": address, "signatures": sigs, "count": len(sigs or []),
+            "network": "solana"}
+
+
+@endpoint("/wallets/{address}/signatures/{limit}", "$0.01",
+          "Recent transaction signatures for one address with a custom limit (capped at 100). $0.01 USDC per call.",
+          "wallet", ["wallet", "signatures", "history"], "wallet-signatures-limit")
+async def wallet_signatures_limit(address: str, limit: int):
+    if not _is_sol_address(address):
+        return _err_addr()
+    limit = max(1, min(limit, 100))
+    sigs = await _rpc("getSignaturesForAddress", [address, {"limit": limit}])
+    if _is_error(sigs):
+        return sigs
+    return {"address": address, "signatures": sigs, "count": len(sigs or []),
+            "network": "solana"}
+
+
+@endpoint("/wallets/{address}/signatures/failed", "$0.01",
+          "Failed transactions among an address's latest 100 signatures, with error summaries. $0.01 USDC per call.",
+          "wallet", ["wallet", "signatures", "failed"], "wallet-signatures-failed")
+async def wallet_signatures_failed(address: str):
+    if not _is_sol_address(address):
+        return _err_addr()
+    sigs = await _rpc("getSignaturesForAddress", [address, {"limit": 100}])
+    if _is_error(sigs):
+        return sigs
+    failed = [s for s in (sigs or []) if s.get("err")]
+    return {
+        "address": address,
+        "sampled": len(sigs or []),
+        "failed_count": len(failed),
+        "failed": [{"signature": s.get("signature"), "slot": s.get("slot"),
+                    "block_time": s.get("blockTime"), "err": s.get("err")} for s in failed[:25]],
+        "network": "solana",
+    }
+
+
+@endpoint("/wallets/{address}/activity", "$0.01",
+          "Activity profile of one address from its latest 100 signatures: success rate, first/last activity in window, busiest day. $0.01 USDC per call.",
+          "wallet", ["wallet", "activity", "analytics"], "wallet-activity")
+async def wallet_activity(address: str):
+    if not _is_sol_address(address):
+        return _err_addr()
+    sigs = await _rpc("getSignaturesForAddress", [address, {"limit": 100}])
+    if _is_error(sigs):
+        return sigs
+    sigs = sigs or []
+    times = [s.get("blockTime") for s in sigs if s.get("blockTime")]
+    per_day = {}
+    for t in times:
+        day = time.strftime("%Y-%m-%d", time.gmtime(t))
+        per_day[day] = per_day.get(day, 0) + 1
+    busiest = max(per_day.items(), key=lambda kv: kv[1]) if per_day else None
+    failed = sum(1 for s in sigs if s.get("err"))
+    return {
+        "address": address,
+        "sampled_transactions": len(sigs),
+        "successful": len(sigs) - failed,
+        "failed": failed,
+        "success_rate_percent": round(100.0 * (len(sigs) - failed) / len(sigs), 2) if sigs else None,
+        "first_in_window_unix": min(times) if times else None,
+        "last_in_window_unix": max(times) if times else None,
+        "busiest_day": {"date": busiest[0], "transactions": busiest[1]} if busiest else None,
+        "network": "solana",
+    }
+
+
+async def _stake_accounts_for(owner):
+    """Stake accounts where the address is staker or withdrawer."""
+    found = {}
+    for offset in (12, 44):  # authorized.staker, authorized.withdrawer
+        res = await _rpc("getProgramAccounts", [
+            STAKE_PROGRAM,
+            {"encoding": "jsonParsed",
+             "filters": [{"dataSize": 200},
+                         {"memcmp": {"offset": offset, "bytes": owner}}]},
+        ])
+        if _is_error(res):
+            return res
+        for entry in res or []:
+            found[entry.get("pubkey")] = entry
+    rows = []
+    for pubkey, entry in found.items():
+        acct = entry.get("account") or {}
+        parsed = ((acct.get("data") or {}).get("parsed") or {})
+        info = parsed.get("info") or {}
+        stake = (info.get("stake") or {})
+        delegation = stake.get("delegation") or {}
+        meta = info.get("meta") or {}
+        rows.append({
+            "stake_account": pubkey,
+            "lamports": acct.get("lamports"),
+            "sol": _round(_sol(acct.get("lamports")), 6),
+            "state": parsed.get("type"),
+            "staker": ((meta.get("authorized") or {}).get("staker")),
+            "withdrawer": ((meta.get("authorized") or {}).get("withdrawer")),
+            "delegated_stake_sol": _round(_sol(delegation.get("stake")), 6),
+            "voter_pubkey": delegation.get("voterPubkey"),
+            "activation_epoch": delegation.get("activationEpoch"),
+            "deactivation_epoch": None if delegation.get("deactivationEpoch") == U64_MAX else delegation.get("deactivationEpoch"),
+        })
+    return rows
+
+
+@endpoint("/wallets/{address}/stake-accounts", "$0.01",
+          "Stake accounts controlled by one wallet (as staker or withdrawer): delegation, voter, epochs, balances. $0.01 USDC per call.",
+          "wallet", ["wallet", "stake", "validators"], "wallet-stake-accounts")
+async def wallet_stake_accounts(address: str):
+    if not _is_sol_address(address):
+        return _err_addr()
+    rows = await _stake_accounts_for(address)
+    if _is_error(rows):
+        return rows
+    return {"address": address, "stake_accounts": rows, "count": len(rows),
+            "network": "solana"}
+
+
+@endpoint("/wallets/{address}/stake/total", "$0.01",
+          "Total SOL one wallet has delegated across all its stake accounts. $0.01 USDC per call.",
+          "wallet", ["wallet", "stake", "total"], "wallet-stake-total")
+async def wallet_stake_total(address: str):
+    if not _is_sol_address(address):
+        return _err_addr()
+    rows = await _stake_accounts_for(address)
+    if _is_error(rows):
+        return rows
+    total = sum(r.get("delegated_stake_sol") or 0 for r in rows)
+    balance_total = sum(_sol(r.get("lamports")) or 0 for r in rows)
+    return {
+        "address": address,
+        "stake_accounts": len(rows),
+        "total_delegated_sol": _round(total, 6),
+        "total_account_balance_sol": _round(balance_total, 6),
+        "network": "solana",
+    }
+
+
+@endpoint("/wallets/{address}/validator", "$0.01",
+          "Validator lookup for one address: matches it as a vote account or node identity in the live validator set. $0.01 USDC per call.",
+          "wallet", ["wallet", "validator", "stake"], "wallet-validator")
+async def wallet_validator(address: str):
+    if not _is_sol_address(address):
+        return _err_addr()
+    res = await _rpc("getVoteAccounts", [])
+    if _is_error(res):
+        return res
+    for kind in ("current", "delinquent"):
+        for v in (res or {}).get(kind) or []:
+            if v.get("votePubkey") == address or v.get("nodePubkey") == address:
+                return {
+                    "address": address,
+                    "is_validator": True,
+                    "delinquent": kind == "delinquent",
+                    "vote_pubkey": v.get("votePubkey"),
+                    "node_pubkey": v.get("nodePubkey"),
+                    "stake_sol": _round(_sol(v.get("activatedStake")), 4),
+                    "commission": v.get("commission"),
+                    "last_vote": v.get("lastVote"),
+                    "root_slot": v.get("rootSlot"),
+                    "network": "solana",
+                }
+    return {"address": address, "is_validator": False, "network": "solana"}
+
+
+@endpoint("/wallets/{address}/inflation-rewards", "$0.01",
+          "Inflation reward earned by one address in the most recent completed epoch (null reward means none). $0.01 USDC per call.",
+          "wallet", ["wallet", "rewards", "inflation"], "wallet-inflation-rewards")
+async def wallet_inflation_rewards(address: str):
+    if not _is_sol_address(address):
+        return _err_addr()
+    info = await _rpc("getEpochInfo", [])
+    if _is_error(info):
+        return info
+    epoch = (info.get("epoch") or 1) - 1
+    res = await _rpc("getInflationReward", [[address], {"epoch": epoch}])
+    if _is_error(res):
+        return res
+    reward = res[0] if isinstance(res, list) and res else None
+    if not reward:
+        return {"address": address, "epoch": epoch, "reward_lamports": 0,
+                "reward_sol": 0, "note": "no inflation reward for this epoch",
+                "network": "solana"}
+    return {
+        "address": address,
+        "epoch": reward.get("epoch", epoch),
+        "reward_lamports": reward.get("amount"),
+        "reward_sol": _round(_sol(reward.get("amount")), 9),
+        "post_balance_lamports": reward.get("postBalance"),
+        "commission": reward.get("commission"),
+        "network": "solana",
+    }
+
+
+@endpoint("/wallets/{address}/largest-token", "$0.01",
+          "A wallet's largest token holding by USD value (Jupiter-priced), with its share of the portfolio. $0.01 USDC per call.",
+          "wallet", ["wallet", "token", "largest"], "wallet-largest-token")
+async def wallet_largest_token(address: str):
+    if not _is_sol_address(address):
+        return _err_addr()
+    accounts = await _wallet_token_accounts(address)
+    if _is_error(accounts):
+        return accounts
+    nonzero = [a for a in accounts if (a.get("amount") or 0) > 0]
+    if not nonzero:
+        return {"address": address, "largest_token": None,
+                "note": "wallet holds no SPL tokens", "network": "solana"}
+    mints = sorted({a["mint"] for a in nonzero if a.get("mint")})
+    prices = {}
+    for i in range(0, len(mints), 30):
+        chunk = await _jupiter_prices(mints[i:i + 30])
+        if isinstance(chunk, dict) and not _is_error(chunk):
+            prices.update(chunk)
+    best = None
+    total = 0.0
+    for a in nonzero:
+        entry = prices.get(a["mint"]) or {}
+        price = _fnum(entry.get("usdPrice"))
+        if price is None:
+            continue
+        value = a["amount"] * price
+        total += value
+        if best is None or value > best["value_usd"]:
+            best = {"mint": a["mint"], "amount": a["amount"],
+                    "price_usd": _round(price, 10), "value_usd": _round(value, 2)}
+    if best is None:
+        return {"address": address, "largest_token": None,
+                "note": "no holding has a Jupiter price", "network": "solana"}
+    best["portfolio_share_percent"] = round(100.0 * best["value_usd"] / total, 2) if total else None
+    return {"address": address, "largest_token": best,
+            "priced_portfolio_usd": _round(total, 2), "network": "solana"}
+
+
+@endpoint("/wallets/{address}/token-rent", "$0.01",
+          "SOL locked as rent inside a wallet's token accounts (sum of token-account lamports). $0.01 USDC per call.",
+          "wallet", ["wallet", "rent", "tokens"], "wallet-token-rent")
+async def wallet_token_rent(address: str):
+    if not _is_sol_address(address):
+        return _err_addr()
+    accounts = await _wallet_token_accounts(address)
+    if _is_error(accounts):
+        return accounts
+    total = sum(a.get("lamports") or 0 for a in accounts)
+    return {
+        "address": address,
+        "token_accounts": len(accounts),
+        "rent_lamports": total,
+        "rent_sol": _round(_sol(total), 9),
+        "network": "solana",
+    }
+
+
+@endpoint("/wallets/{address}/associated-token-account/{mint}", "$0.01",
+          "The associated token account (ATA) address for a wallet + mint: derived PDA, whether it exists, and its balance. $0.01 USDC per call.",
+          "wallet", ["wallet", "ata", "token"], "wallet-ata")
+async def wallet_ata(address: str, mint: str):
+    if not _is_sol_address(address):
+        return _err_addr()
+    if not _is_sol_address(mint):
+        return _err_addr("mint")
+    from solders.pubkey import Pubkey
+    owner = Pubkey.from_string(address)
+    mint_pk = Pubkey.from_string(mint)
+    ata = None
+    program_used = None
+    for program in (TOKEN_PROGRAM, TOKEN_2022_PROGRAM):
+        candidate, _bump = Pubkey.find_program_address(
+            [bytes(owner), bytes(Pubkey.from_string(program)), bytes(mint_pk)],
+            Pubkey.from_string(ATA_PROGRAM),
+        )
+        res = await _rpc("getAccountInfo", [str(candidate), {"encoding": "jsonParsed"}])
+        if _is_error(res):
+            return res
+        if (res or {}).get("value"):
+            ata = str(candidate)
+            program_used = program
+            parsed = (((res["value"].get("data") or {}).get("parsed") or {}).get("info") or {})
+            amt = parsed.get("tokenAmount") or {}
+            return {
+                "address": address, "mint": mint, "ata": ata,
+                "token_program": program_used, "exists": True,
+                "balance": amt.get("uiAmount"), "balance_raw": amt.get("amount"),
+                "decimals": amt.get("decimals"), "network": "solana",
+            }
+        if ata is None:
+            ata = str(candidate)
+            program_used = program
+    return {"address": address, "mint": mint, "ata": ata,
+            "token_program": program_used, "exists": False,
+            "note": "derived for the legacy token program; account not created yet",
+            "network": "solana"}
+
+
+@endpoint("/wallets/{address}/summary", "$0.01",
+          "One-call wallet summary: SOL balance, token and NFT counts, delegated stake, last activity, validator flag. $0.01 USDC per call.",
+          "wallet", ["wallet", "summary", "profile"], "wallet-summary")
+async def wallet_summary(address: str):
+    if not _is_sol_address(address):
+        return _err_addr()
+    bal_res = await _rpc("getBalance", [address])
+    if _is_error(bal_res):
+        return bal_res
+    accounts = await _wallet_token_accounts(address)
+    if _is_error(accounts):
+        return accounts
+    sigs = await _rpc("getSignaturesForAddress", [address, {"limit": 1}])
+    last_activity = None
+    if not _is_error(sigs) and sigs:
+        last_activity = sigs[0].get("blockTime")
+    return {
+        "address": address,
+        "sol_balance": _round(_sol((bal_res or {}).get("value")), 9),
+        "token_accounts": len(accounts),
+        "nonzero_tokens": sum(1 for a in accounts if (a.get("amount") or 0) > 0),
+        "nft_shaped_holdings": sum(1 for a in accounts if a.get("decimals") == 0 and (a.get("amount") or 0) >= 1),
+        "last_activity_unix": last_activity,
+        "network": "solana",
+    }
+
+
+# ===== TRANSACTIONS =====
+
+@endpoint("/transactions/{signature}", "$0.01",
+          "One Solana transaction: slot, time, fee, status, compute units, programs involved and SOL balance changes. $0.01 USDC per call.",
+          "transaction", ["transaction", "detail"], "transaction-detail")
+async def transaction_detail(signature: str):
+    tx = await _rpc("getTransaction", [signature, {"encoding": "jsonParsed",
+                                                    "maxSupportedTransactionVersion": 0}])
+    if _is_error(tx):
+        return tx
+    if not tx:
+        return {"error": "transaction not found", "signature": signature}
+    meta = tx.get("meta") or {}
+    message = ((tx.get("transaction") or {}).get("message")) or {}
+    account_keys = [k.get("pubkey") if isinstance(k, dict) else k
+                    for k in message.get("accountKeys") or []]
+    pre = meta.get("preBalances") or []
+    post = meta.get("postBalances") or []
+    changes = []
+    for i, key in enumerate(account_keys):
+        if i < len(pre) and i < len(post) and pre[i] != post[i]:
+            changes.append({"account": key, "change_sol": _round(_sol(post[i] - pre[i]), 9)})
+    programs = []
+    for ix in message.get("instructions") or []:
+        pid = ix.get("programId") if isinstance(ix, dict) else None
+        if pid and pid not in programs:
+            programs.append(pid)
+    return {
+        "signature": signature,
+        "slot": tx.get("slot"),
+        "block_time": tx.get("blockTime"),
+        "version": tx.get("version"),
+        "fee_lamports": meta.get("fee"),
+        "fee_sol": _round(_sol(meta.get("fee")), 9),
+        "status": "failed" if meta.get("err") else "success",
+        "err": meta.get("err"),
+        "compute_units_consumed": meta.get("computeUnitsConsumed"),
+        "programs": programs,
+        "account_count": len(account_keys),
+        "balance_changes": changes[:20],
+        "log_messages": len(meta.get("logMessages") or []),
+        "network": "solana",
+    }
+
+
+@endpoint("/transactions/{signature}/status", "$0.01",
+          "Confirmation status of one Solana transaction: finalized/confirmed status, slot, error. $0.01 USDC per call.",
+          "transaction", ["transaction", "status"], "transaction-status")
+async def transaction_status(signature: str):
+    res = await _rpc("getSignatureStatuses", [[signature], {"searchTransactionHistory": True}])
+    if _is_error(res):
+        return res
+    value = (res or {}).get("value") or []
+    status = value[0] if value else None
+    if not status:
+        return {"signature": signature, "found": False, "network": "solana"}
+    return {
+        "signature": signature,
+        "found": True,
+        "slot": status.get("slot"),
+        "confirmation_status": status.get("confirmationStatus"),
+        "confirmations": status.get("confirmations"),
+        "err": status.get("err"),
+        "network": "solana",
+    }
+
+
+@endpoint("/transactions/{signature}/balances", "$0.01",
+          "Pre/post balances for one transaction: SOL changes per account and SPL token balance changes. $0.01 USDC per call.",
+          "transaction", ["transaction", "balances"], "transaction-balances")
+async def transaction_balances(signature: str):
+    tx = await _rpc("getTransaction", [signature, {"encoding": "jsonParsed",
+                                                    "maxSupportedTransactionVersion": 0}])
+    if _is_error(tx):
+        return tx
+    if not tx:
+        return {"error": "transaction not found", "signature": signature}
+    meta = tx.get("meta") or {}
+    message = ((tx.get("transaction") or {}).get("message")) or {}
+    account_keys = [k.get("pubkey") if isinstance(k, dict) else k
+                    for k in message.get("accountKeys") or []]
+    pre = meta.get("preBalances") or []
+    post = meta.get("postBalances") or []
+    sol_changes = []
+    for i, key in enumerate(account_keys):
+        if i < len(pre) and i < len(post):
+            sol_changes.append({"account": key,
+                                "pre_sol": _round(_sol(pre[i]), 9),
+                                "post_sol": _round(_sol(post[i]), 9),
+                                "change_sol": _round(_sol(post[i] - pre[i]), 9)})
+    def token_rows(rows):
+        out = []
+        for r in rows or []:
+            amt = r.get("uiTokenAmount") or {}
+            out.append({"account_index": r.get("accountIndex"),
+                        "mint": r.get("mint"), "owner": r.get("owner"),
+                        "amount": amt.get("uiAmount"), "decimals": amt.get("decimals")})
+        return out
+    return {
+        "signature": signature,
+        "sol_balances": sol_changes,
+        "pre_token_balances": token_rows(meta.get("preTokenBalances")),
+        "post_token_balances": token_rows(meta.get("postTokenBalances")),
+        "network": "solana",
+    }
+
+
+@endpoint("/transactions/{signature}/fee", "$0.01",
+          "Fee breakdown of one Solana transaction: fee in lamports/SOL/USD, compute units consumed and cost units. $0.01 USDC per call.",
+          "transaction", ["transaction", "fee"], "transaction-fee")
+async def transaction_fee(signature: str):
+    tx = await _rpc("getTransaction", [signature, {"encoding": "json",
+                                                    "maxSupportedTransactionVersion": 0}])
+    if _is_error(tx):
+        return tx
+    if not tx:
+        return {"error": "transaction not found", "signature": signature}
+    meta = tx.get("meta") or {}
+    fee = meta.get("fee")
+    price = await _sol_price_usd()
+    return {
+        "signature": signature,
+        "fee_lamports": fee,
+        "fee_sol": _round(_sol(fee), 9),
+        "fee_usd": _round(_sol(fee) * price, 6) if fee is not None and price else None,
+        "compute_units_consumed": meta.get("computeUnitsConsumed"),
+        "cost_units": meta.get("costUnits"),
+        "network": "solana",
+    }
+
+
+@endpoint("/transactions/{signature}/programs", "$0.01",
+          "Programs invoked by one Solana transaction: program ids, instruction counts and log size. $0.01 USDC per call.",
+          "transaction", ["transaction", "programs"], "transaction-programs")
+async def transaction_programs(signature: str):
+    tx = await _rpc("getTransaction", [signature, {"encoding": "jsonParsed",
+                                                    "maxSupportedTransactionVersion": 0}])
+    if _is_error(tx):
+        return tx
+    if not tx:
+        return {"error": "transaction not found", "signature": signature}
+    meta = tx.get("meta") or {}
+    message = ((tx.get("transaction") or {}).get("message")) or {}
+    counts = {}
+    for ix in message.get("instructions") or []:
+        if isinstance(ix, dict):
+            pid = ix.get("programId")
+            if pid:
+                counts[pid] = counts.get(pid, 0) + 1
+    inner = meta.get("innerInstructions") or []
+    inner_count = sum(len(g.get("instructions") or []) for g in inner)
+    return {
+        "signature": signature,
+        "programs": [{"program": k, "instructions": v} for k, v in
+                     sorted(counts.items(), key=lambda kv: -kv[1])],
+        "top_level_instructions": sum(counts.values()),
+        "inner_instructions": inner_count,
+        "log_messages": len(meta.get("logMessages") or []),
+        "network": "solana",
+    }
+
+
+@endpoint("/transactions/block/{slot}", "$0.01",
+          "All transaction signatures in one Solana block (first 100 plus total count). $0.01 USDC per call.",
+          "transaction", ["transaction", "block"], "transactions-block")
+async def transactions_block(slot: int):
+    block = await _rpc("getBlock", [slot, {"encoding": "json",
+                                           "transactionDetails": "signatures",
+                                           "rewards": False,
+                                           "maxSupportedTransactionVersion": 0}])
+    if _is_error(block):
+        return block
+    if not block:
+        return {"error": "block not available (pruned or skipped slot)", "slot": slot}
+    sigs = block.get("signatures") or []
+    return {"slot": slot, "count": len(sigs), "signatures": sigs[:100],
+            "network": "solana"}
+
+
+# ===== DEX (Dexscreener pairs + GeckoTerminal pools) =====
+
+@endpoint("/dex/pair/{pair_address}", "$0.01",
+          "One Solana DEX pair by address (Dexscreener): tokens, price, liquidity, volume, market cap. $0.01 USDC per call.",
+          "dex", ["dex", "pair", "dexscreener"], "dex-pair")
+async def dex_pair(pair_address: str):
+    if not _is_sol_address(pair_address):
+        return _err_addr("pair address")
+    data = await _get_json(f"{DEXSCREENER}/latest/dex/pairs/solana/{pair_address}")
+    if _is_error(data):
+        return data
+    pairs = data.get("pairs") if isinstance(data, dict) else None
+    if not pairs:
+        return {"error": "pair not found on Solana", "pair": pair_address}
+    out = _trim_pair(pairs[0])
+    out["network"] = "solana"
+    return out
+
+
+@endpoint("/dex/pair/{pair_address}/info", "$0.01",
+          "Profile info of one Solana pair: websites, socials and image from Dexscreener. $0.01 USDC per call.",
+          "dex", ["dex", "pair", "info"], "dex-pair-info")
+async def dex_pair_info(pair_address: str):
+    if not _is_sol_address(pair_address):
+        return _err_addr("pair address")
+    data = await _get_json(f"{DEXSCREENER}/latest/dex/pairs/solana/{pair_address}")
+    if _is_error(data):
+        return data
+    pairs = data.get("pairs") if isinstance(data, dict) else None
+    if not pairs:
+        return {"error": "pair not found on Solana", "pair": pair_address}
+    p = pairs[0]
+    info = p.get("info") or {}
+    return {
+        "pair": pair_address,
+        "base_token": (p.get("baseToken") or {}).get("symbol"),
+        "websites": info.get("websites"),
+        "socials": info.get("socials"),
+        "image_url": info.get("imageUrl"),
+        "header": info.get("header"),
+        "network": "solana",
+    }
+
+
+@endpoint("/dex/pair/{pair_address}/age", "$0.01",
+          "Age of one Solana DEX pair: creation timestamp and seconds since it opened. $0.01 USDC per call.",
+          "dex", ["dex", "pair", "age"], "dex-pair-age")
+async def dex_pair_age(pair_address: str):
+    if not _is_sol_address(pair_address):
+        return _err_addr("pair address")
+    data = await _get_json(f"{DEXSCREENER}/latest/dex/pairs/solana/{pair_address}")
+    if _is_error(data):
+        return data
+    pairs = data.get("pairs") if isinstance(data, dict) else None
+    if not pairs:
+        return {"error": "pair not found on Solana", "pair": pair_address}
+    created = pairs[0].get("pairCreatedAt")
+    age = None
+    if created:
+        age = int(time.time()) - int(created / 1000)
+    return {"pair": pair_address, "created_at_ms": created,
+            "age_seconds": age, "network": "solana"}
+
+
+@endpoint("/dex/trending", "$0.01",
+          "Trending Solana pools on GeckoTerminal right now (top 10). $0.01 USDC per call.",
+          "dex", ["dex", "trending", "geckoterminal"], "dex-trending")
+async def dex_trending():
+    data = await _gt("/networks/solana/trending_pools?page=1")
+    if _is_error(data):
+        return data
+    pools = data.get("data") or []
+    return {"pools": [_gt_pool_trim(p) for p in pools[:10]],
+            "count": len(pools), "network": "solana"}
+
+
+@endpoint("/dex/new-pools", "$0.01",
+          "Newest Solana pools on GeckoTerminal (top 10 by creation). $0.01 USDC per call.",
+          "dex", ["dex", "new", "pools"], "dex-new-pools")
+async def dex_new_pools():
+    data = await _gt("/networks/solana/new_pools?page=1")
+    if _is_error(data):
+        return data
+    pools = data.get("data") or []
+    return {"pools": [_gt_pool_trim(p) for p in pools[:10]],
+            "count": len(pools), "network": "solana"}
+
+
+@endpoint("/dex/pools/top", "$0.01",
+          "Top Solana pools on GeckoTerminal (top 10 by their ranking: reserves and activity). $0.01 USDC per call.",
+          "dex", ["dex", "pools", "top"], "dex-pools-top")
+async def dex_pools_top():
+    data = await _gt("/networks/solana/pools?page=1")
+    if _is_error(data):
+        return data
+    pools = data.get("data") or []
+    return {"pools": [_gt_pool_trim(p) for p in pools[:10]],
+            "count": len(pools), "network": "solana"}
+
+
+@endpoint("/dex/pools/{pool_address}", "$0.01",
+          "One Solana pool on GeckoTerminal: prices, reserves, volume and transaction windows. $0.01 USDC per call.",
+          "dex", ["dex", "pool", "geckoterminal"], "dex-pool")
+async def dex_pool(pool_address: str):
+    if not _is_sol_address(pool_address):
+        return _err_addr("pool address")
+    data = await _gt(f"/networks/solana/pools/{pool_address}")
+    if _is_error(data):
+        return data
+    pool = data.get("data")
+    if not pool:
+        return {"error": "pool not found", "pool": pool_address}
+    out = _gt_pool_trim(pool)
+    out["network"] = "solana"
+    return out
+
+
+@endpoint("/dex/pools/{pool_address}/trades", "$0.01",
+          "Recent trades in one Solana pool (GeckoTerminal, latest 20): kind, size in USD, price, maker. $0.01 USDC per call.",
+          "dex", ["dex", "pool", "trades"], "dex-pool-trades")
+async def dex_pool_trades(pool_address: str):
+    if not _is_sol_address(pool_address):
+        return _err_addr("pool address")
+    data = await _gt(f"/networks/solana/pools/{pool_address}/trades", ttl=10)
+    if _is_error(data):
+        return data
+    trades = []
+    for t in (data.get("data") or [])[:20]:
+        a = t.get("attributes") or {}
+        trades.append({
+            "kind": a.get("kind"),
+            "block_number": a.get("block_number"),
+            "timestamp": a.get("block_timestamp"),
+            "from": a.get("from_address"),
+            "volume_usd": _round(_fnum(a.get("volume_in_usd")), 2),
+            "price_from_usd": _fnum(a.get("price_from_in_currency_token")),
+            "price_to_usd": _fnum(a.get("price_to_in_currency_token")),
+        })
+    return {"pool": pool_address, "trades": trades, "network": "solana"}
+
+
+@endpoint("/dex/pools/{pool_address}/ohlcv/{timeframe}", "$0.01",
+          "OHLCV candles for one Solana pool (GeckoTerminal; timeframe: day, hour or minute; latest 48). $0.01 USDC per call.",
+          "dex", ["dex", "pool", "ohlcv"], "dex-pool-ohlcv")
+async def dex_pool_ohlcv(pool_address: str, timeframe: str):
+    if not _is_sol_address(pool_address):
+        return _err_addr("pool address")
+    if timeframe not in ("day", "hour", "minute"):
+        return {"error": "timeframe must be day, hour or minute"}
+    data = await _gt(f"/networks/solana/pools/{pool_address}/ohlcv/{timeframe}?limit=48")
+    if _is_error(data):
+        return data
+    candles = (((data.get("data") or {}).get("attributes") or {}).get("ohlcv_list")) or []
+    return {
+        "pool": pool_address,
+        "timeframe": timeframe,
+        "candles": [{"t": c[0], "o": c[1], "h": c[2], "l": c[3], "c": c[4], "v": c[5]}
+                    for c in candles if isinstance(c, list) and len(c) == 6],
+        "network": "solana",
+    }
+
+
+@endpoint("/dex/pools/{pool_address}/tokens", "$0.01",
+          "The two tokens of one Solana pool with their GeckoTerminal token data (price, FDV, supply). $0.01 USDC per call.",
+          "dex", ["dex", "pool", "tokens"], "dex-pool-tokens")
+async def dex_pool_tokens(pool_address: str):
+    if not _is_sol_address(pool_address):
+        return _err_addr("pool address")
+    data = await _gt(f"/networks/solana/pools/{pool_address}")
+    if _is_error(data):
+        return data
+    pool = data.get("data")
+    if not pool:
+        return {"error": "pool not found", "pool": pool_address}
+    rel = pool.get("relationships") or {}
+    out = {"pool": pool_address, "network": "solana"}
+    for side in ("base_token", "quote_token"):
+        token_id = ((rel.get(side) or {}).get("data") or {}).get("id") or ""
+        mint = token_id.replace("solana_", "")
+        if not mint:
+            out[side] = None
+            continue
+        tdata = await _gt(f"/networks/solana/tokens/{mint}")
+        if _is_error(tdata):
+            out[side] = {"mint": mint}
+            continue
+        a = ((tdata.get("data") or {}).get("attributes")) or {}
+        out[side] = {
+            "mint": mint, "name": a.get("name"), "symbol": a.get("symbol"),
+            "decimals": a.get("decimals"), "price_usd": _fnum(a.get("price_usd")),
+            "fdv_usd": _round(_fnum(a.get("fdv_usd")), 2),
+            "total_supply": a.get("total_supply"),
+        }
+    return out
+
+
+@endpoint("/dex/{dex_id}/pools", "$0.01",
+          "Top pools of one Solana DEX on GeckoTerminal (dex id e.g. raydium, orca, meteora, pump-fun). $0.01 USDC per call.",
+          "dex", ["dex", "pools", "geckoterminal"], "dex-pools-by-dex")
+async def dex_pools_by_dex(dex_id: str):
+    data = await _gt(f"/networks/solana/dexes/{dex_id}/pools?page=1")
+    if _is_error(data):
+        return data
+    pools = data.get("data") or []
+    return {"dex": dex_id, "pools": [_gt_pool_trim(p) for p in pools[:10]],
+            "count": len(pools), "network": "solana"}
+
+
+@endpoint("/dex/{dex_id}/new-pools", "$0.01",
+          "Newest pools of one Solana DEX on GeckoTerminal. $0.01 USDC per call.",
+          "dex", ["dex", "new", "pools"], "dex-new-pools-by-dex")
+async def dex_new_pools_by_dex(dex_id: str):
+    # GeckoTerminal has no per-dex new_pools route (it 404s) and its
+    # per-dex pools route only sorts by 24h volume/tx count — so take
+    # the global new-pools feed (creation-ordered) and filter by dex.
+    matched = []
+    scanned = 0
+    for page in (1, 2, 3):
+        data = await _gt(f"/networks/solana/new_pools?page={page}", ttl=20)
+        if _is_error(data):
+            if page == 1:
+                return data
+            break
+        pools = data.get("data") or []
+        scanned += len(pools)
+        for p in pools:
+            t = _gt_pool_trim(p)
+            if t.get("dex") == dex_id:
+                matched.append(t)
+        if len(matched) >= 10:
+            break
+    return {"dex": dex_id, "pools": matched[:10], "count": len(matched),
+            "scanned_newest_pools": scanned, "network": "solana"}
+
+
+@endpoint("/dex/list", "$0.01",
+          "All DEXes trading on Solana according to GeckoTerminal. $0.01 USDC per call.",
+          "dex", ["dex", "list", "geckoterminal"], "dex-list")
+async def dex_list():
+    data = await _gt("/networks/solana/dexes?page=1", ttl=300)
+    if _is_error(data):
+        return data
+    dexes = [{"id": d.get("id"), "name": (d.get("attributes") or {}).get("name")}
+             for d in (data.get("data") or [])]
+    return {"dexes": dexes, "count": len(dexes), "network": "solana"}
+
+
+@endpoint("/dex/search/{query}", "$0.01",
+          "Search Solana DEX pairs by name or symbol (Dexscreener, Solana only, top 10). $0.01 USDC per call.",
+          "dex", ["dex", "search", "dexscreener"], "dex-search")
+async def dex_search(query: str):
+    pairs = await _ds_search(query)
+    if _is_error(pairs):
+        return pairs
+    pairs = sorted(pairs, key=lambda p: -(_fnum((p.get("liquidity") or {}).get("usd")) or 0))
+    return {"query": query, "pairs": [_trim_pair(p) for p in pairs[:10]],
+            "count": len(pairs), "network": "solana"}
+
+
+@endpoint("/dex/boosts/top", "$0.01",
+          "Top boosted tokens on Dexscreener right now, Solana only. $0.01 USDC per call.",
+          "dex", ["dex", "boosts", "trending"], "dex-boosts-top")
+async def dex_boosts_top():
+    items = await _ds_boosts("top")
+    if _is_error(items):
+        return items
+    return {"boosts": [_trim_boost(b) for b in items[:15]],
+            "count": len(items), "network": "solana"}
+
+
+@endpoint("/dex/boosts/latest", "$0.01",
+          "Most recently boosted tokens on Dexscreener, Solana only. $0.01 USDC per call.",
+          "dex", ["dex", "boosts", "latest"], "dex-boosts-latest")
+async def dex_boosts_latest():
+    items = await _ds_boosts("latest")
+    if _is_error(items):
+        return items
+    return {"boosts": [_trim_boost(b) for b in items[:15]],
+            "count": len(items), "network": "solana"}
+
+
+@endpoint("/dex/profiles/latest", "$0.01",
+          "Newest token profiles created on Dexscreener, Solana only. $0.01 USDC per call.",
+          "dex", ["dex", "profiles", "new"], "dex-profiles-latest")
+async def dex_profiles_latest():
+    data = await _get_json(f"{DEXSCREENER}/token-profiles/latest/v1", ttl=30)
+    if _is_error(data):
+        return data
+    items = data if isinstance(data, list) else []
+    sol_items = [i for i in items if i.get("chainId") == "solana"]
+    return {
+        "profiles": [{
+            "token": i.get("tokenAddress"),
+            "url": i.get("url"),
+            "description": (i.get("description") or "")[:200] or None,
+            "links": i.get("links"),
+        } for i in sol_items[:15]],
+        "count": len(sol_items),
+        "network": "solana",
+    }
+
+
+@endpoint("/dex/volume/top-pools", "$0.01",
+          "Aggregate 24h volume and reserves across GeckoTerminal's top Solana pools. $0.01 USDC per call.",
+          "dex", ["dex", "volume", "aggregate"], "dex-volume-top-pools")
+async def dex_volume_top_pools():
+    data = await _gt("/networks/solana/pools?page=1")
+    if _is_error(data):
+        return data
+    pools = data.get("data") or []
+    vol = sum(_fnum((p.get("attributes") or {}).get("volume_usd", {}).get("h24")) or 0
+              for p in pools)
+    reserve = sum(_fnum((p.get("attributes") or {}).get("reserve_in_usd")) or 0
+                  for p in pools)
+    return {
+        "pools_counted": len(pools),
+        "total_volume_24h_usd": _round(vol, 2),
+        "total_reserve_usd": _round(reserve, 2),
+        "network": "solana",
+    }
+
+
+# ===== DEFI (DeFiLlama, Solana-filtered) =====
+
+@endpoint("/defi/tvl", "$0.01",
+          "Total value locked on Solana right now (DeFiLlama), with Solana's rank among all chains. $0.01 USDC per call.",
+          "defi", ["defi", "tvl", "solana"], "defi-tvl")
+async def defi_tvl():
+    chains = await _llama_chains()
+    if _is_error(chains):
+        return chains
+    ranked = sorted([c for c in chains if _fnum(c.get("tvl"))],
+                    key=lambda c: -c["tvl"])
+    solana = next((c for c in ranked if c.get("name") == "Solana"), None)
+    if not solana:
+        return {"error": "Solana not found in DeFiLlama chains"}
+    return {
+        "chain": "Solana",
+        "tvl_usd": _round(_fnum(solana.get("tvl")), 2),
+        "rank": ranked.index(solana) + 1,
+        "chains_ranked": len(ranked),
+        "token_symbol": solana.get("tokenSymbol"),
+        "network": "solana",
+    }
+
+
+@endpoint("/defi/tvl/history", "$0.01",
+          "Solana TVL history summary: latest value, 7d/30d-ago values, all-time high and its date. $0.01 USDC per call.",
+          "defi", ["defi", "tvl", "history"], "defi-tvl-history")
+async def defi_tvl_history():
+    data = await _get_json(f"{LLAMA}/v2/historicalChainTvl/Solana", ttl=300)
+    if _is_error(data):
+        return data
+    if not data:
+        return {"error": "no TVL history returned"}
+    latest = data[-1]
+    def ago(days):
+        target = latest["date"] - days * 86400
+        best = None
+        for row in data:
+            if row["date"] <= target:
+                best = row
+            else:
+                break
+        return best
+    ath = max(data, key=lambda r: r.get("tvl") or 0)
+    v7 = ago(7)
+    v30 = ago(30)
+    return {
+        "chain": "Solana",
+        "latest_tvl_usd": latest.get("tvl"),
+        "latest_date": latest.get("date"),
+        "tvl_7d_ago_usd": v7.get("tvl") if v7 else None,
+        "tvl_30d_ago_usd": v30.get("tvl") if v30 else None,
+        "change_7d_percent": round(100.0 * (latest["tvl"] - v7["tvl"]) / v7["tvl"], 3) if v7 and v7.get("tvl") else None,
+        "change_30d_percent": round(100.0 * (latest["tvl"] - v30["tvl"]) / v30["tvl"], 3) if v30 and v30.get("tvl") else None,
+        "ath_tvl_usd": ath.get("tvl"),
+        "ath_date": ath.get("date"),
+        "network": "solana",
+    }
+
+
+@endpoint("/defi/tvl/change", "$0.01",
+          "Solana TVL percent changes over 1, 7 and 30 days (DeFiLlama history). $0.01 USDC per call.",
+          "defi", ["defi", "tvl", "change"], "defi-tvl-change")
+async def defi_tvl_change():
+    data = await _get_json(f"{LLAMA}/v2/historicalChainTvl/Solana", ttl=300)
+    if _is_error(data):
+        return data
+    if not data:
+        return {"error": "no TVL history returned"}
+    latest = data[-1]
+    def change(days):
+        target = latest["date"] - days * 86400
+        best = None
+        for row in data:
+            if row["date"] <= target:
+                best = row
+            else:
+                break
+        if not best or not best.get("tvl"):
+            return None
+        return round(100.0 * (latest["tvl"] - best["tvl"]) / best["tvl"], 3)
+    return {
+        "chain": "Solana",
+        "tvl_usd": latest.get("tvl"),
+        "change_1d_percent": change(1),
+        "change_7d_percent": change(7),
+        "change_30d_percent": change(30),
+        "network": "solana",
+    }
+
+
+@endpoint("/defi/tvl/dominance", "$0.01",
+          "Solana's share of total cross-chain DeFi TVL and its rank (DeFiLlama). $0.01 USDC per call.",
+          "defi", ["defi", "tvl", "dominance"], "defi-tvl-dominance")
+async def defi_tvl_dominance():
+    chains = await _llama_chains()
+    if _is_error(chains):
+        return chains
+    total = sum(_fnum(c.get("tvl")) or 0 for c in chains)
+    ranked = sorted([c for c in chains if _fnum(c.get("tvl"))],
+                    key=lambda c: -c["tvl"])
+    solana = next((c for c in ranked if c.get("name") == "Solana"), None)
+    if not solana or not total:
+        return {"error": "Solana not found in DeFiLlama chains"}
+    return {
+        "chain": "Solana",
+        "tvl_usd": _round(_fnum(solana.get("tvl")), 2),
+        "all_chains_tvl_usd": _round(total, 2),
+        "share_percent": round(100.0 * (_fnum(solana.get("tvl")) or 0) / total, 3),
+        "rank": ranked.index(solana) + 1,
+        "network": "solana",
+    }
+
+
+@endpoint("/defi/protocols", "$0.01",
+          "Top 25 protocols on Solana by TVL (DeFiLlama), with category and 1d/7d change. $0.01 USDC per call.",
+          "defi", ["defi", "protocols", "tvl"], "defi-protocols")
+async def defi_protocols():
+    protocols = await _llama_protocols()
+    if _is_error(protocols):
+        return protocols
+    sol = _solana_protocols(protocols)
+    return {"protocols": [_trim_protocol(p) for p in sol[:25]],
+            "count": len(sol), "network": "solana"}
+
+
+@endpoint("/defi/protocols/count", "$0.01",
+          "How many DeFiLlama protocols hold TVL on Solana, and their combined Solana TVL. $0.01 USDC per call.",
+          "defi", ["defi", "protocols", "count"], "defi-protocols-count")
+async def defi_protocols_count():
+    protocols = await _llama_protocols()
+    if _is_error(protocols):
+        return protocols
+    sol = _solana_protocols(protocols)
+    total = sum((p.get("chainTvls") or {}).get("Solana") or 0 for p in sol)
+    return {"protocol_count": len(sol), "combined_solana_tvl_usd": _round(total, 2),
+            "network": "solana"}
+
+
+@endpoint("/defi/protocol/{slug}", "$0.01",
+          "One DeFiLlama protocol (by slug): category, chains, and its Solana TVL position. $0.01 USDC per call.",
+          "defi", ["defi", "protocol", "tvl"], "defi-protocol")
+async def defi_protocol(slug: str):
+    data = await _get_json(f"{LLAMA}/protocol/{slug}", ttl=300)
+    if _is_error(data):
+        return data
+    current = data.get("currentChainTvls") or {}
+    return {
+        "name": data.get("name"),
+        "slug": slug,
+        "symbol": data.get("symbol"),
+        "category": data.get("category"),
+        "url": data.get("url"),
+        "chains": data.get("chains"),
+        "solana_tvl_usd": _round(_fnum(current.get("Solana")), 2),
+        "total_tvl_usd": _round(_fnum(current.get("total")), 2) if current.get("total") else None,
+        "network": "solana",
+    }
+
+
+@endpoint("/defi/protocol/{slug}/tvl", "$0.01",
+          "One protocol's Solana TVL over time: current value plus 7d and 30d changes from its chain history. $0.01 USDC per call.",
+          "defi", ["defi", "protocol", "tvl"], "defi-protocol-tvl")
+async def defi_protocol_tvl(slug: str):
+    data = await _get_json(f"{LLAMA}/protocol/{slug}", ttl=300)
+    if _is_error(data):
+        return data
+    chain_tvls = (data.get("chainTvls") or {}).get("Solana") or {}
+    history = chain_tvls.get("tvl") or []
+    if not history:
+        return {"slug": slug, "error": "protocol has no Solana TVL history"}
+    latest = history[-1]
+    def ago(days):
+        target = latest["date"] - days * 86400
+        best = None
+        for row in history:
+            if row["date"] <= target:
+                best = row
+            else:
+                break
+        return best
+    v7, v30 = ago(7), ago(30)
+    def pct(old):
+        if not old or not old.get("totalLiquidityUSD"):
+            return None
+        return round(100.0 * (latest["totalLiquidityUSD"] - old["totalLiquidityUSD"]) / old["totalLiquidityUSD"], 3)
+    return {
+        "slug": slug,
+        "name": data.get("name"),
+        "solana_tvl_usd": latest.get("totalLiquidityUSD"),
+        "change_7d_percent": pct(v7),
+        "change_30d_percent": pct(v30),
+        "network": "solana",
+    }
+
+
+@endpoint("/defi/categories", "$0.01",
+          "Solana DeFi TVL by protocol category (lending, DEX, liquid staking, ...), top 15. $0.01 USDC per call.",
+          "defi", ["defi", "categories", "tvl"], "defi-categories")
+async def defi_categories():
+    protocols = await _llama_protocols()
+    if _is_error(protocols):
+        return protocols
+    sol = _solana_protocols(protocols)
+    by_cat = {}
+    counts = {}
+    for p in sol:
+        cat = p.get("category") or "Other"
+        by_cat[cat] = by_cat.get(cat, 0.0) + ((p.get("chainTvls") or {}).get("Solana") or 0)
+        counts[cat] = counts.get(cat, 0) + 1
+    rows = [{"category": k, "solana_tvl_usd": _round(v, 2), "protocols": counts[k]}
+            for k, v in by_cat.items()]
+    rows.sort(key=lambda r: -r["solana_tvl_usd"])
+    return {"categories": rows[:15], "network": "solana"}
+
+
+@endpoint("/defi/liquid-staking", "$0.01",
+          "Liquid staking protocols on Solana by TVL (DeFiLlama category filter): Sanctum, Jito, Marinade and peers. $0.01 USDC per call.",
+          "defi", ["defi", "liquid-staking", "lst"], "defi-liquid-staking")
+async def defi_liquid_staking():
+    protocols = await _llama_protocols()
+    if _is_error(protocols):
+        return protocols
+    sol = [p for p in _solana_protocols(protocols)
+           if (p.get("category") or "") == "Liquid Staking"]
+    return {"protocols": [_trim_protocol(p) for p in sol[:15]],
+            "count": len(sol), "network": "solana"}
+
+
+@endpoint("/defi/dex/volume", "$0.01",
+          "Solana DEX volume totals (DeFiLlama): 24h, 7d, 30d volumes and day/week/month changes. $0.01 USDC per call.",
+          "defi", ["defi", "dex", "volume"], "defi-dex-volume")
+async def defi_dex_volume():
+    data = await _get_json(f"{LLAMA}/overview/dexs/Solana", ttl=120)
+    if _is_error(data):
+        return data
+    return {
+        "chain": "Solana",
+        "total_24h_usd": _round(_fnum(data.get("total24h")), 2),
+        "total_7d_usd": _round(_fnum(data.get("total7d")), 2),
+        "total_30d_usd": _round(_fnum(data.get("total30d")), 2),
+        "change_1d_percent": _round(_fnum(data.get("change_1d")), 3),
+        "change_7d_percent": _round(_fnum(data.get("change_7d")), 3),
+        "change_1m_percent": _round(_fnum(data.get("change_1m")), 3),
+        "network": "solana",
+    }
+
+
+@endpoint("/defi/dex/volume/top", "$0.01",
+          "Top Solana DEXes by 24h volume (DeFiLlama overview breakdown). $0.01 USDC per call.",
+          "defi", ["defi", "dex", "volume"], "defi-dex-volume-top")
+async def defi_dex_volume_top():
+    data = await _get_json(f"{LLAMA}/overview/dexs/Solana", ttl=120)
+    if _is_error(data):
+        return data
+    return {"chain": "Solana", "dexes": _overview_top_protocols(data, 10),
+            "network": "solana"}
+
+
+@endpoint("/defi/dex/volume/history", "$0.01",
+          "Solana DEX volume for the last 14 days (DeFiLlama daily totals). $0.01 USDC per call.",
+          "defi", ["defi", "dex", "volume"], "defi-dex-volume-history")
+async def defi_dex_volume_history():
+    data = await _get_json(f"{LLAMA}/overview/dexs/Solana",
+                           params={"excludeTotalDataChartBreakdown": "true"}, ttl=120)
+    if _is_error(data):
+        return data
+    chart = data.get("totalDataChart") or []
+    rows = [{"date": r[0], "volume_usd": _round(_fnum(r[1]), 2)}
+            for r in chart[-14:] if isinstance(r, list) and len(r) == 2]
+    return {"chain": "Solana", "days": rows, "network": "solana"}
+
+
+@endpoint("/defi/fees", "$0.01",
+          "Solana protocol fees totals (DeFiLlama): 24h, 7d, 30d fees and changes. $0.01 USDC per call.",
+          "defi", ["defi", "fees", "solana"], "defi-fees")
+async def defi_fees():
+    data = await _get_json(f"{LLAMA}/overview/fees/Solana", ttl=120)
+    if _is_error(data):
+        return data
+    return {
+        "chain": "Solana",
+        "total_24h_usd": _round(_fnum(data.get("total24h")), 2),
+        "total_7d_usd": _round(_fnum(data.get("total7d")), 2),
+        "total_30d_usd": _round(_fnum(data.get("total30d")), 2),
+        "change_1d_percent": _round(_fnum(data.get("change_1d")), 3),
+        "change_7d_percent": _round(_fnum(data.get("change_7d")), 3),
+        "network": "solana",
+    }
+
+
+@endpoint("/defi/fees/top", "$0.01",
+          "Top fee-earning protocols on Solana in the last 24h (DeFiLlama overview breakdown). $0.01 USDC per call.",
+          "defi", ["defi", "fees", "top"], "defi-fees-top")
+async def defi_fees_top():
+    data = await _get_json(f"{LLAMA}/overview/fees/Solana", ttl=120)
+    if _is_error(data):
+        return data
+    return {"chain": "Solana", "protocols": _overview_top_protocols(data, 10),
+            "network": "solana"}
+
+
+@endpoint("/defi/fees/history", "$0.01",
+          "Solana protocol fees for the last 14 days (DeFiLlama daily totals). $0.01 USDC per call.",
+          "defi", ["defi", "fees", "history"], "defi-fees-history")
+async def defi_fees_history():
+    data = await _get_json(f"{LLAMA}/overview/fees/Solana",
+                           params={"excludeTotalDataChartBreakdown": "true"}, ttl=120)
+    if _is_error(data):
+        return data
+    chart = data.get("totalDataChart") or []
+    rows = [{"date": r[0], "fees_usd": _round(_fnum(r[1]), 2)}
+            for r in chart[-14:] if isinstance(r, list) and len(r) == 2]
+    return {"chain": "Solana", "days": rows, "network": "solana"}
+
+
+async def _solana_yield_pools():
+    pools = await _llama_yield_pools()
+    if _is_error(pools):
+        return pools
+    return [p for p in pools if p.get("chain") == "Solana"]
+
+
+@endpoint("/defi/yields", "$0.01",
+          "Highest-APY yield pools on Solana right now (DeFiLlama yields, minimum $100k TVL, top 15). $0.01 USDC per call.",
+          "defi", ["defi", "yields", "apy"], "defi-yields")
+async def defi_yields():
+    pools = await _solana_yield_pools()
+    if _is_error(pools):
+        return pools
+    rows = [p for p in pools if (_fnum(p.get("tvlUsd")) or 0) >= 100000
+            and _fnum(p.get("apy")) is not None]
+    rows.sort(key=lambda p: -(p.get("apy") or 0))
+    return {"pools": [_trim_yield_pool(p) for p in rows[:15]],
+            "count": len(rows), "network": "solana"}
+
+
+@endpoint("/defi/yields/top-tvl", "$0.01",
+          "Largest yield pools on Solana by TVL (DeFiLlama yields, top 15) with their APYs. $0.01 USDC per call.",
+          "defi", ["defi", "yields", "tvl"], "defi-yields-top-tvl")
+async def defi_yields_top_tvl():
+    pools = await _solana_yield_pools()
+    if _is_error(pools):
+        return pools
+    rows = sorted(pools, key=lambda p: -(p.get("tvlUsd") or 0))
+    return {"pools": [_trim_yield_pool(p) for p in rows[:15]],
+            "count": len(rows), "network": "solana"}
+
+
+@endpoint("/defi/yields/stablecoins", "$0.01",
+          "Best stablecoin yields on Solana (DeFiLlama yields, stablecoin pools, minimum $100k TVL). $0.01 USDC per call.",
+          "defi", ["defi", "yields", "stablecoins"], "defi-yields-stablecoins")
+async def defi_yields_stablecoins():
+    pools = await _solana_yield_pools()
+    if _is_error(pools):
+        return pools
+    rows = [p for p in pools if p.get("stablecoin")
+            and (_fnum(p.get("tvlUsd")) or 0) >= 100000
+            and _fnum(p.get("apy")) is not None]
+    rows.sort(key=lambda p: -(p.get("apy") or 0))
+    return {"pools": [_trim_yield_pool(p) for p in rows[:15]],
+            "count": len(rows), "network": "solana"}
+
+
+@endpoint("/defi/yields/sol", "$0.01",
+          "Best yields for SOL and liquid-staked SOL pools on Solana (symbol contains SOL). $0.01 USDC per call.",
+          "defi", ["defi", "yields", "sol"], "defi-yields-sol")
+async def defi_yields_sol():
+    pools = await _solana_yield_pools()
+    if _is_error(pools):
+        return pools
+    rows = [p for p in pools if "SOL" in (p.get("symbol") or "").upper()
+            and (_fnum(p.get("tvlUsd")) or 0) >= 50000
+            and _fnum(p.get("apy")) is not None]
+    rows.sort(key=lambda p: -(p.get("apy") or 0))
+    return {"pools": [_trim_yield_pool(p) for p in rows[:15]],
+            "count": len(rows), "network": "solana"}
+
+
+@endpoint("/defi/yields/usdc", "$0.01",
+          "Best USDC yields on Solana (DeFiLlama yields, symbol contains USDC, minimum $50k TVL). $0.01 USDC per call.",
+          "defi", ["defi", "yields", "usdc"], "defi-yields-usdc")
+async def defi_yields_usdc():
+    pools = await _solana_yield_pools()
+    if _is_error(pools):
+        return pools
+    rows = [p for p in pools if "USDC" in (p.get("symbol") or "").upper()
+            and (_fnum(p.get("tvlUsd")) or 0) >= 50000
+            and _fnum(p.get("apy")) is not None]
+    rows.sort(key=lambda p: -(p.get("apy") or 0))
+    return {"pools": [_trim_yield_pool(p) for p in rows[:15]],
+            "count": len(rows), "network": "solana"}
+
+
+@endpoint("/defi/yields/project/{project}", "$0.01",
+          "Yield pools of one project on Solana (DeFiLlama project id, e.g. kamino, jito-liquid-staking): pools, TVL, best APY. $0.01 USDC per call.",
+          "defi", ["defi", "yields", "project"], "defi-yields-project")
+async def defi_yields_project(project: str):
+    pools = await _solana_yield_pools()
+    if _is_error(pools):
+        return pools
+    rows = [p for p in pools if p.get("project") == project]
+    if not rows:
+        return {"error": "no Solana pools for project", "project": project}
+    rows.sort(key=lambda p: -(p.get("tvlUsd") or 0))
+    apys = [p["apy"] for p in rows if _fnum(p.get("apy")) is not None]
+    return {
+        "project": project,
+        "pools": [_trim_yield_pool(p) for p in rows[:15]],
+        "pool_count": len(rows),
+        "total_tvl_usd": _round(sum(p.get("tvlUsd") or 0 for p in rows), 2),
+        "best_apy": _round(max(apys), 4) if apys else None,
+        "network": "solana",
+    }
+
+
+@endpoint("/defi/yields/pool/{pool_id}", "$0.01",
+          "One DeFiLlama yield pool's recent history: latest APY/TVL and 30-day average APY. $0.01 USDC per call.",
+          "defi", ["defi", "yields", "pool"], "defi-yields-pool")
+async def defi_yields_pool(pool_id: str):
+    data = await _get_json(f"{YIELDS}/chart/{pool_id}", ttl=300)
+    if _is_error(data):
+        return data
+    rows = data.get("data") if isinstance(data, dict) else None
+    if not rows:
+        return {"error": "no chart data for pool", "pool": pool_id}
+    latest = rows[-1]
+    last30 = rows[-30:]
+    apys = [r["apy"] for r in last30 if _fnum(r.get("apy")) is not None]
+    return {
+        "pool": pool_id,
+        "latest_timestamp": latest.get("timestamp"),
+        "latest_apy": latest.get("apy"),
+        "latest_tvl_usd": latest.get("tvlUsd"),
+        "avg_apy_30d": _round(sum(apys) / len(apys), 4) if apys else None,
+        "network": "solana",
+    }
+
+
+@endpoint("/defi/solana/summary", "$0.02",
+          "Solana DeFi in one call: TVL, DEX volume, protocol fees, stablecoin value on Solana, protocol count and median yield. $0.02 USDC per call.",
+          "defi", ["defi", "summary", "solana"], "defi-solana-summary")
+async def defi_solana_summary():
+    chains = await _llama_chains()
+    if _is_error(chains):
+        return chains
+    solana = next((c for c in chains if c.get("name") == "Solana"), None)
+    dex = await _get_json(f"{LLAMA}/overview/dexs/Solana",
+                          params={"excludeTotalDataChart": "true",
+                                  "excludeTotalDataChartBreakdown": "true"}, ttl=120)
+    fees = await _get_json(f"{LLAMA}/overview/fees/Solana",
+                           params={"excludeTotalDataChart": "true",
+                                   "excludeTotalDataChartBreakdown": "true"}, ttl=120)
+    stable_chains = await _get_json(f"{STABLECOINS_API}/stablecoinchains", ttl=300)
+    stable_solana = None
+    if not _is_error(stable_chains) and isinstance(stable_chains, list):
+        entry = next((c for c in stable_chains if c.get("name") == "Solana"), None)
+        if entry:
+            stable_solana = ((entry.get("totalCirculatingUSD") or {}).get("peggedUSD"))
+    pools = await _solana_yield_pools()
+    median_apy = None
+    protocol_count = None
+    if not _is_error(pools):
+        apys = sorted(p["apy"] for p in pools
+                      if _fnum(p.get("apy")) is not None and (_fnum(p.get("tvlUsd")) or 0) >= 10000)
+        if apys:
+            median_apy = _round(apys[len(apys) // 2], 4)
+    protocols = await _llama_protocols()
+    if not _is_error(protocols):
+        protocol_count = len(_solana_protocols(protocols))
+    return {
+        "chain": "Solana",
+        "tvl_usd": _round(_fnum(solana.get("tvl")), 2) if solana else None,
+        "dex_volume_24h_usd": _round(_fnum(dex.get("total24h")), 2) if not _is_error(dex) else None,
+        "protocol_fees_24h_usd": _round(_fnum(fees.get("total24h")), 2) if not _is_error(fees) else None,
+        "stablecoin_value_on_solana_usd": _round(_fnum(stable_solana), 2),
+        "protocol_count": protocol_count,
+        "median_yield_apy": median_apy,
+        "network": "solana",
+    }
+
+
+# ===== ORACLES (Pyth feed directory + cross-source price checks) =====
+# Pyth's Hermes price-update endpoints now answer 401 without an API
+# key (verified 2026-11-23), so no endpoint here pretends to serve
+# Pyth prices. The Pyth endpoints serve the real, public feed
+# directory; the price endpoints cross-check Jupiter, Dexscreener and
+# CoinGecko — the sources that do answer for free.
+
+@endpoint("/oracles/pyth/feeds", "$0.01",
+          "Pyth price-feed directory (crypto): total feed count and the first 50 feeds with ids and symbols. $0.01 USDC per call.",
+          "oracle", ["oracle", "pyth", "feeds"], "oracle-pyth-feeds")
+async def oracle_pyth_feeds():
+    feeds = await _pyth_feeds()
+    if _is_error(feeds):
+        return feeds
+    feeds = feeds if isinstance(feeds, list) else []
+    return {"feeds": [_trim_pyth_feed(f) for f in feeds[:50]],
+            "count": len(feeds), "network": "solana",
+            "note": "Pyth is Solana's native oracle network; live price updates require a Pyth API key, so this service cross-checks Jupiter/Dexscreener/CoinGecko for prices"}
+
+
+@endpoint("/oracles/pyth/feeds/search/{query}", "$0.01",
+          "Search the Pyth feed directory (e.g. SOL, BTC/USD, JUP): matching feeds with their feed ids. $0.01 USDC per call.",
+          "oracle", ["oracle", "pyth", "search"], "oracle-pyth-feeds-search")
+async def oracle_pyth_feeds_search(query: str):
+    feeds = await _pyth_feeds(query=query)
+    if _is_error(feeds):
+        return feeds
+    feeds = feeds if isinstance(feeds, list) else []
+    return {"query": query, "feeds": [_trim_pyth_feed(f) for f in feeds[:25]],
+            "count": len(feeds), "network": "solana"}
+
+
+@endpoint("/oracles/pyth/feed/{symbol}", "$0.01",
+          "One Pyth feed by symbol (e.g. SOL/USD): feed id, base, quote, display symbol, market hours. $0.01 USDC per call.",
+          "oracle", ["oracle", "pyth", "feed"], "oracle-pyth-feed")
+async def oracle_pyth_feed(symbol: str):
+    feeds = await _pyth_feeds(query=symbol)
+    if _is_error(feeds):
+        return feeds
+    feeds = feeds if isinstance(feeds, list) else []
+    want = ("Crypto." + symbol).lower()
+    exact = next((f for f in feeds
+                  if ((f.get("attributes") or {}).get("symbol") or "").lower() == want), None)
+    chosen = exact or (feeds[0] if feeds else None)
+    if not chosen:
+        return {"error": "no Pyth feed matches symbol", "symbol": symbol}
+    out = _trim_pyth_feed(chosen)
+    out["network"] = "solana"
+    return out
+
+
+async def _cross_source_price(mint, coingecko_id=None):
+    """Jupiter vs Dexscreener (vs CoinGecko) price cross-check."""
+    prices = await _jupiter_prices([mint])
+    jup = None
+    if isinstance(prices, dict) and not _is_error(prices):
+        entry = prices.get(mint) or {}
+        jup = _fnum(entry.get("usdPrice"))
+    ds_price = None
+    pairs = await _ds_base_pairs(mint)
+    if not _is_error(pairs):
+        best = _best_pair(pairs)
+        if best:
+            ds_price = _fnum(best.get("priceUsd"))
+    cg_price = None
+    if coingecko_id:
+        cg = await _get_json(f"{COINGECKO}/simple/price",
+                             params={"ids": coingecko_id, "vs_currencies": "usd"},
+                             ttl=60)
+        if not _is_error(cg):
+            cg_price = _fnum((cg.get(coingecko_id) or {}).get("usd"))
+    values = [v for v in (jup, ds_price, cg_price) if v]
+    median = None
+    max_dev = None
+    if values:
+        ordered = sorted(values)
+        median = ordered[len(ordered) // 2]
+        if median:
+            max_dev = round(100.0 * max(abs(v - median) for v in values) / median, 4)
+    return {
+        "mint": mint,
+        "jupiter_usd": _round(jup, 8),
+        "dexscreener_usd": _round(ds_price, 8),
+        "coingecko_usd": _round(cg_price, 8),
+        "median_usd": _round(median, 8),
+        "max_deviation_percent": max_dev,
+        "sources_reporting": len(values),
+        "network": "solana",
+    }
+
+
+@endpoint("/oracles/price/{mint}", "$0.01",
+          "Cross-source USD price check for one Solana mint: Jupiter vs Dexscreener, median and max deviation. $0.01 USDC per call.",
+          "oracle", ["oracle", "price", "cross-source"], "oracle-price")
+async def oracle_price(mint: str):
+    if not _is_sol_address(mint):
+        return _err_addr("mint")
+    return await _cross_source_price(mint)
+
+
+@endpoint("/oracles/sol", "$0.02",
+          "Cross-source SOL price check: Jupiter, Dexscreener and CoinGecko compared, with median and max deviation. $0.02 USDC per call.",
+          "oracle", ["oracle", "sol", "price"], "oracle-sol")
+async def oracle_sol():
+    out = await _cross_source_price(WSOL, coingecko_id="solana")
+    out["asset"] = "SOL"
+    return out
+
+
+@endpoint("/oracles/btc", "$0.01",
+          "Cross-source BTC price check on Solana (cbBTC mint): Jupiter vs Dexscreener vs CoinGecko bitcoin. $0.01 USDC per call.",
+          "oracle", ["oracle", "btc", "price"], "oracle-btc")
+async def oracle_btc():
+    results = await _jupiter_search("cbBTC")
+    mint = None
+    if not _is_error(results):
+        exact = next((t for t in results if (t.get("symbol") or "") == "cbBTC"), None)
+        if exact:
+            mint = exact.get("id")
+    if not mint:
+        return {"error": "could not resolve the cbBTC mint via Jupiter"}
+    out = await _cross_source_price(mint, coingecko_id="bitcoin")
+    out["asset"] = "BTC (cbBTC on Solana)"
+    return out
+
+
+@endpoint("/oracles/eth", "$0.01",
+          "Cross-source ETH price check on Solana (bridged ETH mint): Jupiter vs Dexscreener vs CoinGecko ethereum. $0.01 USDC per call.",
+          "oracle", ["oracle", "eth", "price"], "oracle-eth")
+async def oracle_eth():
+    mint = "7vfCXTUXx5WJV5JADk17DUJ4ksgau7utNKj4b963voxs"  # Wormhole-wrapped ETH
+    out = await _cross_source_price(mint, coingecko_id="ethereum")
+    out["asset"] = "ETH (bridged to Solana)"
+    return out
+
+
+@endpoint("/oracles/usdc", "$0.01",
+          "USDC peg check on Solana: Jupiter, Dexscreener and CoinGecko prices compared against the $1 peg. $0.01 USDC per call.",
+          "oracle", ["oracle", "usdc", "peg"], "oracle-usdc")
+async def oracle_usdc():
+    out = await _cross_source_price(SOLANA_USDC, coingecko_id="usd-coin")
+    median = out.get("median_usd")
+    out["asset"] = "USDC"
+    out["peg_deviation_percent"] = round(100.0 * abs(median - 1.0), 4) if median else None
+    return out
+
+
+@endpoint("/oracles/deviation/{mint}", "$0.01",
+          "Price deviation between Jupiter and Dexscreener for one Solana mint (percent, with both prices). $0.01 USDC per call.",
+          "oracle", ["oracle", "deviation", "price"], "oracle-deviation")
+async def oracle_deviation(mint: str):
+    if not _is_sol_address(mint):
+        return _err_addr("mint")
+    out = await _cross_source_price(mint)
+    return {
+        "mint": mint,
+        "jupiter_usd": out["jupiter_usd"],
+        "dexscreener_usd": out["dexscreener_usd"],
+        "deviation_percent": out["max_deviation_percent"],
+        "network": "solana",
+    }
+
+
+@endpoint("/oracles/jupiter/{mint}", "$0.01",
+          "Jupiter's oracle-grade price detail for one mint: price, 24h change, liquidity, last-update block. $0.01 USDC per call.",
+          "oracle", ["oracle", "jupiter", "price"], "oracle-jupiter")
+async def oracle_jupiter(mint: str):
+    if not _is_sol_address(mint):
+        return _err_addr("mint")
+    data = await _jupiter_prices([mint])
+    if _is_error(data):
+        return data
+    entry = data.get(mint)
+    if not entry:
+        return {"error": "Jupiter has no price for this mint", "mint": mint}
+    return {
+        "mint": mint,
+        "price_usd": _round(_fnum(entry.get("usdPrice")), 10),
+        "price_change_24h_percent": _round(_fnum(entry.get("priceChange24h")), 4),
+        "liquidity_usd": _round(_fnum(entry.get("liquidity")), 2),
+        "decimals": entry.get("decimals"),
+        "block_id": entry.get("blockId"),
+        "source": "jupiter price v3",
+        "network": "solana",
+    }
+
+
+@endpoint("/oracles/dexscreener/{mint}", "$0.01",
+          "Dexscreener's price view of one Solana mint from its deepest base-asset pair. $0.01 USDC per call.",
+          "oracle", ["oracle", "dexscreener", "price"], "oracle-dexscreener")
+async def oracle_dexscreener(mint: str):
+    if not _is_sol_address(mint):
+        return _err_addr("mint")
+    pairs = await _ds_base_pairs(mint)
+    if _is_error(pairs):
+        return pairs
+    best = _best_pair(pairs)
+    if not best:
+        return {"error": "token is not the base asset of any Solana pair", "mint": mint}
+    return {
+        "mint": mint,
+        "price_usd": best.get("priceUsd"),
+        "liquidity_usd": (best.get("liquidity") or {}).get("usd"),
+        "volume_24h_usd": (best.get("volume") or {}).get("h24"),
+        "pair": best.get("pairAddress"),
+        "source": "dexscreener",
+        "network": "solana",
+    }
+
+
+@endpoint("/oracles/coingecko/{mint}", "$0.01",
+          "CoinGecko's price view of one Solana mint by contract address. $0.01 USDC per call.",
+          "oracle", ["oracle", "coingecko", "price"], "oracle-coingecko")
+async def oracle_coingecko(mint: str):
+    if not _is_sol_address(mint):
+        return _err_addr("mint")
+    data = await _get_json(f"{COINGECKO}/coins/solana/contract/{mint}",
                            params={"localization": "false", "tickers": "false",
                                    "market_data": "true", "community_data": "false",
-                                   "developer_data": "false", "sparkline": "false"})
-    if isinstance(data, dict) and "error" in data:
+                                   "developer_data": "false"}, ttl=60)
+    if _is_error(data):
         return data
-    md = (data or {}).get("market_data") or {}
-    return {"coin": coin, "name": data.get("name"), "symbol": data.get("symbol"),
-            "current_price_usd": (md.get("current_price") or {}).get("usd"),
-            "change_24h_pct": md.get("price_change_percentage_24h"),
-            "change_7d_pct": md.get("price_change_percentage_7d"),
-            "change_30d_pct": md.get("price_change_percentage_30d"),
-            "change_1y_pct": md.get("price_change_percentage_1y"),
-            "market_cap_usd": (md.get("market_cap") or {}).get("usd")}
-
-# ---------- v5 REGISTRATION ----------
-# Applied here (rather than as decorators above) so the handler
-# definitions stay readable; calling endpoint(...)(fn) is identical
-# to decorating fn with @endpoint(...).
-# Price mix: $0.01 x97, $0.02 x3 = 100 new.
-
-# Lending (14)
-endpoint("/lending/aave/markets", "$0.02", "All Aave V3 markets on Base with on-chain supply/borrow APY. $0.02 USDC per call.", "lending", ["lending", "aave", "markets"], "lending-aave-markets")(lending_aave_markets)
-endpoint("/lending/aave/market/{asset}", "$0.01", "Aave V3 market for one asset: on-chain rates + aToken/debt tokens. $0.01 USDC per call.", "lending", ["lending", "aave", "market"], "lending-aave-market")(lending_aave_market_asset)
-endpoint("/lending/aave/user/{wallet}", "$0.01", "Aave V3 account data for one wallet: collateral, debt, health factor. $0.01 USDC per call.", "lending", ["lending", "aave", "account"], "lending-aave-user")(lending_aave_user)
-endpoint("/lending/aave/tvl", "$0.01", "Aave V3 TVL on Base. $0.01 USDC per call.", "lending", ["lending", "aave", "tvl"], "lending-aave-tvl")(lending_aave_tvl)
-endpoint("/lending/compound/markets", "$0.01", "Compound V3 yield pools on Base, top 10 by TVL. $0.01 USDC per call.", "lending", ["lending", "compound", "markets"], "lending-compound-markets")(lending_compound_markets)
-endpoint("/lending/compound/usdc", "$0.01", "Compound V3 Comet USDC market on Base: utilization, totals, APY. $0.01 USDC per call.", "lending", ["lending", "compound", "usdc"], "lending-compound-usdc")(lending_compound_usdc)
-endpoint("/lending/compound/user/{wallet}", "$0.01", "Compound V3 Comet USDC position for one wallet: supplied/borrowed. $0.01 USDC per call.", "lending", ["lending", "compound", "account"], "lending-compound-user")(lending_compound_user)
-endpoint("/lending/morpho/pools", "$0.01", "Morpho Blue yield pools on Base, top 10 by TVL. $0.01 USDC per call.", "lending", ["lending", "morpho", "pools"], "lending-morpho-pools")(lending_morpho_pools)
-endpoint("/lending/morpho/stable", "$0.01", "Highest-APY Morpho Blue stablecoin pools on Base. $0.01 USDC per call.", "lending", ["lending", "morpho", "stablecoin"], "lending-morpho-stable")(lending_morpho_stable)
-endpoint("/lending/rates/{asset}", "$0.01", "Lending rates for one asset: Aave on-chain + yield pools. $0.01 USDC per call.", "lending", ["lending", "rates", "aave"], "lending-rates")(lending_rates)
-endpoint("/lending/top-apy", "$0.01", "Top 10 lending APY pools on Base. $0.01 USDC per call.", "lending", ["lending", "apy", "top"], "lending-top-apy")(lending_top_apy)
-endpoint("/lending/stablecoin-rates", "$0.01", "Aave V3 supply/borrow APY for USDC, DAI and USDbC on Base. $0.01 USDC per call.", "lending", ["lending", "stablecoin", "rates"], "lending-stablecoin-rates")(lending_stablecoin_rates)
-endpoint("/lending/usdc-rate", "$0.01", "Aave V3 USDC market rates on Base. $0.01 USDC per call.", "lending", ["lending", "aave", "usdc"], "lending-usdc-rate")(lending_usdc_rate)
-endpoint("/lending/weth-rate", "$0.01", "Aave V3 WETH market rates on Base. $0.01 USDC per call.", "lending", ["lending", "aave", "weth"], "lending-weth-rate")(lending_weth_rate)
-
-# Stablecoins (6)
-endpoint("/stablecoins/top", "$0.01", "Top 10 stablecoins by circulating supply. $0.01 USDC per call.", "stablecoins", ["stablecoins", "top", "supply"], "stablecoins-top")(stablecoins_top)
-endpoint("/stablecoins/{asset}", "$0.01", "One stablecoin by id, symbol, or gecko_id, with per-chain supply. $0.01 USDC per call.", "stablecoins", ["stablecoins", "asset"], "stablecoins-asset")(stablecoins_asset)
-endpoint("/stablecoins/chains", "$0.01", "Stablecoin supply by chain, top 15. $0.01 USDC per call.", "stablecoins", ["stablecoins", "chains"], "stablecoins-chains")(stablecoins_chains)
-endpoint("/stablecoins/pegs", "$0.01", "Stablecoins furthest from their $1 peg right now. $0.01 USDC per call.", "stablecoins", ["stablecoins", "peg", "depeg"], "stablecoins-pegs")(stablecoins_pegs)
-endpoint("/stablecoins/chain/{chain}", "$0.01", "Top 15 stablecoins by circulating supply on one chain. $0.01 USDC per call.", "stablecoins", ["stablecoins", "chain"], "stablecoins-chain")(stablecoins_chain)
-endpoint("/stablecoins/total", "$0.01", "Total circulating supply of all stablecoins. $0.01 USDC per call.", "stablecoins", ["stablecoins", "total"], "stablecoins-total")(stablecoins_total)
-
-# Oracles (6)
-endpoint("/oracles/feeds", "$0.01", "Chainlink price feeds on Base: ETH/USD, BTC/USD, USDC/USD. $0.01 USDC per call.", "oracles", ["oracles", "chainlink", "feeds"], "oracles-feeds")(oracles_feeds)
-endpoint("/oracles/price/{symbol}", "$0.01", "Chainlink price for one symbol (eth, btc, usdc). $0.01 USDC per call.", "oracles", ["oracles", "chainlink", "price"], "oracles-price")(oracles_price)
-endpoint("/oracles/eth", "$0.01", "Chainlink ETH/USD on Base. $0.01 USDC per call.", "oracles", ["oracles", "chainlink", "eth"], "oracles-eth")(oracles_eth)
-endpoint("/oracles/btc", "$0.01", "Chainlink BTC/USD on Base. $0.01 USDC per call.", "oracles", ["oracles", "chainlink", "btc"], "oracles-btc")(oracles_btc)
-endpoint("/oracles/usdc", "$0.01", "Chainlink USDC/USD on Base. $0.01 USDC per call.", "oracles", ["oracles", "chainlink", "usdc"], "oracles-usdc")(oracles_usdc)
-endpoint("/oracles/vs-coingecko", "$0.01", "Chainlink ETH/USD vs CoinGecko ETH price (oracle deviation check). $0.01 USDC per call.", "oracles", ["oracles", "chainlink", "coingecko"], "oracles-vs-coingecko")(oracles_vs_coingecko)
-
-# Governance (5)
-endpoint("/gov/proposals", "$0.01", "Latest 10 Snapshot proposals across all DAOs. $0.01 USDC per call.", "governance", ["governance", "snapshot", "proposals"], "gov-proposals")(gov_proposals)
-endpoint("/gov/space/{space}/proposals", "$0.01", "Latest 10 Snapshot proposals for one space. $0.01 USDC per call.", "governance", ["governance", "snapshot", "space"], "gov-space-proposals")(gov_space_proposals)
-endpoint("/gov/proposal/{proposal_id}", "$0.01", "One Snapshot proposal by id, with scores. $0.01 USDC per call.", "governance", ["governance", "snapshot", "proposal"], "gov-proposal")(gov_proposal)
-endpoint("/gov/proposal/{proposal_id}/votes", "$0.01", "Top 20 votes on one Snapshot proposal, by voting power. $0.01 USDC per call.", "governance", ["governance", "snapshot", "votes"], "gov-votes")(gov_votes)
-endpoint("/gov/space/{space}", "$0.01", "One Snapshot space: name, about, proposal/follower counts. $0.01 USDC per call.", "governance", ["governance", "snapshot", "space"], "gov-space")(gov_space)
-
-# Gas (5)
-endpoint("/chain/gas/base-fee", "$0.01", "Current base fee + predicted next-block base fee. $0.01 USDC per call.", "gas", ["gas", "base-fee", "eip1559"], "chain-gas-base-fee")(chain_gas_base_fee)
-endpoint("/chain/gas/fee-history/{blocks}", "$0.01", "Fee history for the last N blocks (1-20). $0.01 USDC per call.", "gas", ["gas", "fee-history"], "chain-gas-fee-history")(chain_gas_fee_history)
-endpoint("/chain/gas/transfer-cost", "$0.01", "Cost of a plain 21,000-gas ETH transfer on Base. $0.01 USDC per call.", "gas", ["gas", "transfer", "cost"], "chain-gas-transfer-cost")(chain_gas_transfer_cost)
-endpoint("/chain/gas/transfer-cost-usd", "$0.01", "Cost of a plain ETH transfer on Base in USD. $0.01 USDC per call.", "gas", ["gas", "transfer", "usd"], "chain-gas-transfer-cost-usd")(chain_gas_transfer_cost_usd)
-endpoint("/chain/gas/max-fee", "$0.01", "Current base fee + max priority fee. $0.01 USDC per call.", "gas", ["gas", "max-fee", "priority"], "chain-gas-max-fee")(chain_gas_max_fee)
-
-# NFTs (6)
-endpoint("/nfts/{collection}/token/{token_id}/uri", "$0.01", "Raw tokenURI for one NFT token. $0.01 USDC per call.", "nft", ["nft", "tokenuri"], "nft-token-uri")(nft_token_uri)
-endpoint("/nfts/{collection}/token/{token_id}/image", "$0.01", "Image URL from one NFT token's metadata. $0.01 USDC per call.", "nft", ["nft", "image", "metadata"], "nft-token-image")(nft_token_image)
-endpoint("/nfts/{collection}/token/{token_id}/attributes", "$0.01", "Traits/attributes from one NFT token's metadata. $0.01 USDC per call.", "nft", ["nft", "traits", "metadata"], "nft-token-attributes")(nft_token_attributes)
-endpoint("/nfts1155/{collection}/balance/{wallet}/{token_id}", "$0.01", "ERC1155 balance of one wallet for one token id. $0.01 USDC per call.", "nft", ["nft", "erc1155", "balance"], "nft1155-balance")(nft1155_balance)
-endpoint("/nfts1155/{collection}/uri/{token_id}", "$0.01", "ERC1155 metadata URI for one token id. $0.01 USDC per call.", "nft", ["nft", "erc1155", "uri"], "nft1155-uri")(nft1155_uri)
-endpoint("/nfts1155/{collection}/supply/{token_id}", "$0.01", "ERC1155 total supply for one token id (if the contract tracks it). $0.01 USDC per call.", "nft", ["nft", "erc1155", "supply"], "nft1155-supply")(nft1155_supply)
-
-# DeFi (12)
-endpoint("/defi/protocol/{slug}", "$0.01", "One protocol's TVL detail by slug. $0.01 USDC per call.", "defi", ["defi", "protocol", "tvl"], "defi-protocol")(defi_protocol)
-endpoint("/defi/chains", "$0.01", "TVL by chain, top 20. $0.01 USDC per call.", "defi", ["defi", "chains", "tvl"], "defi-chains")(defi_chains)
-endpoint("/defi/chains/{chain}", "$0.01", "TVL for one chain. $0.01 USDC per call.", "defi", ["defi", "chain", "tvl"], "defi-chain")(defi_chain)
-endpoint("/defi/chains/{chain}/history", "$0.01", "TVL history for one chain: first, latest, 30-day change. $0.01 USDC per call.", "defi", ["defi", "chain", "history"], "defi-chain-history")(defi_chain_history)
-endpoint("/defi/fees/overview", "$0.01", "Top 10 protocols by 24h fees (all chains). $0.01 USDC per call.", "defi", ["defi", "fees", "overview"], "defi-fees-overview")(defi_fees_overview)
-endpoint("/defi/yields/chart/{pool}", "$0.01", "TVL/APY history for one yield pool (last 30 points). $0.01 USDC per call.", "defi", ["defi", "yields", "chart"], "defi-yields-chart")(defi_yields_chart)
-endpoint("/defi/yields/il/{pool}", "$0.01", "Impermanent-loss risk + APY for one yield pool. $0.01 USDC per call.", "defi", ["defi", "yields", "il"], "defi-yields-il")(defi_yields_il)
-endpoint("/defi/yields/project/{project}", "$0.01", "Top 10 yield pools for one project, by APY. $0.01 USDC per call.", "defi", ["defi", "yields", "project"], "defi-yields-project")(defi_yields_project)
-endpoint("/defi/yields/token/{symbol}", "$0.01", "Top 10 yield pools for one token symbol, by APY. $0.01 USDC per call.", "defi", ["defi", "yields", "token"], "defi-yields-token")(defi_yields_token)
-endpoint("/defi/yields/stable/{chain}", "$0.01", "Top 10 stablecoin yield pools on one chain, by APY. $0.01 USDC per call.", "defi", ["defi", "yields", "stablecoin"], "defi-yields-stable-chain")(defi_yields_stable)
-endpoint("/defi/dex/volume/7d", "$0.01", "Total DEX volume, last 7 days (all chains). $0.01 USDC per call.", "defi", ["defi", "dex", "volume"], "defi-dex-volume-7d")(defi_dex_volume_7d)
-endpoint("/defi/dex/volume/base/7d", "$0.01", "Total DEX volume on Base, last 7 days. $0.01 USDC per call.", "defi", ["defi", "dex", "volume", "base"], "defi-dex-volume-base-7d")(defi_dex_volume_base_7d)
-
-# DEX (8)
-endpoint("/dex/top/volume/{n}", "$0.01", "Top N DEXs by 24h volume (1-25). $0.01 USDC per call.", "dex", ["dex", "top", "volume"], "dex-top-volume")(dex_top_volume)
-endpoint("/dex/volume/{chain}", "$0.01", "Total DEX volume for one chain (24h + 7d). $0.01 USDC per call.", "dex", ["dex", "volume", "chain"], "dex-volume-chain")(dex_volume_chain)
-endpoint("/dex/chains", "$0.02", "DEX volume by chain for the major chains. $0.02 USDC per call.", "dex", ["dex", "chains", "volume"], "dex-chains")(dex_chains)
-endpoint("/dex/top/fees", "$0.01", "Top 10 DEXs by 24h fees. $0.01 USDC per call.", "dex", ["dex", "top", "fees"], "dex-top-fees")(dex_top_fees)
-endpoint("/dex/fees/{protocol}/chains", "$0.01", "Fee breakdown by chain for one protocol. $0.01 USDC per call.", "dex", ["dex", "fees", "chains"], "dex-fees-chains")(dex_fees_chains)
-endpoint("/dex/pair/{chain}/{pair}/txns", "$0.01", "Transactions + volume for one DEX pair. $0.01 USDC per call.", "dex", ["dex", "pair", "txns"], "dex-pair-txns")(dex_pair_txns)
-endpoint("/dex/pairs/{token}", "$0.01", "Top 10 DEX pairs for one token, by liquidity. $0.01 USDC per call.", "dex", ["dex", "pairs", "token"], "dex-pairs-token")(dex_pairs_token)
-endpoint("/dex/pair/{token}/{chain}", "$0.01", "Best DEX pair for one token on one chain, by liquidity. $0.01 USDC per call.", "dex", ["dex", "pair", "chain"], "dex-pair-chain")(dex_pair_chain)
-
-# Wallets (7)
-endpoint("/wallets/{address}/approvals", "$0.01", "Token allowances a wallet granted to Permit2, routers, Aave. $0.01 USDC per call.", "wallet", ["wallet", "approvals", "allowance"], "wallet-approvals")(wallet_approvals)
-endpoint("/wallets/{address}/approvals/{token}", "$0.01", "Allowances one wallet granted for one token. $0.01 USDC per call.", "wallet", ["wallet", "approvals", "token"], "wallet-approvals-token")(wallet_approvals_token)
-endpoint("/wallets/{address}/token/{token}/value", "$0.01", "One wallet's balance of one token + USD value. $0.01 USDC per call.", "wallet", ["wallet", "token", "value"], "wallet-token-value")(wallet_token_value)
-endpoint("/wallets/{address}/cbeth-balance", "$0.01", "Wallet cbETH balance. $0.01 USDC per call.", "wallet", ["wallet", "cbeth", "balance"], "wallet-cbeth-balance")(wallet_cbeth_balance)
-endpoint("/wallets/{address}/dai-balance", "$0.01", "Wallet DAI balance. $0.01 USDC per call.", "wallet", ["wallet", "dai", "balance"], "wallet-dai-balance")(wallet_dai_balance)
-endpoint("/wallets/{address}/usdbc-balance", "$0.01", "Wallet USDbC balance. $0.01 USDC per call.", "wallet", ["wallet", "usdbc", "balance"], "wallet-usdbc-balance")(wallet_usdbc_balance)
-endpoint("/wallets/{address}/higher-balance", "$0.01", "Wallet HIGHER balance. $0.01 USDC per call.", "wallet", ["wallet", "higher", "balance"], "wallet-higher-balance")(wallet_higher_balance)
-
-# Memecoins (5)
-endpoint("/memes/new-pairs", "$0.01", "Newest Base token profiles on Dexscreener. $0.01 USDC per call.", "memes", ["memes", "new", "pairs"], "memes-new-pairs")(memes_new_pairs)
-endpoint("/memes/trending", "$0.02", "Top 15 Base pairs by 24h volume across the main Base tokens. $0.02 USDC per call.", "memes", ["memes", "trending", "volume"], "memes-trending")(memes_trending)
-endpoint("/memes/boosted", "$0.01", "Latest boosted Base tokens on Dexscreener. $0.01 USDC per call.", "memes", ["memes", "boosted"], "memes-boosted")(memes_boosted)
-endpoint("/memes/{token}/price-change", "$0.01", "Price changes (5m/1h/6h/24h) for one token's best pair. $0.01 USDC per call.", "memes", ["memes", "price-change"], "memes-price-change")(memes_price_change)
-endpoint("/memes/{token}/holders", "$0.01", "Holder count + top holders for one token. $0.01 USDC per call.", "memes", ["memes", "holders"], "memes-holders")(memes_holders)
-
-# Prediction (6)
-endpoint("/predict/markets", "$0.01", "Top 15 active Polymarket markets by liquidity. $0.01 USDC per call.", "prediction", ["prediction", "polymarket", "markets"], "predict-markets")(predict_markets)
-endpoint("/predict/trending", "$0.01", "Top 15 active Polymarket markets by 24h volume. $0.01 USDC per call.", "prediction", ["prediction", "polymarket", "trending"], "predict-trending")(predict_trending)
-endpoint("/predict/search/{query}", "$0.01", "Search active Polymarket markets by keyword. $0.01 USDC per call.", "prediction", ["prediction", "polymarket", "search"], "predict-search")(predict_search)
-endpoint("/predict/events", "$0.01", "Latest 20 active Polymarket events. $0.01 USDC per call.", "prediction", ["prediction", "polymarket", "events"], "predict-events")(predict_events)
-endpoint("/predict/market/{slug}", "$0.01", "One Polymarket market by slug, with outcomes and prices. $0.01 USDC per call.", "prediction", ["prediction", "polymarket", "market"], "predict-market")(predict_market)
-endpoint("/predict/markets/closing", "$0.01", "Active Polymarket markets ending soonest (next 15 by end date). $0.01 USDC per call.", "prediction", ["prediction", "polymarket", "closing"], "predict-closing")(predict_closing)
-
-# Tokens (6)
-endpoint("/tokens/{address}/history/{days}", "$0.01", "Price history for one Base token (1-365 days). $0.01 USDC per call.", "token", ["token", "history", "price"], "token-history")(token_history)
-endpoint("/tokens/{address}/audit", "$0.01", "Security audit flags for one Base token (GoPlus). $0.01 USDC per call.", "token", ["token", "audit", "security"], "token-audit")(token_audit)
-endpoint("/tokens/{address}/holders", "$0.01", "Holder count + top 10 holders for one Base token (GoPlus). $0.01 USDC per call.", "token", ["token", "holders"], "token-holders")(token_holders)
-endpoint("/tokens/{address}/top-holder", "$0.01", "Largest holder of one Base token (GoPlus). $0.01 USDC per call.", "token", ["token", "top-holder"], "token-top-holder")(token_top_holder)
-endpoint("/tokens/{address}/age", "$0.01", "Age of a token's oldest DEX pair (first listing date). $0.01 USDC per call.", "token", ["token", "age"], "token-age")(token_age)
-endpoint("/tokens/{address}/liquidity-usd", "$0.01", "Total DEX liquidity (USD) across all pairs for one token. $0.01 USDC per call.", "token", ["token", "liquidity"], "token-liquidity-usd")(token_liquidity_usd)
-endpoint("/tokens/{address}/fdv", "$0.01", "Fully diluted valuation + market cap for one Base token. $0.01 USDC per call.", "token", ["token", "fdv", "market-cap"], "token-fdv")(token_fdv)
-
-# Chain (5)
-endpoint("/chain/blocks/{count}", "$0.01", "Summaries of the last N blocks (1-10). $0.01 USDC per call.", "chain", ["chain", "blocks"], "chain-blocks")(chain_blocks)
-endpoint("/chain/pending/count", "$0.01", "Pending-block transaction count (live mempool snapshot). $0.01 USDC per call.", "chain", ["chain", "pending", "mempool"], "chain-pending-count")(chain_pending_count)
-endpoint("/chain/transaction/{tx_hash}/status", "$0.01", "Transaction receipt: status + confirmations. $0.01 USDC per call.", "chain", ["chain", "transaction", "status"], "chain-tx-status")(chain_tx_status)
-endpoint("/chain/transaction/{tx_hash}/cost", "$0.01", "Transaction cost in ETH and USD. $0.01 USDC per call.", "chain", ["chain", "transaction", "cost"], "chain-tx-cost")(chain_tx_cost)
-endpoint("/chain/block/{number}/tx-count", "$0.01", "Transaction count + gas for one block number. $0.01 USDC per call.", "chain", ["chain", "block", "tx-count"], "chain-block-tx-count")(chain_block_tx_count)
-
-# Utils (5)
-endpoint("/utils/coin/{coin}/history/{days}", "$0.01", "Price history for one CoinGecko coin (1-365 days). $0.01 USDC per call.", "utils", ["utils", "coin", "history"], "utils-coin-history")(utils_coin_history)
-endpoint("/utils/convert/usdc-eth/{amount}", "$0.01", "Convert a USDC amount to ETH at the current price. $0.01 USDC per call.", "utils", ["utils", "convert", "usdc", "eth"], "utils-convert-usdc-eth")(utils_convert_usdc_eth)
-endpoint("/utils/market/fear-greed/history", "$0.01", "Fear & Greed index, last 7 days. $0.01 USDC per call.", "utils", ["utils", "fear-greed", "history"], "utils-fear-greed-history")(utils_fear_greed_history)
-endpoint("/utils/coin/{coin}/ath", "$0.01", "All-time high/low for one CoinGecko coin (USD). $0.01 USDC per call.", "utils", ["utils", "coin", "ath"], "utils-coin-ath")(utils_coin_ath)
-endpoint("/utils/convert/gwei-eth/{amount}", "$0.01", "Convert gwei to ETH. $0.01 USDC per call.", "utils", ["utils", "convert", "gwei", "eth"], "utils-convert-gwei-eth")(utils_convert_gwei_eth)
-endpoint("/utils/coin/{coin}/change", "$0.01", "Price change (24h/7d/30d/1y) for one CoinGecko coin. $0.01 USDC per call.", "utils", ["utils", "coin", "change"], "utils-coin-change")(utils_coin_change)
-
-# ENS (2)
-endpoint("/ens/{name}/records", "$0.01", "ENS text records / socials for one name. $0.01 USDC per call.", "naming", ["ens", "records", "socials"], "ens-records")(ens_records)
-endpoint("/ens/{name}/content", "$0.01", "ENS content hash + avatar for one name. $0.01 USDC per call.", "naming", ["ens", "content", "avatar"], "ens-content")(ens_content)
-
-
-# ===== APP CONSTRUCTION (routes + paywall built from the registry) =====
-
-# Static routes first, parameterized routes after. This matters twice:
-#  - FastAPI matches in registration order, so /chain/block/latest must
-#    come before /chain/block/{number}.
-#  - the x402 middleware returns the FIRST matching route config, so an
-#    exact static route must be checked before a :param pattern that
-#    could also match its path (e.g. /defi/yields/top vs :pool).
-ORDERED = sorted(REGISTRY, key=lambda e: ("{" in e["path"],))
-
-
-def _middleware_pattern(path: str) -> str:
-    """FastAPI '{param}' -> x402 ':param' (single-segment match)."""
-    import re
-    return re.sub(r"\{(\w+)\}", r":\1", path)
-
-
-# Public origin of the deployed service. Route configs advertise the
-# resource as an absolute URL: Coinbase CDP's Bazaar validator rejects
-# bare paths in its discovery simulation ("resource must start with
-# 'https://' when protocol type is http").
-PUBLIC_ORIGIN = "https://manteclaw-x402-solana.fly.dev"
-
-
-def _resource_for(path: str) -> str:
-    """v3 convention: the resource is the path up to the first parameter,
-    made absolute with PUBLIC_ORIGIN (CDP Bazaar requires https://)."""
-    idx = path.find("/{")
-    return PUBLIC_ORIGIN + (path if idx == -1 else path[:idx])
-
-
-# ===== BAZAAR DISCOVERY DECLARATIONS (PayAI catalog) =====
-# PayAI's Bazaar catalogs a resource from the payments its facilitator
-# processes — but only when the payment payload carries the discovery
-# declaration this server put in its 402 response (the buyer's client
-# echoes `extensions` from the 402 into the payload). Without a
-# declaration, settled payments stay invisible to the catalog: this
-# service took ~31 settled calls on Nov 21, 2026 and appeared nowhere
-# in /discovery/resources. So every route config below carries one
-# declaration, built with the SDK's declare_discovery_extension. The
-# FastAPI payment middleware auto-registers
-# bazaar_resource_server_extension when a route config declares a
-# "bazaar" extension; that extension enriches each declaration at
-# request time with the HTTP method and, for dynamic routes, the
-# concrete path params plus a :param routeTemplate.
-#
-# Dynamic routes: PayAI rejects a templated resource
-# (resource_path_template) unless EVERY path parameter declares an
-# example value — the catalog lists the route under a real URL built
-# from the examples and probes that URL. Path params are strings on
-# the wire (the SDK extracts them from the URL as strings), so their
-# schema type is "string" even when a handler annotates int/float;
-# the query-input schema (no route takes query params today) maps
-# annotations to JSON types properly.
-
-_BAZAAR_JSON_TYPES = {str: "string", int: "integer", float: "number", bool: "boolean"}
-
-# Example values for path parameters, by parameter name. Address-shaped
-# parameters (see _BAZAAR_ADDRESS_PARAMS) use the USDC contract: a real
-# Base contract that returns useful data from any address-taking
-# endpoint, so the catalog's probe of the example URL and any agent
-# calling the route as listed both get a sensible result.
-_BAZAAR_EXAMPLES = {
-    "symbol": "ETH",
-    "chain": "base",
-    "number": "19000000",
-    "name": "vitalik.eth",
-    "space": "aave.eth",
-    "protocol": "aave",
-    "slug": "aave",
-    "project": "aave-v3",
-    "coin": "ethereum",
-    "query": "ethereum",
-    "text": "hello",
-    "gwei": "20",
-    "gas": "21000",
-    "amount": "1",
-    "days": "30",
-    "count": "5",
-    "n": "10",
-    "blocks": "10",
-    "tokenId": "1",
-    "token_id": "1",
-    "proposal_id": "0x" + "0123456789abcdef" * 4,
-    "hash": "0x" + "0123456789abcdef" * 4,
-    "tx_hash": "0x" + "0123456789abcdef" * 4,
-}
-
-_BAZAAR_ADDRESS_PARAMS = {
-    "address", "token_address", "wallet", "owner", "spender", "to",
-    "token", "collection", "pool", "pair", "asset",
-}
-
-
-def _bazaar_example(entry, name, annotation):
-    """One example value for a parameter: by route/name, then by type."""
-    # /stablecoins/{asset} looks up by id/symbol, not by contract address
-    # (the lending {asset} routes do want an address — handled below).
-    if name == "asset" and entry["path"].startswith("/stablecoins"):
-        return "USDC"
-    if name in _BAZAAR_EXAMPLES:
-        return _BAZAAR_EXAMPLES[name]
-    if name in _BAZAAR_ADDRESS_PARAMS:
-        return USDC
-    if annotation is int:
-        return 1
-    if annotation is float:
-        return 1.0
-    if annotation is bool:
-        return True
-    return "example"
-
-
-def _bazaar_extension(entry):
-    """Build the {"bazaar": ...} discovery declaration for one registry entry.
-
-    All routes are GET, so handler params not in the path are query
-    params: they go into the declaration's example input (required ones
-    only) and input schema, with JSON types mapped from the annotations.
-    Path params go into path_params_schema with an example for each.
-    """
-    import re
-
-    path_params = re.findall(r"\{(\w+)\}", entry["path"])
-    query_props, query_required, query_example = {}, [], {}
-    path_props, path_required = {}, []
-    for pname, param in inspect.signature(entry["handler"]).parameters.items():
-        if pname in path_params:
-            path_props[pname] = {
-                "type": "string",
-                "examples": [str(_bazaar_example(entry, pname, param.annotation))],
-            }
-            path_required.append(pname)
-        else:
-            query_props[pname] = {
-                "type": _BAZAAR_JSON_TYPES.get(param.annotation, "string")
-            }
-            if param.default is inspect.Parameter.empty:
-                query_required.append(pname)
-                query_example[pname] = _bazaar_example(entry, pname, param.annotation)
-    return declare_discovery_extension(
-        input=query_example or None,
-        input_schema={"properties": query_props, "required": query_required},
-        path_params_schema=(
-            {"properties": path_props, "required": path_required} if path_props else None
-        ),
-        output=OutputConfig(example={"status": "ok"}),
-    )
-
-
-# x402 payment config, built from the same registry as the routes.
-routes = {}
-for _e in ORDERED:
-    _cfg = {
-        "accepts": {
-            "scheme": "exact",
-            "payTo": WALLET_ADDRESS,
-            "price": _e["price"],
-            "network": SOLANA_NETWORK,
-        },
-        "resource": _resource_for(_e["path"]),
-        "description": _e["description"],
-        "mimeType": "application/json",
-        "extensions": _bazaar_extension(_e),
+    md = data.get("market_data") or {}
+    return {
+        "mint": mint,
+        "name": data.get("name"),
+        "price_usd": (md.get("current_price") or {}).get("usd"),
+        "price_change_24h_percent": md.get("price_change_percentage_24h"),
+        "market_cap_usd": (md.get("market_cap") or {}).get("usd"),
+        "source": "coingecko",
+        "network": "solana",
     }
-    routes[f"GET {_middleware_pattern(_e['path'])}"] = _cfg
-    # HEAD carries the same payment config (Alex approved 2026-11-21):
-    # directory probers (AgentPay, Arispay) probe with HEAD and must see
-    # the 402 payment terms instead of a bare 405. A HEAD response has
-    # no body, so nothing leaks unpaid; a paid HEAD runs the handler
-    # exactly like GET (the server strips the body).
-    routes[f"HEAD {_middleware_pattern(_e['path'])}"] = _cfg
-
-# Create FastAPI app
-app = FastAPI(title="Manteclaw x402 service", version="5.0")
-
-# Extensionless x402 discovery document. Agent402 probes /.well-known/x402
-# (no extension) and expects JSON. StaticFiles serves an extensionless
-# file as application/octet-stream, which the probe rejects, so serve it
-# explicitly as JSON. This route is registered BEFORE the StaticFiles
-# mount below so it takes precedence for this one path.
-_WELL_KNOWN_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".well-known")
 
 
-@app.get("/.well-known/x402", include_in_schema=False)
-async def well_known_x402():
-    """Serve the x402 discovery document at the extensionless path."""
-    from fastapi.responses import FileResponse
+# ===== MEMECOINS (pump.fun + Dexscreener + GeckoTerminal) =====
 
-    return FileResponse(
-        os.path.join(_WELL_KNOWN_DIR, "x402.json"),
-        media_type="application/json",
+def _trim_pump_coin(c):
+    return {
+        "mint": c.get("mint"),
+        "name": c.get("name"),
+        "symbol": c.get("symbol"),
+        "description": (c.get("description") or "")[:200] or None,
+        "image": c.get("image_uri"),
+        "creator": c.get("creator"),
+        "created_timestamp": c.get("created_timestamp"),
+        "market_cap_sol": _round(_fnum(c.get("market_cap")), 4),
+        "usd_market_cap": _round(_fnum(c.get("usd_market_cap")), 2),
+        "virtual_sol_reserves": c.get("virtual_sol_reserves"),
+        "virtual_token_reserves": c.get("virtual_token_reserves"),
+        "total_supply": c.get("total_supply"),
+        "complete": c.get("complete"),
+        "raydium_pool": c.get("raydium_pool"),
+        "website": c.get("website"),
+        "twitter": c.get("twitter"),
+        "telegram": c.get("telegram"),
+    }
+
+
+async def _pump_coins(params, ttl=20):
+    return await _get_json(f"{PUMPFUN}/coins", params=params, ttl=ttl)
+
+
+@endpoint("/memecoins/new", "$0.01",
+          "Newest memecoins launched on pump.fun (latest 25): mint, name, market cap, creator, bonding state. $0.01 USDC per call.",
+          "memecoin", ["memecoins", "pumpfun", "new"], "memecoins-new")
+async def memecoins_new():
+    data = await _pump_coins({"offset": 0, "limit": 25, "sort": "created_timestamp",
+                              "order": "DESC", "includeNsfw": "false"})
+    if _is_error(data):
+        return data
+    coins = data if isinstance(data, list) else []
+    return {"coins": [_trim_pump_coin(c) for c in coins],
+            "count": len(coins), "network": "solana"}
+
+
+@endpoint("/memecoins/trending", "$0.01",
+          "Biggest memecoins on pump.fun by market cap (top 25): the trending board. $0.01 USDC per call.",
+          "memecoin", ["memecoins", "pumpfun", "trending"], "memecoins-trending")
+async def memecoins_trending():
+    data = await _pump_coins({"offset": 0, "limit": 25, "sort": "market_cap",
+                              "order": "DESC", "includeNsfw": "false"})
+    if _is_error(data):
+        return data
+    coins = data if isinstance(data, list) else []
+    return {"coins": [_trim_pump_coin(c) for c in coins],
+            "count": len(coins), "network": "solana"}
+
+
+@endpoint("/memecoins/graduating", "$0.02",
+          "pump.fun coins closest to graduation: still on the bonding curve (not complete), ranked by market cap. $0.02 USDC per call.",
+          "memecoin", ["memecoins", "pumpfun", "graduating"], "memecoins-graduating")
+async def memecoins_graduating():
+    data = await _pump_coins({"offset": 0, "limit": 50, "sort": "market_cap",
+                              "order": "DESC", "includeNsfw": "false"})
+    if _is_error(data):
+        return data
+    coins = [c for c in (data if isinstance(data, list) else [])
+             if not c.get("complete")]
+    return {
+        "coins": [_trim_pump_coin(c) for c in coins[:25]],
+        "count": len(coins),
+        "note": "graduation = bonding curve completes and the token migrates to a DEX pool; these are the largest still-bonding coins",
+        "network": "solana",
+    }
+
+
+@endpoint("/memecoins/{mint}", "$0.01",
+          "Memecoin profile for one mint: deepest pair data, price, liquidity, links (Dexscreener). $0.01 USDC per call.",
+          "memecoin", ["memecoins", "profile", "dex"], "memecoin-profile")
+async def memecoin_profile(mint: str):
+    if not _is_sol_address(mint):
+        return _err_addr("mint")
+    pairs = await _ds_base_pairs(mint)
+    if _is_error(pairs):
+        return pairs
+    best = _best_pair(pairs)
+    if not best:
+        return {"error": "no Solana DEX pair for this mint yet (may still be on the bonding curve)",
+                "mint": mint}
+    info = best.get("info") or {}
+    out = _trim_pair(best)
+    out.update({
+        "mint": mint,
+        "websites": info.get("websites"),
+        "socials": info.get("socials"),
+        "price_change": best.get("priceChange"),
+        "txns": best.get("txns"),
+        "network": "solana",
+    })
+    return out
+
+
+@endpoint("/memecoins/{mint}/price", "$0.01",
+          "Price of one memecoin: Dexscreener best pair first, GeckoTerminal top pool as fallback. $0.01 USDC per call.",
+          "memecoin", ["memecoins", "price"], "memecoin-price")
+async def memecoin_price(mint: str):
+    if not _is_sol_address(mint):
+        return _err_addr("mint")
+    pairs = await _ds_base_pairs(mint)
+    if not _is_error(pairs):
+        best = _best_pair(pairs)
+        if best:
+            return {"mint": mint, "price_usd": best.get("priceUsd"),
+                    "source": "dexscreener", "pair": best.get("pairAddress"),
+                    "network": "solana"}
+    data = await _gt(f"/networks/solana/tokens/{mint}/pools?page=1")
+    if _is_error(data):
+        return data
+    pools = data.get("data") or []
+    if not pools:
+        return {"error": "no trading pool found for this mint", "mint": mint}
+    a = pools[0].get("attributes") or {}
+    return {"mint": mint, "price_usd": _fnum(a.get("base_token_price_usd")),
+            "source": "geckoterminal", "pool": a.get("address"), "network": "solana"}
+
+
+@endpoint("/memecoins/{mint}/holders", "$0.01",
+          "Largest holders of one memecoin mint (getTokenLargestAccounts, top 20 with supply shares). $0.01 USDC per call.",
+          "memecoin", ["memecoins", "holders"], "memecoin-holders")
+async def memecoin_holders(mint: str):
+    if not _is_sol_address(mint):
+        return _err_addr("mint")
+    res = await _rpc("getTokenLargestAccounts", [mint])
+    if _is_error(res):
+        return res
+    value = (res or {}).get("value") or []
+    supply_res = await _rpc("getTokenSupply", [mint])
+    supply_raw = None
+    if not _is_error(supply_res):
+        supply_raw = _fnum(((supply_res or {}).get("value") or {}).get("amount"))
+    rows = []
+    for a in value:
+        raw = _fnum(a.get("amount"))
+        rows.append({
+            "account": a.get("address"),
+            "amount": a.get("uiAmount"),
+            "share_percent": round(100.0 * raw / supply_raw, 4) if raw is not None and supply_raw else None,
+        })
+    return {"mint": mint, "holders": rows, "count": len(rows), "network": "solana"}
+
+
+@endpoint("/memecoins/{mint}/trades", "$0.01",
+          "Recent trades of one memecoin in its top GeckoTerminal pool (latest 20). $0.01 USDC per call.",
+          "memecoin", ["memecoins", "trades"], "memecoin-trades")
+async def memecoin_trades(mint: str):
+    if not _is_sol_address(mint):
+        return _err_addr("mint")
+    pools = await _gt(f"/networks/solana/tokens/{mint}/pools?page=1")
+    if _is_error(pools):
+        return pools
+    data_list = pools.get("data") or []
+    if not data_list:
+        return {"error": "no GeckoTerminal pools for token", "mint": mint}
+    pool_addr = (data_list[0].get("attributes") or {}).get("address")
+    data = await _gt(f"/networks/solana/pools/{pool_addr}/trades", ttl=10)
+    if _is_error(data):
+        return data
+    trades = []
+    for t in (data.get("data") or [])[:20]:
+        a = t.get("attributes") or {}
+        trades.append({
+            "kind": a.get("kind"),
+            "timestamp": a.get("block_timestamp"),
+            "from": a.get("from_address"),
+            "volume_usd": _round(_fnum(a.get("volume_in_usd")), 2),
+        })
+    return {"mint": mint, "pool": pool_addr, "trades": trades, "network": "solana"}
+
+
+@endpoint("/memecoins/{mint}/risk", "$0.01",
+          "Memecoin risk snapshot for one mint: mint/freeze authority status, top-10 holder share, deepest-pair liquidity. $0.01 USDC per call.",
+          "memecoin", ["memecoins", "risk", "safety"], "memecoin-risk")
+async def memecoin_risk(mint: str):
+    if not _is_sol_address(mint):
+        return _err_addr("mint")
+    out = {"mint": mint, "network": "solana"}
+    info_res = await _mint_info(mint)
+    if not _is_error(info_res):
+        info = info_res["info"]
+        out["mint_authority_active"] = info.get("mintAuthority") is not None
+        out["freeze_authority_active"] = info.get("freezeAuthority") is not None
+    largest = await _rpc("getTokenLargestAccounts", [mint])
+    if not _is_error(largest):
+        value = (largest or {}).get("value") or []
+        supply_res = await _rpc("getTokenSupply", [mint])
+        supply_raw = None
+        if not _is_error(supply_res):
+            supply_raw = _fnum(((supply_res or {}).get("value") or {}).get("amount"))
+        if supply_raw:
+            top10 = sum(_fnum(a.get("amount")) or 0 for a in value[:10])
+            out["top_10_holder_share_percent"] = round(100.0 * top10 / supply_raw, 4)
+    pairs = await _ds_base_pairs(mint)
+    if not _is_error(pairs):
+        best = _best_pair(pairs)
+        out["deepest_pair_liquidity_usd"] = (best.get("liquidity") or {}).get("usd") if best else None
+        out["pair_count"] = len(pairs)
+    flags = []
+    if out.get("mint_authority_active"):
+        flags.append("MINT_AUTHORITY_ACTIVE (supply can be inflated)")
+    if out.get("freeze_authority_active"):
+        flags.append("FREEZE_AUTHORITY_ACTIVE (balances can be frozen)")
+    if (out.get("top_10_holder_share_percent") or 0) > 50:
+        flags.append("TOP10_HOLDERS_OVER_50_PERCENT")
+    if (out.get("deepest_pair_liquidity_usd") or 0) < 10000:
+        flags.append("THIN_LIQUIDITY_UNDER_10K")
+    out["risk_flags"] = flags
+    return out
+
+
+@endpoint("/memecoins/search/{query}", "$0.01",
+          "Search Solana memecoin pairs by name or symbol (Dexscreener, top 10 by liquidity). $0.01 USDC per call.",
+          "memecoin", ["memecoins", "search"], "memecoin-search")
+async def memecoin_search(query: str):
+    pairs = await _ds_search(query)
+    if _is_error(pairs):
+        return pairs
+    pairs = sorted(pairs, key=lambda p: -(_fnum((p.get("liquidity") or {}).get("usd")) or 0))
+    return {"query": query, "pairs": [_trim_pair(p) for p in pairs[:10]],
+            "count": len(pairs), "network": "solana"}
+
+
+@endpoint("/memecoins/pools", "$0.01",
+          "Top pump.fun AMM pools on GeckoTerminal (graduated memecoins trade here). $0.01 USDC per call.",
+          "memecoin", ["memecoins", "pools", "pumpfun"], "memecoin-pools")
+async def memecoin_pools():
+    data = await _gt("/networks/solana/dexes/pump-fun/pools?page=1")
+    if _is_error(data):
+        return data
+    pools = data.get("data") or []
+    return {"pools": [_gt_pool_trim(p) for p in pools[:10]],
+            "count": len(pools), "network": "solana"}
+
+
+@endpoint("/memecoins/trending/pools", "$0.01",
+          "Trending Solana pools (GeckoTerminal) — the memecoin-heavy board, top 10 with 24h changes. $0.01 USDC per call.",
+          "memecoin", ["memecoins", "trending", "pools"], "memecoin-trending-pools")
+async def memecoin_trending_pools():
+    data = await _gt("/networks/solana/trending_pools?page=1")
+    if _is_error(data):
+        return data
+    pools = data.get("data") or []
+    return {"pools": [_gt_pool_trim(p) for p in pools[:10]],
+            "count": len(pools), "network": "solana"}
+
+
+@endpoint("/memecoins/movers", "$0.01",
+          "Biggest memecoin movers among trending Solana pools, ranked by absolute 24h price change. $0.01 USDC per call.",
+          "memecoin", ["memecoins", "movers", "gainers"], "memecoin-movers")
+async def memecoin_movers():
+    rows = []
+    for page in (1, 2):
+        data = await _gt(f"/networks/solana/trending_pools?page={page}")
+        if _is_error(data):
+            if page == 1:
+                return data
+            break
+        for p in data.get("data") or []:
+            t = _gt_pool_trim(p)
+            if t["price_change_24h_pct"] is not None:
+                rows.append(t)
+    rows.sort(key=lambda r: -abs(r["price_change_24h_pct"]))
+    return {"movers": rows[:10], "count": len(rows), "network": "solana"}
+
+
+@endpoint("/memecoins/stats", "$0.01",
+          "pump.fun launchpad snapshot: launches in the newest 50, graduated share of the top 50, combined top-50 market cap. $0.01 USDC per call.",
+          "memecoin", ["memecoins", "stats", "pumpfun"], "memecoin-stats")
+async def memecoin_stats():
+    newest = await _pump_coins({"offset": 0, "limit": 50, "sort": "created_timestamp",
+                                "order": "DESC", "includeNsfw": "false"})
+    if _is_error(newest):
+        return newest
+    top = await _pump_coins({"offset": 0, "limit": 50, "sort": "market_cap",
+                             "order": "DESC", "includeNsfw": "false"})
+    if _is_error(top):
+        return top
+    newest = newest if isinstance(newest, list) else []
+    top = top if isinstance(top, list) else []
+    now_ms = int(time.time() * 1000)
+    last_hour = sum(1 for c in newest
+                    if (c.get("created_timestamp") or 0) > now_ms - 3600_000)
+    graduated = sum(1 for c in top if c.get("complete"))
+    total_mcap = sum(_fnum(c.get("usd_market_cap")) or 0 for c in top)
+    return {
+        "launches_in_newest_50": len(newest),
+        "launches_last_hour_in_sample": last_hour,
+        "top_50_graduated": graduated,
+        "top_50_still_bonding": len(top) - graduated,
+        "top_50_combined_market_cap_usd": _round(total_mcap, 2),
+        "network": "solana",
+    }
+
+
+# ===== STABLECOINS (DeFiLlama stablecoins, Solana-aware) =====
+
+def _find_stablecoin(assets, key):
+    key = key.lower()
+    for a in assets or []:
+        if (a.get("symbol") or "").lower() == key or (a.get("id") or "").lower() == key \
+                or (a.get("name") or "").lower() == key:
+            return a
+    return None
+
+
+def _trim_stablecoin(a):
+    circ = a.get("circulating") or {}
+    return {
+        "id": a.get("id"),
+        "name": a.get("name"),
+        "symbol": a.get("symbol"),
+        "peg_type": a.get("pegType"),
+        "peg_mechanism": a.get("pegMechanism"),
+        "price_usd": _round(_fnum(a.get("price")), 6),
+        "circulating_usd": _round(_fnum(circ.get("peggedUSD")), 2),
+        "chains": len(a.get("chainCirculating") or {}),
+    }
+
+
+def _stablecoin_chain_amount(asset, chain="Solana"):
+    entry = ((asset.get("chainCirculating") or {}).get(chain)) or {}
+    current = entry.get("current") or {}
+    return _fnum(current.get("peggedUSD"))
+
+
+@endpoint("/stablecoins/top", "$0.01",
+          "Top 12 stablecoins by market cap with prices and peg types (DeFiLlama). $0.01 USDC per call.",
+          "stablecoin", ["stablecoins", "top"], "stablecoins-top")
+async def stablecoins_top():
+    assets = await _llama_stablecoins()
+    if assets is None:
+        return {"error": "stablecoin data unavailable"}
+    ranked = sorted(assets,
+                    key=lambda a: -(_fnum((a.get("circulating") or {}).get("peggedUSD")) or 0))
+    return {"stablecoins": [_trim_stablecoin(a) for a in ranked[:12]],
+            "network": "solana"}
+
+
+@endpoint("/stablecoins/{asset}", "$0.01",
+          "One stablecoin in detail (by symbol or DeFiLlama id): supply, price, peg mechanism, and its Solana-chain amount. $0.01 USDC per call.",
+          "stablecoin", ["stablecoins", "detail"], "stablecoin-detail")
+async def stablecoin_detail(asset: str):
+    assets = await _llama_stablecoins()
+    if assets is None:
+        return {"error": "stablecoin data unavailable"}
+    found = _find_stablecoin(assets, asset)
+    if not found:
+        return {"error": "stablecoin not found", "asset": asset}
+    out = _trim_stablecoin(found)
+    out["solana_circulating_usd"] = _round(_stablecoin_chain_amount(found), 2)
+    out["network"] = "solana"
+    return out
+
+
+@endpoint("/stablecoins/usdc", "$0.01",
+          "USDC in detail: global supply, price, and how much USDC circulates on Solana. $0.01 USDC per call.",
+          "stablecoin", ["stablecoins", "usdc"], "stablecoin-usdc")
+async def stablecoin_usdc():
+    assets = await _llama_stablecoins()
+    if assets is None:
+        return {"error": "stablecoin data unavailable"}
+    found = _find_stablecoin(assets, "USDC")
+    if not found:
+        return {"error": "USDC not found in stablecoin data"}
+    out = _trim_stablecoin(found)
+    solana_amt = _stablecoin_chain_amount(found)
+    total = _fnum((found.get("circulating") or {}).get("peggedUSD"))
+    out["solana_circulating_usd"] = _round(solana_amt, 2)
+    out["solana_share_percent"] = round(100.0 * solana_amt / total, 3) if solana_amt and total else None
+    out["network"] = "solana"
+    return out
+
+
+@endpoint("/stablecoins/usdt", "$0.01",
+          "USDT in detail: global supply, price, and how much USDT circulates on Solana. $0.01 USDC per call.",
+          "stablecoin", ["stablecoins", "usdt"], "stablecoin-usdt")
+async def stablecoin_usdt():
+    assets = await _llama_stablecoins()
+    if assets is None:
+        return {"error": "stablecoin data unavailable"}
+    found = _find_stablecoin(assets, "USDT")
+    if not found:
+        return {"error": "USDT not found in stablecoin data"}
+    out = _trim_stablecoin(found)
+    solana_amt = _stablecoin_chain_amount(found)
+    total = _fnum((found.get("circulating") or {}).get("peggedUSD"))
+    out["solana_circulating_usd"] = _round(solana_amt, 2)
+    out["solana_share_percent"] = round(100.0 * solana_amt / total, 3) if solana_amt and total else None
+    out["network"] = "solana"
+    return out
+
+
+@endpoint("/stablecoins/pyusd", "$0.01",
+          "PYUSD (PayPal USD) in detail: global supply and its Solana-chain amount. $0.01 USDC per call.",
+          "stablecoin", ["stablecoins", "pyusd"], "stablecoin-pyusd")
+async def stablecoin_pyusd():
+    assets = await _llama_stablecoins()
+    if assets is None:
+        return {"error": "stablecoin data unavailable"}
+    found = _find_stablecoin(assets, "PYUSD")
+    if not found:
+        return {"error": "PYUSD not found in stablecoin data"}
+    out = _trim_stablecoin(found)
+    out["solana_circulating_usd"] = _round(_stablecoin_chain_amount(found), 2)
+    out["network"] = "solana"
+    return out
+
+
+@endpoint("/stablecoins/solana", "$0.01",
+          "Stablecoin value circulating on Solana: chain total plus the top stablecoins' Solana amounts. $0.01 USDC per call.",
+          "stablecoin", ["stablecoins", "solana", "chain"], "stablecoins-solana")
+async def stablecoins_solana():
+    chains = await _get_json(f"{STABLECOINS_API}/stablecoinchains", ttl=300)
+    if _is_error(chains):
+        return chains
+    entry = next((c for c in chains if c.get("name") == "Solana"), None)
+    total = None
+    if entry:
+        total = ((entry.get("totalCirculatingUSD") or {}).get("peggedUSD"))
+    assets = await _llama_stablecoins()
+    top_assets = []
+    if assets:
+        rows = []
+        for a in assets:
+            amt = _stablecoin_chain_amount(a)
+            if amt:
+                rows.append({"symbol": a.get("symbol"), "name": a.get("name"),
+                             "solana_circulating_usd": _round(amt, 2)})
+        rows.sort(key=lambda r: -r["solana_circulating_usd"])
+        top_assets = rows[:10]
+    return {
+        "chain": "Solana",
+        "total_stablecoin_value_usd": _round(_fnum(total), 2),
+        "top_assets_on_solana": top_assets,
+        "network": "solana",
+    }
+
+
+@endpoint("/stablecoins/chains", "$0.01",
+          "Stablecoin value by chain (DeFiLlama stablecoinchains), top 15 — Solana highlighted by rank. $0.01 USDC per call.",
+          "stablecoin", ["stablecoins", "chains"], "stablecoins-chains")
+async def stablecoins_chains():
+    chains = await _get_json(f"{STABLECOINS_API}/stablecoinchains", ttl=300)
+    if _is_error(chains):
+        return chains
+    rows = []
+    for c in chains or []:
+        total = ((c.get("totalCirculatingUSD") or {}).get("peggedUSD"))
+        if total:
+            rows.append({"chain": c.get("name"), "total_usd": _round(_fnum(total), 2)})
+    rows.sort(key=lambda r: -r["total_usd"])
+    solana_rank = next((i + 1 for i, r in enumerate(rows) if r["chain"] == "Solana"), None)
+    return {"chains": rows[:15], "solana_rank": solana_rank, "network": "solana"}
+
+
+@endpoint("/stablecoins/pegs", "$0.01",
+          "Stablecoins trading furthest from their peg right now (DeFiLlama prices, top 10 by absolute deviation). $0.01 USDC per call.",
+          "stablecoin", ["stablecoins", "pegs", "deviation"], "stablecoins-pegs")
+async def stablecoins_pegs():
+    assets = await _llama_stablecoins()
+    if assets is None:
+        return {"error": "stablecoin data unavailable"}
+    rows = []
+    for a in assets:
+        price = _fnum(a.get("price"))
+        circ = _fnum((a.get("circulating") or {}).get("peggedUSD"))
+        if price is None or not circ or circ < 1_000_000:
+            continue
+        rows.append({
+            "symbol": a.get("symbol"), "name": a.get("name"),
+            "price_usd": _round(price, 6),
+            "deviation_percent": round(100.0 * (price - 1.0), 4),
+            "circulating_usd": _round(circ, 2),
+        })
+    rows.sort(key=lambda r: -abs(r["deviation_percent"]))
+    return {"stablecoins": rows[:10], "network": "solana",
+            "note": "only assets with at least $1M circulating are ranked"}
+
+
+# ===== MARKETS (CoinGecko, Solana-focused + global context) =====
+
+@endpoint("/markets/global", "$0.01",
+          "Global crypto market snapshot (CoinGecko): total market cap, volume, BTC/ETH dominance, active coins. $0.01 USDC per call.",
+          "market", ["markets", "global", "coingecko"], "markets-global")
+async def markets_global():
+    data = await _get_json(f"{COINGECKO}/global", ttl=60)
+    if _is_error(data):
+        return data
+    g = data.get("data") or {}
+    return {
+        "total_market_cap_usd": (g.get("total_market_cap") or {}).get("usd"),
+        "total_volume_usd": (g.get("total_volume") or {}).get("usd"),
+        "market_cap_change_24h_percent": g.get("market_cap_change_percentage_24h_usd"),
+        "btc_dominance": (g.get("market_cap_percentage") or {}).get("btc"),
+        "eth_dominance": (g.get("market_cap_percentage") or {}).get("eth"),
+        "sol_dominance": (g.get("market_cap_percentage") or {}).get("sol"),
+        "active_cryptocurrencies": g.get("active_cryptocurrencies"),
+        "network": "solana",
+    }
+
+
+@endpoint("/markets/sol", "$0.01",
+          "SOL market data (CoinGecko): price, market cap and rank, volume, ATH, 24h/7d/30d changes. $0.01 USDC per call.",
+          "market", ["markets", "sol", "coingecko"], "markets-sol")
+async def markets_sol():
+    data = await _get_json(f"{COINGECKO}/coins/solana",
+                           params={"localization": "false", "tickers": "false",
+                                   "community_data": "false", "developer_data": "false"},
+                           ttl=60)
+    if _is_error(data):
+        return data
+    md = data.get("market_data") or {}
+    return {
+        "id": "solana",
+        "symbol": "SOL",
+        "market_cap_rank": data.get("market_cap_rank"),
+        "price_usd": (md.get("current_price") or {}).get("usd"),
+        "market_cap_usd": (md.get("market_cap") or {}).get("usd"),
+        "total_volume_usd": (md.get("total_volume") or {}).get("usd"),
+        "ath_usd": (md.get("ath") or {}).get("usd"),
+        "ath_date": (md.get("ath_date") or {}).get("usd"),
+        "change_24h_percent": md.get("price_change_percentage_24h"),
+        "change_7d_percent": md.get("price_change_percentage_7d"),
+        "change_30d_percent": md.get("price_change_percentage_30d"),
+        "circulating_supply": md.get("circulating_supply"),
+        "total_supply": md.get("total_supply"),
+        "network": "solana",
+    }
+
+
+@endpoint("/markets/sol/price", "$0.01",
+          "SOL simple price (CoinGecko): USD price, market cap, 24h volume and 24h change in one light call. $0.01 USDC per call.",
+          "market", ["markets", "sol", "price"], "markets-sol-price")
+async def markets_sol_price():
+    data = await _get_json(f"{COINGECKO}/simple/price",
+                           params={"ids": "solana", "vs_currencies": "usd",
+                                   "include_market_cap": "true",
+                                   "include_24hr_vol": "true",
+                                   "include_24hr_change": "true"}, ttl=60)
+    if _is_error(data):
+        return data
+    s = data.get("solana") or {}
+    return {
+        "symbol": "SOL",
+        "price_usd": s.get("usd"),
+        "market_cap_usd": s.get("usd_market_cap"),
+        "volume_24h_usd": s.get("usd_24h_vol"),
+        "change_24h_percent": _round(_fnum(s.get("usd_24h_change")), 4),
+        "network": "solana",
+    }
+
+
+@endpoint("/markets/sol/history/{days}", "$0.01",
+          "SOL price history summary for N days (CoinGecko market chart): start/end, high, low, change. $0.01 USDC per call.",
+          "market", ["markets", "sol", "history"], "markets-sol-history")
+async def markets_sol_history(days: int):
+    days = max(1, min(days, 365))
+    data = await _get_json(f"{COINGECKO}/coins/solana/market_chart",
+                           params={"vs_currency": "usd", "days": days}, ttl=120)
+    if _is_error(data):
+        return data
+    prices = data.get("prices") or []
+    if not prices:
+        return {"error": "no price history returned"}
+    values = [p[1] for p in prices]
+    return {
+        "symbol": "SOL",
+        "days": days,
+        "points": len(values),
+        "start_price_usd": _round(values[0], 4),
+        "end_price_usd": _round(values[-1], 4),
+        "high_usd": _round(max(values), 4),
+        "low_usd": _round(min(values), 4),
+        "change_percent": round(100.0 * (values[-1] - values[0]) / values[0], 3) if values[0] else None,
+        "network": "solana",
+    }
+
+
+@endpoint("/markets/sol/ohlc/{days}", "$0.01",
+          "SOL OHLC candles from CoinGecko (days: 1, 7, 14, 30, 90, 180 or 365; latest 40 candles). $0.01 USDC per call.",
+          "market", ["markets", "sol", "ohlc"], "markets-sol-ohlc")
+async def markets_sol_ohlc(days: int):
+    if days not in (1, 7, 14, 30, 90, 180, 365):
+        return {"error": "days must be one of 1, 7, 14, 30, 90, 180, 365"}
+    data = await _get_json(f"{COINGECKO}/coins/solana/ohlc",
+                           params={"vs_currency": "usd", "days": days}, ttl=120)
+    if _is_error(data):
+        return data
+    candles = data if isinstance(data, list) else []
+    return {
+        "symbol": "SOL",
+        "days": days,
+        "candles": [{"t": c[0], "o": c[1], "h": c[2], "l": c[3], "c": c[4]}
+                    for c in candles[-40:] if isinstance(c, list) and len(c) == 5],
+        "network": "solana",
+    }
+
+
+async def _cg_ecosystem_markets(ttl=120):
+    return await _get_json(f"{COINGECKO}/coins/markets",
+                           params={"vs_currency": "usd", "category": "solana-ecosystem",
+                                   "order": "market_cap_desc", "per_page": 100,
+                                   "page": 1, "price_change_percentage": "24h"},
+                           ttl=ttl)
+
+
+def _trim_cg_market(c):
+    return {
+        "id": c.get("id"),
+        "symbol": (c.get("symbol") or "").upper(),
+        "name": c.get("name"),
+        "price_usd": c.get("current_price"),
+        "market_cap_usd": c.get("market_cap"),
+        "market_cap_rank": c.get("market_cap_rank"),
+        "volume_24h_usd": c.get("total_volume"),
+        "change_24h_percent": _round(_fnum(c.get("price_change_percentage_24h")), 3),
+    }
+
+
+@endpoint("/markets/ecosystem", "$0.01",
+          "Top Solana-ecosystem tokens by market cap (CoinGecko category): price, volume, 24h change. $0.01 USDC per call.",
+          "market", ["markets", "ecosystem", "solana"], "markets-ecosystem")
+async def markets_ecosystem():
+    data = await _cg_ecosystem_markets()
+    if _is_error(data):
+        return data
+    coins = data if isinstance(data, list) else []
+    return {"coins": [_trim_cg_market(c) for c in coins[:15]],
+            "count": len(coins), "network": "solana"}
+
+
+@endpoint("/markets/ecosystem/gainers", "$0.01",
+          "Biggest 24h gainers in the Solana ecosystem category (CoinGecko, top 10). $0.01 USDC per call.",
+          "market", ["markets", "ecosystem", "gainers"], "markets-ecosystem-gainers")
+async def markets_ecosystem_gainers():
+    data = await _cg_ecosystem_markets()
+    if _is_error(data):
+        return data
+    coins = [c for c in (data if isinstance(data, list) else [])
+             if _fnum(c.get("price_change_percentage_24h")) is not None]
+    coins.sort(key=lambda c: -c["price_change_percentage_24h"])
+    return {"coins": [_trim_cg_market(c) for c in coins[:10]], "network": "solana"}
+
+
+@endpoint("/markets/ecosystem/losers", "$0.01",
+          "Biggest 24h losers in the Solana ecosystem category (CoinGecko, top 10). $0.01 USDC per call.",
+          "market", ["markets", "ecosystem", "losers"], "markets-ecosystem-losers")
+async def markets_ecosystem_losers():
+    data = await _cg_ecosystem_markets()
+    if _is_error(data):
+        return data
+    coins = [c for c in (data if isinstance(data, list) else [])
+             if _fnum(c.get("price_change_percentage_24h")) is not None]
+    coins.sort(key=lambda c: c["price_change_percentage_24h"])
+    return {"coins": [_trim_cg_market(c) for c in coins[:10]], "network": "solana"}
+
+
+@endpoint("/markets/trending", "$0.01",
+          "Trending coins on CoinGecko search right now (global list, Solana names included when trending). $0.01 USDC per call.",
+          "market", ["markets", "trending", "coingecko"], "markets-trending")
+async def markets_trending():
+    data = await _get_json(f"{COINGECKO}/search/trending", ttl=120)
+    if _is_error(data):
+        return data
+    coins = []
+    for entry in (data.get("coins") or [])[:10]:
+        item = entry.get("item") or {}
+        coins.append({
+            "id": item.get("id"),
+            "name": item.get("name"),
+            "symbol": (item.get("symbol") or "").upper(),
+            "market_cap_rank": item.get("market_cap_rank"),
+            "price_btc": item.get("price_btc"),
+        })
+    return {"coins": coins, "network": "solana",
+            "note": "global CoinGecko trending list"}
+
+
+@endpoint("/markets/fear-greed", "$0.01",
+          "Crypto Fear & Greed index: current value, classification and timestamp (Alternative.me). $0.01 USDC per call.",
+          "market", ["markets", "fear-greed", "sentiment"], "markets-fear-greed")
+async def markets_fear_greed():
+    data = await _get_json(f"{FNG}/fng/", params={"limit": 1}, ttl=120)
+    if _is_error(data):
+        return data
+    rows = data.get("data") or []
+    if not rows:
+        return {"error": "no fear & greed data returned"}
+    r = rows[0]
+    return {"value": int(r["value"]), "classification": r.get("value_classification"),
+            "timestamp": int(r["timestamp"]), "network": "solana"}
+
+
+@endpoint("/markets/fear-greed/history", "$0.01",
+          "Fear & Greed index for the last 7 days with the weekly average (Alternative.me). $0.01 USDC per call.",
+          "market", ["markets", "fear-greed", "history"], "markets-fear-greed-history")
+async def markets_fear_greed_history():
+    data = await _get_json(f"{FNG}/fng/", params={"limit": 7}, ttl=120)
+    if _is_error(data):
+        return data
+    rows = [{"value": int(r["value"]), "classification": r.get("value_classification"),
+             "timestamp": int(r["timestamp"])} for r in (data.get("data") or [])]
+    avg = round(sum(r["value"] for r in rows) / len(rows), 1) if rows else None
+    return {"days": rows, "average": avg, "network": "solana"}
+
+
+# ===== NFTS (Magic Eden public API + RPC) =====
+# Magic Eden is the only free NFT source that answers reliably from
+# this network (verified 2026-11-23); its stats endpoint occasionally
+# drops a connection, in which case the handler returns the upstream
+# error rather than invented data.
+
+@endpoint("/nfts/collections", "$0.01",
+          "Solana NFT collections on Magic Eden (first page of 20): symbol, name, image, description. $0.01 USDC per call.",
+          "nft", ["nfts", "collections", "magiceden"], "nft-collections")
+async def nft_collections():
+    data = await _get_json(f"{MAGICEDEN}/collections",
+                           params={"offset": 0, "limit": 20}, ttl=120)
+    if _is_error(data):
+        return data
+    items = data if isinstance(data, list) else []
+    return {
+        "collections": [{
+            "symbol": c.get("symbol"),
+            "name": c.get("name"),
+            "image": c.get("image"),
+            "description": (c.get("description") or "")[:160] or None,
+            "website": c.get("website"),
+            "twitter": c.get("twitter"),
+            "discord": c.get("discord"),
+        } for c in items],
+        "count": len(items),
+        "network": "solana",
+    }
+
+
+@endpoint("/nfts/collections/{symbol}/stats", "$0.01",
+          "Magic Eden stats for one Solana NFT collection: floor price, listed count, average sale prices, volumes. $0.01 USDC per call.",
+          "nft", ["nfts", "collections", "stats"], "nft-collection-stats")
+async def nft_collection_stats(symbol: str):
+    data = await _get_json(f"{MAGICEDEN}/collections/{symbol}/stats", ttl=60)
+    if _is_error(data):
+        return data
+    return {
+        "symbol": data.get("symbol", symbol),
+        "floor_price_sol": _round(_sol(data.get("floorPrice")), 4),
+        "listed_count": data.get("listedCount"),
+        "avg_price_24h_sol": _round(_sol(_fnum(data.get("avgPrice24hr"))), 4),
+        "volume_24h_sol": _round(_sol(_fnum(data.get("vol24hr"))), 2),
+        "volume_7d_sol": _round(_sol(_fnum(data.get("volume7d"))), 2),
+        "volume_30d_sol": _round(_sol(_fnum(data.get("vol30d"))), 2),
+        "volume_all_sol": _round(_sol(_fnum(data.get("volumeAll"))), 2),
+        "network": "solana",
+    }
+
+
+@endpoint("/nfts/collections/{symbol}", "$0.01",
+          "One Solana NFT collection's Magic Eden profile: name, description, image and social links. $0.01 USDC per call.",
+          "nft", ["nfts", "collections", "magiceden"], "nft-collection")
+async def nft_collection(symbol: str):
+    data = await _get_json(f"{MAGICEDEN}/collections/{symbol}", ttl=120)
+    if _is_error(data):
+        return data
+    c = data if isinstance(data, dict) else {}
+    return {
+        "symbol": c.get("symbol", symbol),
+        "name": c.get("name"),
+        "description": (c.get("description") or "")[:400] or None,
+        "image": c.get("image"),
+        "website": c.get("website"),
+        "twitter": c.get("twitter"),
+        "discord": c.get("discord"),
+        "network": "solana",
+    }
+
+
+@endpoint("/nfts/{mint}/owner", "$0.01",
+          "Current holder of one NFT mint: the largest token account and its owner (an NFT has exactly one holder of 1 unit). $0.01 USDC per call.",
+          "nft", ["nfts", "owner", "rpc"], "nft-owner")
+async def nft_owner(mint: str):
+    if not _is_sol_address(mint):
+        return _err_addr("mint")
+    res = await _rpc("getTokenLargestAccounts", [mint])
+    if _is_error(res):
+        return res
+    value = (res or {}).get("value") or []
+    holders = [a for a in value if (_fnum(a.get("amount")) or 0) > 0]
+    if not holders:
+        return {"mint": mint, "owner": None, "note": "no token accounts with a balance",
+                "network": "solana"}
+    top = holders[0]
+    owner = None
+    acct = await _rpc("getAccountInfo", [top.get("address"), {"encoding": "jsonParsed"}])
+    if not _is_error(acct):
+        raw_data = ((acct or {}).get("value") or {}).get("data")
+        parsed = (raw_data.get("parsed") or {}) if isinstance(raw_data, dict) else {}
+        owner = (parsed.get("info") or {}).get("owner")
+    return {
+        "mint": mint,
+        "token_account": top.get("address"),
+        "owner": owner,
+        "amount": top.get("uiAmount"),
+        "network": "solana",
+    }
+
+
+@endpoint("/nfts/{mint}/accounts", "$0.01",
+          "All token accounts holding a balance of one mint (for an NFT this is the single holder account). $0.01 USDC per call.",
+          "nft", ["nfts", "accounts", "rpc"], "nft-accounts")
+async def nft_accounts(mint: str):
+    if not _is_sol_address(mint):
+        return _err_addr("mint")
+    res = await _rpc("getTokenLargestAccounts", [mint])
+    if _is_error(res):
+        return res
+    value = (res or {}).get("value") or []
+    rows = [{"account": a.get("address"), "amount": a.get("uiAmount"),
+             "amount_raw": a.get("amount")} for a in value
+            if (_fnum(a.get("amount")) or 0) > 0]
+    return {"mint": mint, "accounts": rows, "count": len(rows), "network": "solana"}
+
+
+# ===== UTILITIES (pure/local + light RPC) =====
+
+@endpoint("/utils/convert/lamports/{amount}", "$0.01",
+          "Convert lamports to SOL (and USD at the live price). $0.01 USDC per call.",
+          "utils", ["utils", "convert", "lamports"], "utils-convert-lamports")
+async def utils_convert_lamports(amount: int):
+    sol = _sol(amount)
+    price = await _sol_price_usd()
+    return {"lamports": amount, "sol": sol,
+            "usd": _round(sol * price, 4) if price else None, "network": "solana"}
+
+
+@endpoint("/utils/convert/sol/{amount}", "$0.01",
+          "Convert a SOL amount to lamports and USD at the live price. $0.01 USDC per call.",
+          "utils", ["utils", "convert", "sol"], "utils-convert-sol")
+async def utils_convert_sol(amount: float):
+    price = await _sol_price_usd()
+    return {"sol": amount, "lamports": int(amount * LAMPORTS_PER_SOL),
+            "usd": _round(amount * price, 4) if price else None, "network": "solana"}
+
+
+@endpoint("/utils/convert/usd-sol/{amount}", "$0.01",
+          "Convert a USD amount to SOL at the live Jupiter price. $0.01 USDC per call.",
+          "utils", ["utils", "convert", "usd"], "utils-convert-usd-sol")
+async def utils_convert_usd_sol(amount: float):
+    price = await _sol_price_usd()
+    if not price:
+        return {"error": "SOL price unavailable"}
+    return {"usd": amount, "sol_price_usd": _round(price, 4),
+            "sol": _round(amount / price, 8), "network": "solana"}
+
+
+@endpoint("/utils/convert/sol-usd/{amount}", "$0.01",
+          "Convert a SOL amount to USD at the live Jupiter price. $0.01 USDC per call.",
+          "utils", ["utils", "convert", "usd"], "utils-convert-sol-usd")
+async def utils_convert_sol_usd(amount: float):
+    price = await _sol_price_usd()
+    if not price:
+        return {"error": "SOL price unavailable"}
+    return {"sol": amount, "sol_price_usd": _round(price, 4),
+            "usd": _round(amount * price, 4), "network": "solana"}
+
+
+@endpoint("/utils/address/{address}/validate", "$0.01",
+          "Validate a Solana address: base58 format, 32-byte length, and whether it is on the ed25519 curve (off-curve means a PDA). $0.01 USDC per call.",
+          "utils", ["utils", "address", "validate"], "utils-address-validate")
+async def utils_address_validate(address: str):
+    valid = _is_sol_address(address)
+    on_curve = _on_curve(address) if valid else None
+    return {
+        "address": address,
+        "valid": valid,
+        "on_curve": on_curve,
+        "is_program_derived_address": (on_curve is False) if valid else None,
+        "network": "solana",
+    }
+
+
+@endpoint("/utils/address/{address}/type", "$0.01",
+          "Classify one Solana address by its owner program: wallet, mint, token account, stake account, vote account, program or unknown. $0.01 USDC per call.",
+          "utils", ["utils", "address", "type"], "utils-address-type")
+async def utils_address_type(address: str):
+    if not _is_sol_address(address):
+        return _err_addr()
+    res = await _rpc("getAccountInfo", [address, {"encoding": "jsonParsed"}])
+    if _is_error(res):
+        return res
+    value = (res or {}).get("value")
+    if not value:
+        return {"address": address, "exists": False, "type": "unfunded wallet (no account)",
+                "network": "solana"}
+    owner = value.get("owner")
+    data = value.get("data")
+    # jsonParsed falls back to the [data, "base64"] list form for
+    # accounts it cannot parse (e.g. empty system accounts).
+    parsed = (data.get("parsed") or {}) if isinstance(data, dict) else {}
+    ptype = parsed.get("type")
+    if value.get("executable"):
+        kind = "program"
+    elif owner == SYSTEM_PROGRAM:
+        kind = "wallet (system account)"
+    elif owner in (TOKEN_PROGRAM, TOKEN_2022_PROGRAM) and ptype == "mint":
+        kind = "token mint"
+    elif owner in (TOKEN_PROGRAM, TOKEN_2022_PROGRAM) and ptype == "account":
+        kind = "token account"
+    elif owner == STAKE_PROGRAM:
+        kind = "stake account"
+    elif owner == VOTE_PROGRAM:
+        kind = "vote account"
+    else:
+        kind = "program-owned account"
+    return {
+        "address": address,
+        "exists": True,
+        "type": kind,
+        "parsed_type": ptype,
+        "owner_program": owner,
+        "executable": value.get("executable"),
+        "lamports": value.get("lamports"),
+        "network": "solana",
+    }
+
+
+@endpoint("/utils/slot/time/{slot}", "$0.01",
+          "Estimated wall-clock time of one slot: exact getBlockTime when the node has it, otherwise an estimate from average slot duration. $0.01 USDC per call.",
+          "utils", ["utils", "slot", "time"], "utils-slot-time")
+async def utils_slot_time(slot: int):
+    t = await _rpc("getBlockTime", [slot])
+    if not _is_error(t) and t is not None:
+        return {"slot": slot, "unix_time": t, "estimated": False, "network": "solana"}
+    current = await _rpc("getSlot", [{"commitment": "finalized"}])
+    if _is_error(current):
+        return current
+    samples = await _rpc("getRecentPerformanceSamples", [12])
+    slot_secs = 0.4
+    if not _is_error(samples) and samples:
+        tot_slots = sum(s.get("numSlots") or 0 for s in samples)
+        tot_secs = sum(s.get("samplePeriodSecs") or 0 for s in samples)
+        if tot_slots and tot_secs:
+            slot_secs = tot_secs / tot_slots
+    est = int(time.time() + (slot - current) * slot_secs)
+    return {"slot": slot, "unix_time": est, "estimated": True,
+            "avg_slot_seconds": _round(slot_secs, 4), "network": "solana"}
+
+
+@endpoint("/utils/time/slot/{timestamp}", "$0.01",
+          "Estimated slot at a given Unix timestamp, extrapolated from the current slot and average slot duration. $0.01 USDC per call.",
+          "utils", ["utils", "time", "slot"], "utils-time-slot")
+async def utils_time_slot(timestamp: int):
+    current = await _rpc("getSlot", [{"commitment": "finalized"}])
+    if _is_error(current):
+        return current
+    samples = await _rpc("getRecentPerformanceSamples", [12])
+    slot_secs = 0.4
+    if not _is_error(samples) and samples:
+        tot_slots = sum(s.get("numSlots") or 0 for s in samples)
+        tot_secs = sum(s.get("samplePeriodSecs") or 0 for s in samples)
+        if tot_slots and tot_secs:
+            slot_secs = tot_secs / tot_slots
+    est_slot = int(current + (timestamp - time.time()) / slot_secs)
+    return {"timestamp": timestamp, "estimated_slot": est_slot,
+            "current_slot": current, "avg_slot_seconds": _round(slot_secs, 4),
+            "network": "solana"}
+
+
+@endpoint("/utils/epoch/{epoch}/slots", "$0.01",
+          "Slot range of one Solana epoch from the epoch schedule: first slot, last slot, and estimated start/end times. $0.01 USDC per call.",
+          "utils", ["utils", "epoch", "slots"], "utils-epoch-slots")
+async def utils_epoch_slots(epoch: int):
+    sched = await _rpc("getEpochSchedule", [])
+    if _is_error(sched):
+        return sched
+    slots_per_epoch = sched.get("slotsPerEpoch") or 432000
+    first_normal_slot = sched.get("firstNormalSlot") or 0
+    first_normal_epoch = sched.get("firstNormalEpoch") or 0
+    if epoch < first_normal_epoch:
+        return {"error": "epoch is in the warmup period; schedule math differs",
+                "epoch": epoch, "first_normal_epoch": first_normal_epoch}
+    first_slot = first_normal_slot + (epoch - first_normal_epoch) * slots_per_epoch
+    last_slot = first_slot + slots_per_epoch - 1
+    info = await _rpc("getEpochInfo", [])
+    est_start = est_end = None
+    if not _is_error(info):
+        samples = await _rpc("getRecentPerformanceSamples", [12])
+        slot_secs = 0.4
+        if not _is_error(samples) and samples:
+            tot_slots = sum(s.get("numSlots") or 0 for s in samples)
+            tot_secs = sum(s.get("samplePeriodSecs") or 0 for s in samples)
+            if tot_slots and tot_secs:
+                slot_secs = tot_secs / tot_slots
+        now = time.time()
+        current_slot = info.get("absoluteSlot")
+        if current_slot:
+            est_start = int(now + (first_slot - current_slot) * slot_secs)
+            est_end = int(now + (last_slot - current_slot) * slot_secs)
+    return {
+        "epoch": epoch,
+        "first_slot": first_slot,
+        "last_slot": last_slot,
+        "slots_in_epoch": slots_per_epoch,
+        "estimated_start_unix": est_start,
+        "estimated_end_unix": est_end,
+        "network": "solana",
+    }
+
+
+@endpoint("/utils/fees/priority", "$0.01",
+          "Current priority-fee estimate for a simple Solana transfer: median network prioritization fee plus the 5,000-lamport base fee. $0.01 USDC per call.",
+          "utils", ["utils", "fees", "estimate"], "utils-fees-priority")
+async def utils_fees_priority():
+    fees = await _rpc("getRecentPrioritizationFees", [])
+    if _is_error(fees):
+        return fees
+    vals = sorted(f.get("prioritizationFee") or 0 for f in (fees or []))
+    if not vals:
+        return {"error": "no prioritization fee data returned"}
+    median = vals[len(vals) // 2]
+    # A simple transfer uses ~200k compute-unit limit in most wallets;
+    # priority fee total = median micro-lamports/CU * CU / 1e6 lamports.
+    assumed_cu = 200_000
+    priority_lamports = median * assumed_cu / 1_000_000
+    base_fee = 5000
+    total = base_fee + priority_lamports
+    price = await _sol_price_usd()
+    return {
+        "median_priority_micro_lamports_per_cu": median,
+        "assumed_compute_units": assumed_cu,
+        "base_fee_lamports": base_fee,
+        "priority_fee_lamports": _round(priority_lamports, 2),
+        "estimated_total_lamports": _round(total, 2),
+        "estimated_total_sol": _round(_sol(total), 9),
+        "estimated_total_usd": _round(_sol(total) * price, 6) if price else None,
+        "network": "solana",
+    }
+
+
+
+# ============ APP + ROUTES + X402 WIRING ============
+# The REGISTRY list above is the single source of truth: the FastAPI
+# routes and the x402 payment config are both built from it here, so
+# they can never drift apart. Payment uses the SDK 2.9.0 FastAPI
+# middleware with the x402ResourceServer configured at the top of this
+# file (PayAI facilitator, exact SVM scheme, USDC on Solana mainnet).
+
+import re
+
+from fastapi.responses import FileResponse
+from x402.http import PaymentOption
+from x402.http.types import RouteConfig
+
+app = FastAPI(title="Manteclaw x402 — Solana Data APIs", version="2.0.0")
+
+for _entry in REGISTRY:
+    app.get(_entry["path"], name=_entry["id"])(_entry["handler"])
+
+
+def _route_config(entry):
+    return RouteConfig(
+        accepts=PaymentOption(
+            scheme="exact",
+            pay_to=WALLET_ADDRESS,
+            price=entry["price"],
+            network=SOLANA_NETWORK,
+            max_timeout_seconds=300,
+        ),
+        description=entry["description"],
+        mime_type="application/json",
     )
 
 
-# Serve the discovery + verification files for free (no payment):
-# /.well-known/x402.json, /.well-known/agent-catalog.json, and
-# /.well-known/aipaygen-verify.txt (AiPayGen site verification).
-# These MUST be public — agents and directories read them unpaid.
-if os.path.isdir(_WELL_KNOWN_DIR):
-    app.mount("/.well-known", StaticFiles(directory=_WELL_KNOWN_DIR), name="well-known")
+def _pattern(path):
+    """FastAPI-style {param} -> the x402 SDK's [param] route pattern.
 
-# Build x402 middleware once and register it
-x402_mw = payment_middleware(routes, server)
+    The SDK compiles route patterns to regexes that understand '*',
+    '[param]' and ':param' — but NOT '{param}' (braces are escaped
+    literally, so a '{mint}' key would never match a real request and
+    the endpoint would serve unpaid). Verified against
+    x402.http.x402_http_server_base._parse_route_pattern (SDK 2.9.0).
+    """
+    return re.sub(r"\{(\w+)\}", r"[\1]", path)
 
-# Paths that must answer without payment. /health is the liveness probe
-# used by the service manager and monitors: it must never return 402,
-# or the manager will keep restarting a healthy service.
-# /.well-known/* is also free: discovery files (x402.json,
-# agent-catalog.json) and the AiPayGen site-verification file must be
-# readable unpaid, or directories cannot index or verify the service.
-# / is the landing page: directories (e.g. Agent402) probe the bare root
-# and require a 200, not a 404.
-# /catalog is the public shareable catalog page (LinkedIn): it must load
-# free, or nobody can open the link.
-HEALTH_PATHS = {"/health", "/", "/catalog"}
+
+ROUTES_CONFIG = {}
+for _entry in REGISTRY:
+    ROUTES_CONFIG[f"GET {_pattern(_entry['path'])}"] = _route_config(_entry)
+    ROUTES_CONFIG[f"HEAD {_pattern(_entry['path'])}"] = _route_config(_entry)
+
+_x402_gate = payment_middleware(ROUTES_CONFIG, server)
 
 
 @app.middleware("http")
-async def x402_middleware(request: Request, call_next):
-    if request.url.path in HEALTH_PATHS or request.url.path.startswith("/.well-known/"):
-        return await call_next(request)
-    response = await x402_mw(request, call_next)
-    # The SDK returns 402s with an EMPTY {} JSON body: the payment terms
-    # live only in the base64 `payment-required` header. Body-based
-    # validators (e.g. Market402) read the body and score an empty one
-    # 5/10, so mirror the header's decoded PaymentRequired JSON into the
-    # body — identical terms in both places, header and status untouched.
-    # Only an empty body is replaced (a richer SDK error body is kept),
-    # and HEAD is skipped: a HEAD response must not carry a body.
-    if response.status_code == 402 and request.method != "HEAD":
-        pr_header = response.headers.get("payment-required")
-        body = getattr(response, "body", b"") or b""
-        if pr_header and body.strip() in (b"", b"{}"):
+async def _x402_payment_gate(request, call_next):
+    return await _x402_gate(request, call_next)
+
+
+@app.on_event("startup")
+async def _warm_facilitator():
+    """Pre-sync the facilitator's supported-kinds in the background.
+
+    The payment middleware otherwise syncs lazily on the first paid
+    request; through a slow proxy that sync can time out and 500 the
+    first caller (seen in local testing). Warming it here means the
+    first real request usually gets its 402 immediately. This must
+    NEVER block startup: it runs as a background task in a thread
+    (initialize() is a blocking sync call), and failure is non-fatal —
+    the middleware retries on demand.
+    """
+    async def _warm():
+        # Retry for up to ~10 minutes, then stop — the middleware
+        # remains the on-demand backstop either way.
+        deadline = time.time() + 600
+        delay = 2.0
+        while time.time() < deadline:
             try:
-                terms = json.loads(base64.b64decode(pr_header))
+                await asyncio.to_thread(server.initialize)
+                return
             except Exception:
-                terms = None
-            if isinstance(terms, dict) and terms.get("accepts"):
-                from fastapi.responses import JSONResponse
+                await asyncio.sleep(delay)
+                delay = min(delay * 1.5, 30.0)
 
-                headers = {
-                    k: v
-                    for k, v in response.headers.items()
-                    if k.lower() not in ("content-length", "content-type")
-                }
-                return JSONResponse(content=terms, status_code=402, headers=headers)
-    return response
+    asyncio.create_task(_warm())
 
 
-# CORS: the public catalog page (and any browser client) calls the API
-# cross-origin. Browsers block reading a cross-origin response unless
-# the server sends CORS headers, and the x402 client must be able to
-# read the `payment-required` header on the 402 and send `X-PAYMENT`.
-# Allow any origin (the endpoints are public, pay-per-call) and expose
-# the headers the x402 browser flow needs.
-# NOTE: this MUST be registered AFTER the x402 middleware above.
-# Starlette runs the most-recently-added middleware outermost, so CORS
-# has to be added last to wrap the 402 responses the x402 middleware
-# returns without calling through.
 app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_methods=["GET", "HEAD", "OPTIONS"],
+    CORSMiddleware, allow_origins=["*"], allow_methods=["*"],
     allow_headers=["*"],
-    expose_headers=["payment-required", "x-payment-response"],
 )
 
-
-# ===== HEALTH CHECK (no payment required) =====
-
-@app.get("/health")
-async def health():
-    """Liveness probe. No payment, no on-chain call, no facilitator call."""
-    return {
-        "status": "ok",
-        "service": "x402-service",
-        "version": "5.0",
-        "network": "solana",
-        "payee": WALLET_ADDRESS,
-        "rpc_connected": w3.is_connected(),
-        "endpoints": len(ORDERED) + 1,  # 199 paid + /health = 200
-    }
+# ============ OPENAPI (so registries can import all endpoints) ============
+_default_openapi = app.openapi
 
 
-# ===== ROOT LANDING PAGE (no payment required) =====
-
-@app.get("/")
-async def root():
-    """Service landing/discovery page. Free, no payment.
-    Directories probe the bare root and require a 200."""
-    return {
-        "service": "Manteclaw x402 service",
-        "version": "5.0",
-        "network": "solana",
-        "payment": "x402 v2, USDC on Solana, per call ($0.01-$0.02)",
-        "payee": WALLET_ADDRESS,
-        "endpoints": len(ORDERED) + 1,  # 199 paid + /health = 200
-        "health": "/health",
-        "catalog": "/.well-known/agent-catalog.json",
-        "discovery": "/.well-known/x402.json",
-        "tools": "/mcp/tools",
-        "docs": "https://manteclaw-x402-solana.fly.dev/.well-known/agent-catalog.json",
-    }
-
-
-@app.head("/")
-async def root_head():
-    """Explicit HEAD handler for the root. Some directory/indexer probes
-    send HEAD (not GET); Starlette does not auto-answer HEAD here once
-    the x402 middleware is in the stack, so answer it directly."""
-    from fastapi.responses import Response
-
-    return Response(status_code=200)
-
-
-# ===== PUBLIC CATALOG PAGE (no payment required) =====
-
-@app.get("/catalog")
-async def catalog_page():
-    """The shareable catalog page (LinkedIn). Served from the same origin
-    as the API, so the page's Pay & Call buttons are same-origin calls.
-    Free, no payment. The HTML is a static export of the catalog
-    artifact; keep catalog.html next to this file in the repo."""
-    from fastapi.responses import FileResponse
-
-    _catalog = os.path.join(os.path.dirname(os.path.abspath(__file__)), "catalog.html")
-    return FileResponse(_catalog, media_type="text/html")
-
-
-# Register every paid route from the registry.
-for _e in ORDERED:
-    app.add_api_route(_e["path"], _e["handler"], methods=["GET"])
-    # HEAD twin for the middleware config above (Alex approved
-    # 2026-11-21). include_in_schema=False keeps /openapi.json exactly
-    # as the GET-only spec directories already consume.
-    app.add_api_route(
-        _e["path"], _e["handler"], methods=["HEAD"], include_in_schema=False
-    )
-
-
-# ===== OPENAPI INPUT-SCHEMA FIX (x402scan) =====
-# Directories that import this service from its OpenAPI document
-# (x402scan's registerFromOrigin) reject any operation that has neither
-# `parameters` nor a `requestBody` — "Missing input schema — add a
-# requestBody or parameter schema to your OpenAPI spec". The no-input GET
-# endpoints (e.g. /defi/gas-tracker) have neither, so they failed to
-# register (72 of the 199 paid endpoints in v5). Give every such operation
-# an explicit, optional JSON request body describing an empty input
-# object. This changes only the served /openapi.json document — the
-# handlers take no body and runtime behaviour is unchanged.
-from fastapi.openapi.utils import get_openapi
-
-
-def _custom_openapi():
-    if app.openapi_schema:
-        return app.openapi_schema
-    schema = get_openapi(
-        title=app.title,
-        version=app.version,
-        openapi_version=app.openapi_version,
-        description=app.description,
-        routes=app.routes,
-    )
-    _empty_input_body = {
-        "required": False,
-        "content": {
-            "application/json": {
-                "schema": {
-                    "type": "object",
-                    "properties": {},
-                    "additionalProperties": True,
-                    "title": "EmptyInput",
-                    "description": "This endpoint takes no input.",
-                }
+def _openapi_with_inputs():
+    """Same fix as the Base service: give every operation an explicit
+    empty-input requestBody when it has no parameters, so importers
+    (PayAPI etc.) don't flag a missing input schema."""
+    schema = _default_openapi()
+    for path_item in (schema.get("paths") or {}).values():
+        for method, op in list(path_item.items()):
+            if method not in ("get", "post", "put", "patch", "delete"):
+                continue
+            if not isinstance(op, dict):
+                continue
+            if op.get("parameters") or "requestBody" in op:
+                continue
+            op["requestBody"] = {
+                "required": False,
+                "content": {
+                    "application/json": {
+                        "schema": {"type": "object", "properties": {}}
+                    }
+                },
             }
-        },
-    }
-    for _path_item in schema.get("paths", {}).values():
-        for _op in _path_item.values():
-            if (
-                isinstance(_op, dict)
-                and "parameters" not in _op
-                and "requestBody" not in _op
-            ):
-                _op["requestBody"] = _empty_input_body
-    app.openapi_schema = schema
     return schema
 
 
-app.openapi = _custom_openapi
+app.openapi = _openapi_with_inputs
+
+# ============ FREE DISCOVERY / HEALTH / CATALOG ROUTES ============
+_HERE = os.path.dirname(os.path.abspath(__file__))
+BASE_URL = "https://manteclaw-x402-solana.fly.dev"
+SERVICE_NAME = "Manteclaw x402 — Solana Data APIs"
+SERVICE_DESCRIPTION = (
+    "199 pay-per-call Solana data APIs: chain state, SPL tokens, wallets, "
+    "transactions, DEX pairs, DeFi, Pyth oracle feeds, pump.fun memecoins, "
+    "stablecoins, markets, NFTs and utilities. Paid in USDC on Solana "
+    "via x402."
+)
+
+
+def _discovery_endpoints():
+    """Endpoint list in the x402.json discovery shape."""
+    return [
+        {
+            "path": e["path"],
+            "price": e["price"].lstrip("$"),
+            "currency": "usdc",
+            "description": e["description"],
+        }
+        for e in REGISTRY
+    ]
+
+
+def _x402_document():
+    return {
+        "name": "Manteclaw Agent Services (Solana)",
+        "description": SERVICE_DESCRIPTION,
+        "version": "2.0.0",
+        "wallet": WALLET_ADDRESS,
+        "network": SOLANA_NETWORK,
+        "asset": SOLANA_USDC,
+        "scheme": "exact",
+        "contact": {"github": "https://github.com/manteclaw"},
+        "endpoints": _discovery_endpoints(),
+    }
+
+
+def _agent_catalog_document():
+    return {
+        "agent_id": "manteclaw-x402-solana-services",
+        "agent_name": "ManteClaw x402 Services (Solana)",
+        "assets": [
+            {
+                "category": e["category"],
+                "description": e["description"],
+                "endpoint": e["path"],
+                "id": e["id"],
+                "name": e["id"],
+                "preview_endpoint": e["path"],
+                "price_usdc": e["price"].lstrip("$"),
+                "tags": e["tags"],
+                "type": "data",
+            }
+            for e in REGISTRY
+        ],
+        "base_url": BASE_URL,
+        "contact": {"github": "https://github.com/manteclaw"},
+        "description": SERVICE_DESCRIPTION,
+        "network": SOLANA_NETWORK,
+        "protocols_supported": ["x402"],
+        "schema_version": "1.0.0",
+        "wallet_address": WALLET_ADDRESS,
+    }
+
+
+@app.get("/health")
+async def health():
+    return {
+        "status": "ok",
+        "service": "manteclaw-x402-solana",
+        "version": "2.0.0",
+        "chain": "solana",
+        "network": SOLANA_NETWORK,
+        "payee": WALLET_ADDRESS,
+        "endpoints": len(REGISTRY) + 1,
+        "paid_endpoints": len(REGISTRY),
+        "facilitator": FACILITATOR_URL,
+    }
+
+
+@app.get("/catalog")
+async def catalog():
+    html_path = os.path.join(_HERE, "catalog.html")
+    if os.path.exists(html_path):
+        return FileResponse(html_path, media_type="text/html")
+    return {"service": SERVICE_NAME, "endpoints": _discovery_endpoints()}
+
+
+@app.get("/x402")
+async def x402_discovery():
+    return _x402_document()
+
+
+@app.get("/.well-known/x402.json")
+async def well_known_x402_json():
+    return _x402_document()
+
+
+@app.get("/.well-known/x402")
+async def well_known_x402():
+    return _x402_document()
+
+
+@app.get("/.well-known/agent-catalog.json")
+async def well_known_agent_catalog():
+    return _agent_catalog_document()
+
 
 if __name__ == "__main__":
     import uvicorn
