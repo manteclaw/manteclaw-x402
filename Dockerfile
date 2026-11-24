@@ -28,6 +28,13 @@ COPY .well-known/aipaygen-verify.txt ./.well-known/aipaygen-verify.txt
 # the host for the 402index domain claim; the file contains only the
 # SHA-256 verification hash and is served at /.well-known/402index-verify.txt.
 COPY .well-known/402index-verify.txt ./.well-known/402index-verify.txt
+# AWS Marketplace Agentic Commerce (Nov 23, 2026): the scheme module,
+# the route -> product_id map, and the quote-signing public JWKS. The
+# quote-signing PRIVATE key is never in the image - it is mounted at
+# boot from a Fly secret via the [[files]] section of fly.toml.
+COPY aws_agentic_commerce.py ./
+COPY aws-products.json ./
+COPY .well-known/jwks.json ./.well-known/jwks.json
 # Extensionless copy of x402.json (identical content): Agent402 probes
 # /.well-known/x402 (no extension) and backs off on a 404.
 COPY .well-known/x402 ./.well-known/x402

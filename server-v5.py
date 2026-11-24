@@ -4476,6 +4476,13 @@ HEALTH_PATHS = {"/health", "/", "/catalog"}
 
 @app.middleware("http")
 async def x402_middleware(request: Request, call_next):
+    # AWS Marketplace Agentic Commerce: a request whose AWS payment
+    # token was already verified by the AWS middleware (which runs
+    # outside this one) carries the scope flag; let it straight
+    # through to the handler. The flag is only ever set by
+    # aws_agentic_commerce after cryptographic token verification.
+    if request.scope.get("aws_payment_verified"):
+        return await call_next(request)
     if request.url.path in HEALTH_PATHS or request.url.path.startswith("/.well-known/"):
         return await call_next(request)
     response = await x402_mw(request, call_next)
@@ -4523,6 +4530,30 @@ app.add_middleware(
     allow_headers=["*"],
     expose_headers=["payment-required", "x-payment-response"],
 )
+
+# AWS Marketplace Agentic Commerce — added Nov 23, 2026 as a SECOND
+# payment scheme (Alex's call), mirroring the parked CDP facilitator
+# pattern above: built only when AWS_SCHEME_ENABLED is set in the
+# environment; without it this block never runs, the module is never
+# imported, and the crypto x402 surface is exactly as before. All of
+# the scheme logic lives in aws_agentic_commerce.py (local-only, like
+# the CDP code — never pushed with the repo copy). A broken AWS setup
+# must not kill the crypto service, hence the broad guard.
+if os.environ.get("AWS_SCHEME_ENABLED"):
+    try:
+        from aws_agentic_commerce import install_aws_scheme
+
+        install_aws_scheme(
+            app,
+            public_origin=PUBLIC_ORIGIN,
+            well_known_dir=_WELL_KNOWN_DIR,
+            resource_server=server,
+        )
+    except Exception as _exc:  # a broken AWS setup must not kill x402
+        print(
+            f"[aws] Agentic Commerce disabled (init failed): {_exc}",
+            file=sys.stderr,
+        )
 
 
 # ===== HEALTH CHECK (no payment required) =====

@@ -1,0 +1,803 @@
+{
+ "generated": "2026-11-23",
+ "note": "AWS Marketplace Agentic Commerce route -> product_id map. One product per endpoint (Alex's decision, Nov 23, 2026). product_id values are null until the products are created via the Catalog API; fill them in here - no code change needed. The AWS scheme refuses to quote for any route whose product_id is null.",
+ "routes": {
+  "GET /chain/address/{address}/code": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /chain/block/latest": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /chain/block/{number}": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /chain/block/{number}/transactions": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /chain/block/{number}/tx-count": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /chain/blocks/{count}": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /chain/client": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /chain/gas/base-fee": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /chain/gas/estimate-transfer/{to}": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /chain/gas/fee-history": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /chain/gas/fee-history/{blocks}": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /chain/gas/max-fee": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /chain/gas/oracle": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /chain/gas/priority-fee": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /chain/gas/transfer-cost": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /chain/gas/transfer-cost-usd": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /chain/network": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /chain/pending/count": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /chain/stats": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /chain/syncing": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /chain/transaction/{hash}": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /chain/transaction/{hash}/input": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /chain/transaction/{hash}/logs": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /chain/transaction/{hash}/receipt": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /chain/transaction/{tx_hash}/cost": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /chain/transaction/{tx_hash}/status": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /defi/aave/reserves": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /defi/chains": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /defi/chains/{chain}": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /defi/chains/{chain}/history": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /defi/dex/volume/7d": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /defi/dex/volume/base/7d": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /defi/fees/overview": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /defi/gas-tracker": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /defi/protocol/{slug}": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /defi/protocols": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /defi/protocols/base": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /defi/stablecoins": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /defi/token-price/{token_address}": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /defi/token-security/{token_address}": {
+   "price_usd": 0.02,
+   "product_id": null
+  },
+  "GET /defi/tvl": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /defi/tvl/{protocol}": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /defi/wallet-analyzer/{address}": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /defi/yields/base": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /defi/yields/chart/{pool}": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /defi/yields/il/{pool}": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /defi/yields/pool/{pool}": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /defi/yields/project/{project}": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /defi/yields/stable": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /defi/yields/stable/{chain}": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /defi/yields/token/{symbol}": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /defi/yields/top": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /dex/chains": {
+   "price_usd": 0.02,
+   "product_id": null
+  },
+  "GET /dex/fees/{protocol}": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /dex/fees/{protocol}/chains": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /dex/latest-boosts": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /dex/latest-profiles": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /dex/pair/{chain}/{pair}/txns": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /dex/pair/{token}/{chain}": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /dex/pairs/{chain}/{pair}": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /dex/pairs/{token}": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /dex/pool/{pool}/info": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /dex/pool/{pool}/price": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /dex/search/{query}": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /dex/top": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /dex/top/fees": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /dex/top/volume/{n}": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /dex/trending": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /dex/volume": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /dex/volume/base": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /dex/volume/{chain}": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /dex/volume/{protocol}": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /ens/avatar/{name}": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /ens/profile/{name}": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /ens/resolve/{name}": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /ens/reverse/{address}": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /ens/{name}/content": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /ens/{name}/records": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /gov/proposal/{proposal_id}": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /gov/proposal/{proposal_id}/votes": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /gov/proposals": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /gov/space/{space}": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /gov/space/{space}/proposals": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /lending/aave/market/{asset}": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /lending/aave/markets": {
+   "price_usd": 0.02,
+   "product_id": null
+  },
+  "GET /lending/aave/tvl": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /lending/aave/user/{wallet}": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /lending/compound/markets": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /lending/compound/usdc": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /lending/compound/user/{wallet}": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /lending/morpho/pools": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /lending/morpho/stable": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /lending/rates/{asset}": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /lending/stablecoin-rates": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /lending/top-apy": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /lending/usdc-rate": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /lending/weth-rate": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /mcp/status": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /mcp/tools": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /memes/boosted": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /memes/new-pairs": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /memes/trending": {
+   "price_usd": 0.02,
+   "product_id": null
+  },
+  "GET /memes/{token}/holders": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /memes/{token}/price-change": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /nfts/{collection}/balance/{wallet}": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /nfts/{collection}/exists/{tokenId}": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /nfts/{collection}/info": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /nfts/{collection}/interfaces": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /nfts/{collection}/owner/{tokenId}": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /nfts/{collection}/supply": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /nfts/{collection}/token/{tokenId}": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /nfts/{collection}/token/{token_id}/attributes": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /nfts/{collection}/token/{token_id}/image": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /nfts/{collection}/token/{token_id}/uri": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /nfts1155/{collection}/balance/{wallet}/{token_id}": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /nfts1155/{collection}/supply/{token_id}": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /nfts1155/{collection}/uri/{token_id}": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /oracles/btc": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /oracles/eth": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /oracles/feeds": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /oracles/price/{symbol}": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /oracles/usdc": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /oracles/vs-coingecko": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /predict/events": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /predict/market/{slug}": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /predict/markets": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /predict/markets/closing": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /predict/search/{query}": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /predict/trending": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /stablecoins/chain/{chain}": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /stablecoins/chains": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /stablecoins/pegs": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /stablecoins/top": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /stablecoins/total": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /stablecoins/{asset}": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /tokens/boosts": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /tokens/new": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /tokens/search/{query}": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /tokens/trending": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /tokens/{address}/age": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /tokens/{address}/allowance/{owner}/{spender}": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /tokens/{address}/audit": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /tokens/{address}/balance/{wallet}": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /tokens/{address}/coingecko": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /tokens/{address}/decimals": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /tokens/{address}/fdv": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /tokens/{address}/history/{days}": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /tokens/{address}/holders": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /tokens/{address}/info": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /tokens/{address}/liquidity": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /tokens/{address}/liquidity-usd": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /tokens/{address}/market": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /tokens/{address}/name": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /tokens/{address}/pairs": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /tokens/{address}/price": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /tokens/{address}/price-change": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /tokens/{address}/supply": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /tokens/{address}/symbol": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /tokens/{address}/top-holder": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /tokens/{address}/txns": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /utils/address/keccak/{text}": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /utils/address/validate/{address}": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /utils/coin-price/{coin}": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /utils/coin/{coin}": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /utils/coin/{coin}/ath": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /utils/coin/{coin}/change": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /utils/coin/{coin}/history/{days}": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /utils/convert/eth-usd/{amount}": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /utils/convert/ether-wei/{amount}": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /utils/convert/gwei-eth/{amount}": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /utils/convert/usd-eth/{amount}": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /utils/convert/usdc-eth/{amount}": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /utils/convert/wei/{amount}": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /utils/eth-usd": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /utils/fear-greed": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /utils/gas-cost/{gwei}/{gas}": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /utils/market/fear-greed/history": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /utils/market/global": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /utils/market/top": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /utils/market/trending": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /wallets/{address}/aero-balance": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /wallets/{address}/approvals": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /wallets/{address}/approvals/{token}": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /wallets/{address}/balance": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /wallets/{address}/cbeth-balance": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /wallets/{address}/code": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /wallets/{address}/dai-balance": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /wallets/{address}/ens": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /wallets/{address}/eth-value": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /wallets/{address}/higher-balance": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /wallets/{address}/is-contract": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /wallets/{address}/nonce": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /wallets/{address}/portfolio": {
+   "price_usd": 0.02,
+   "product_id": null
+  },
+  "GET /wallets/{address}/token-count": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /wallets/{address}/token/{token}/value": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /wallets/{address}/tokens": {
+   "price_usd": 0.02,
+   "product_id": null
+  },
+  "GET /wallets/{address}/usdbc-balance": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /wallets/{address}/usdc-balance": {
+   "price_usd": 0.01,
+   "product_id": null
+  },
+  "GET /wallets/{address}/weth-balance": {
+   "price_usd": 0.01,
+   "product_id": null
+  }
+ },
+ "version": 1
+}

@@ -25,3 +25,13 @@ primary_region = "iad"
 [[vm]]
   size = "shared-cpu-1x"
   memory = "256mb"
+
+[env]
+  AWS_SCHEME_ENABLED = "1"
+
+# Quote-signing private key for AWS Agentic Commerce: the Fly secret
+# AWS_QUOTE_KEY_PEM holds the base64-encoded PEM; Fly decodes it and
+# writes it here at boot. The key itself never enters git or the image.
+[[files]]
+  guest_path = "/app/aws-quote-key.pem"
+  secret_name = "AWS_QUOTE_KEY_PEM"
